@@ -9,7 +9,7 @@ const WA = "6285181301622";
 
 function PricingCard({ pkg, isEn }: { pkg: { name: string; price: string; period: string; features: string[]; popular: boolean; waText: string; badge?: string }; isEn: boolean }) {
   return (
-    <div className="relative rounded-2xl p-8 flex flex-col" style={{ background: pkg.popular ? "rgba(74,124,89,0.12)" : "rgba(255,255,255,0.04)", border: pkg.popular ? "2px solid #4a7c59" : "1px solid rgba(255,255,255,0.1)", boxShadow: pkg.popular ? "0 0 40px rgba(74,124,89,0.15)" : "none" }}>
+    <div className="relative rounded-2xl p-5 sm:p-8 flex flex-col" style={{ background: pkg.popular ? "rgba(74,124,89,0.12)" : "rgba(255,255,255,0.04)", border: pkg.popular ? "2px solid #4a7c59" : "1px solid rgba(255,255,255,0.1)", boxShadow: pkg.popular ? "0 0 40px rgba(74,124,89,0.15)" : "none" }}>
       {pkg.popular && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest" style={{ background: "#4a7c59", color: "#fff" }}>
           {pkg.badge || (isEn ? "POPULAR" : "POPULER")}
@@ -106,7 +106,7 @@ export default function HargaPage() {
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs uppercase tracking-widest mb-6 border" style={{ color: "#4a7c59", borderColor: "rgba(74,124,89,0.3)", background: "rgba(74,124,89,0.08)" }}>
               {isEn ? "Pricing & Packages" : "Harga & Paket"}
             </span>
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
               <span style={{ color: "#4a7c59" }}>{isEn ? "Transparent Pricing," : "Harga Transparan,"}</span>
               <br />
               <span className="text-white">{isEn ? "Real Results" : "Hasil Nyata"}</span>
@@ -141,7 +141,7 @@ export default function HargaPage() {
 
         <section className="pb-20 px-4">
           <div className="mx-auto max-w-6xl">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {allPackages[activeTab].map((pkg) => (
                 <PricingCard key={pkg.name} pkg={pkg} isEn={isEn} />
               ))}

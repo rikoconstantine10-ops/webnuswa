@@ -67,7 +67,7 @@ export function NewsletterCapture({
       <Mail className="w-8 h-8 mb-4 opacity-80" />
       <h3 className="text-lg font-bold mb-2">{title}</h3>
       <p className="text-sm text-gray-300 mb-5">{description}</p>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
         <input
           type="email"
           value={email}
@@ -80,7 +80,7 @@ export function NewsletterCapture({
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2.5 bg-white text-[#2d4a2d] rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors flex-shrink-0 disabled:opacity-60"
+          className="w-full sm:w-auto px-4 py-2.5 bg-white text-[#2d4a2d] rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors flex-shrink-0 disabled:opacity-60"
         >
           {loading ? "..." : buttonText}
         </button>

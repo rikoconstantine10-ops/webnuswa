@@ -87,7 +87,7 @@ export default function AIContentSystemPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-6 shimmer-card" style={{color:"var(--color-primary)"}}>
                 <Sparkles className="w-4 h-4" /><span>AI-Powered Content</span>
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6" style={{fontFamily:"var(--font-display)"}}>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6" style={{fontFamily:"var(--font-display)"}}>
                 {isEn
                   ? <>Sistem Konten <span className="text-gradient">Berbasis AI</span> untuk Skala Bisnis Anda</>
                   : <>Sistem Konten <span className="text-gradient">Berbasis AI</span> untuk Skala Bisnis Anda</>}

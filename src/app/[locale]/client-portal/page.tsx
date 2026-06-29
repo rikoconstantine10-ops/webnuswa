@@ -125,7 +125,7 @@ export default function ClientPortalPage() {
 
           {/* Auth Card */}
           <AnimateOnScroll className="md:col-span-3" delay={100}>
-            <div className="shimmer-card rounded-2xl p-8">
+            <div className="shimmer-card rounded-2xl p-5 sm:p-8">
               {/* Tabs */}
               <div className="flex rounded-xl overflow-hidden border border-border mb-7">
                 {(["login", "request"] as const).map((tab) => (
@@ -216,7 +216,7 @@ export default function ClientPortalPage() {
                 </div>
               ) : (
                 <form onSubmit={handleRequestSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                         {isEn ? "Full Name" : "Nama Lengkap"}

@@ -293,7 +293,7 @@ export default function KenapaNuswalabPage() {
               {isEn ? "What Makes Nuswalab Different" : "Apa yang Membuat Nuswalab Berbeda"}
             </h2>
           </AnimateOnScroll>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 icon: "📊",
