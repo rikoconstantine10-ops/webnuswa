@@ -28,11 +28,16 @@ export function NewsletterCapture({
     setLoading(true);
     setError("");
     try {
+      const fbp = document.cookie.match(/_fbp=([^;]+)/)?.[1];
+      const fbc = document.cookie.match(/_fbc=([^;]+)/)?.[1];
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source }),
+        body: JSON.stringify({ email, source, fbp, fbc, page_url: window.location.href }),
       });
+      if (res.ok && typeof window !== "undefined" && (window as Window & { fbq?: (...a: unknown[]) => void }).fbq) {
+        (window as Window & { fbq?: (...a: unknown[]) => void }).fbq?.("track", "Lead", { content_name: "Newsletter" }, { eventID: `newsletter_${Date.now()}` });
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Gagal subscribe. Coba lagi.");
