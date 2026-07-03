@@ -5,8 +5,13 @@ import { markOrderPaid } from "@/lib/orders";
 const PAID_STATUSES = ["paid", "success", "settlement", "completed", "berhasil"];
 
 // Endpoint notifikasi status pembayaran dari Louvin.
-// Set webhook_url project Louvin ke: {APP_URL}/api/webhooks/louvin
+// Set webhook_url project Louvin ke: {APP_URL}/api/webhooks/louvin?key={WEBHOOK_SECRET}
 export async function POST(req: NextRequest) {
+  const secret = process.env.WEBHOOK_SECRET;
+  if (secret && req.nextUrl.searchParams.get("key") !== secret) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   let payload: Record<string, unknown>;
   try {
     payload = await req.json();

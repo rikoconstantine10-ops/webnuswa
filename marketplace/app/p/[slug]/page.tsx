@@ -68,6 +68,7 @@ export default async function ProductPage({
             <BuyForm
               productId={product.id}
               productType={product.type}
+              price={product.price}
               maxQty={product.stock}
               defaultName={user?.name ?? undefined}
               defaultEmail={user?.email}

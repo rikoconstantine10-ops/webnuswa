@@ -34,6 +34,8 @@ function extractPaymentDisplay(paymentInfo: string | null) {
       qrImageUrl,
       qrString: p.qr_string ?? p.qris_string ?? null,
       expiredAt: p.expired_at ?? null,
+      // Saat "fee ke customer" aktif di Louvin, total bayar > total order.
+      totalPayment: typeof p.total_payment === "number" ? p.total_payment : null,
       simulated: Boolean(trx.simulated),
     };
   } catch {
@@ -98,6 +100,22 @@ export default async function OrderPage({
       {isPendingPayment && (
         <div className="bg-white rounded-2xl border-2 border-teal-500 p-6">
           <h2 className="font-bold mb-3">Selesaikan Pembayaran</h2>
+          {pay?.totalPayment != null && pay.totalPayment !== order.total && (
+            <div className="text-sm bg-slate-50 rounded-lg px-4 py-3 mb-3 space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total pesanan</span>
+                <span>{formatRupiah(order.total)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Biaya admin pembayaran</span>
+                <span>{formatRupiah(pay.totalPayment - order.total)}</span>
+              </div>
+              <div className="flex justify-between font-extrabold border-t border-slate-200 pt-1.5">
+                <span>Total yang harus dibayar</span>
+                <span className="text-teal-600">{formatRupiah(pay.totalPayment)}</span>
+              </div>
+            </div>
+          )}
           {pay?.simulated && (
             <p className="text-xs bg-amber-50 text-amber-700 rounded-lg px-3 py-2 mb-3">
               Mode simulasi (LOUVIN_API_KEY belum diset) — pembayaran tidak nyata.

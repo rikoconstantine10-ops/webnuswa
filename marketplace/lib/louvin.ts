@@ -10,6 +10,15 @@ export const PAYMENT_TYPES = [
   { id: "cimb_va", label: "CIMB Niaga Virtual Account" },
 ] as const;
 
+// Fee VA dari gateway besar (± Rp6.500/transaksi), jadi VA hanya
+// ditawarkan untuk order yang cukup besar. Di bawah ini: QRIS saja.
+export const MIN_VA_AMOUNT = 50000;
+
+export function isPaymentTypeAllowed(paymentType: string, amount: number): boolean {
+  if (paymentType.endsWith("_va")) return amount >= MIN_VA_AMOUNT;
+  return true;
+}
+
 export type LouvinTransaction = {
   success: boolean;
   error?: string;

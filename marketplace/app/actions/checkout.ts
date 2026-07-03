@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
-import { createLouvinTransaction, extractTrxId, PAYMENT_TYPES } from "@/lib/louvin";
+import {
+  createLouvinTransaction,
+  extractTrxId,
+  isPaymentTypeAllowed,
+  MIN_VA_AMOUNT,
+  PAYMENT_TYPES,
+} from "@/lib/louvin";
 import { generateOrderCode } from "@/lib/orders";
 
 const checkoutSchema = z.object({
@@ -51,6 +57,13 @@ export async function checkoutAction(
   const subtotal = product.price * input.qty;
   const shippingCost = 0; // MVP: ongkir flat 0 (Biteship menyusul di Fase 2)
   const total = subtotal + shippingCost;
+
+  if (!isPaymentTypeAllowed(input.paymentType, total)) {
+    return {
+      error: `Virtual Account hanya tersedia untuk pembelian minimal Rp ${MIN_VA_AMOUNT.toLocaleString("id-ID")} — silakan pilih QRIS`,
+    };
+  }
+
   const code = generateOrderCode();
 
   const trx = await createLouvinTransaction({
