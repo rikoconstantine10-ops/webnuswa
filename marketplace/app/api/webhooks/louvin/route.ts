@@ -19,9 +19,15 @@ export async function POST(req: NextRequest) {
   });
 
   const data = (payload.data ?? {}) as Record<string, unknown>;
-  const trxId = payload.transaction_id ?? payload.id ?? data.transaction_id ?? data.id;
+  const transaction = (payload.transaction ?? {}) as Record<string, unknown>;
+  const trxId =
+    transaction.id ?? payload.transaction_id ?? payload.id ?? data.transaction_id ?? data.id;
   const status = String(
-    payload.status ?? payload.transaction_status ?? data.status ?? ""
+    payload.status ??
+      payload.transaction_status ??
+      transaction.status ??
+      data.status ??
+      ""
   ).toLowerCase();
 
   if (!trxId) {
@@ -32,7 +38,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  const order = await db.order.findUnique({ where: { louvinTrxId: String(trxId) } });
+  let order = await db.order.findUnique({ where: { louvinTrxId: String(trxId) } });
+  if (!order) {
+    // Fallback: cocokkan via reference/order_id yang tersimpan di paymentInfo.
+    const ref =
+      transaction.reference ?? payload.reference ?? payload.order_id ?? data.reference ?? data.order_id;
+    if (ref) {
+      order = await db.order.findFirst({
+        where: { paymentInfo: { contains: String(ref) } },
+      });
+    }
+  }
   if (!order) {
     await db.webhookLog.update({
       where: { id: log.id },

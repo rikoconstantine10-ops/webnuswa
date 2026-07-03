@@ -21,10 +21,19 @@ function extractPaymentDisplay(paymentInfo: string | null) {
   try {
     const trx = JSON.parse(paymentInfo);
     const p = trx.payment ?? trx.data ?? trx;
+    // URL gambar QR dari acquirer (mis. Midtrans "generate-qr-code" action)
+    const actions: { name?: string; url?: string }[] = p.raw_response?.actions ?? [];
+    const qrImageUrl =
+      p.qris_url ??
+      p.qris_image ??
+      actions.find((a) => a.name?.startsWith("generate-qr-code"))?.url ??
+      null;
     return {
       vaNumber: p.va_number ?? p.vaNumber ?? null,
-      qris: p.qris_url ?? p.qris_image ?? p.qris_string ?? null,
-      qrisIsImage: Boolean(p.qris_url ?? p.qris_image),
+      bank: p.bank ?? null,
+      qrImageUrl,
+      qrString: p.qr_string ?? p.qris_string ?? null,
+      expiredAt: p.expired_at ?? null,
       simulated: Boolean(trx.simulated),
     };
   } catch {
@@ -96,22 +105,27 @@ export default async function OrderPage({
           )}
           {pay?.vaNumber && (
             <div className="mb-3">
-              <p className="text-sm text-slate-500 mb-1">Nomor Virtual Account ({order.paymentType?.replace("_va", "").toUpperCase()})</p>
+              <p className="text-sm text-slate-500 mb-1">
+                Nomor Virtual Account ({(pay.bank ?? order.paymentType?.replace("_va", ""))?.toUpperCase()})
+              </p>
               <p className="text-2xl font-mono font-extrabold tracking-wider bg-slate-100 rounded-lg px-4 py-3">
                 {pay.vaNumber}
               </p>
             </div>
           )}
-          {pay?.qris && (
+          {(pay?.qrImageUrl || pay?.qrString) && (
             <div className="mb-3">
               <p className="text-sm text-slate-500 mb-2">Scan QRIS berikut:</p>
-              {pay.qrisIsImage ? (
+              {pay.qrImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={String(pay.qris)} alt="QRIS" className="w-56 h-56 border rounded-xl" />
+                <img src={String(pay.qrImageUrl)} alt="QRIS" className="w-56 h-56 border rounded-xl bg-white" />
               ) : (
-                <p className="text-xs font-mono break-all bg-slate-100 rounded-lg p-3">{String(pay.qris)}</p>
+                <p className="text-xs font-mono break-all bg-slate-100 rounded-lg p-3">{String(pay.qrString)}</p>
               )}
             </div>
+          )}
+          {pay?.expiredAt && (
+            <p className="text-xs text-amber-600 mb-2">Bayar sebelum: {String(pay.expiredAt)} WIB</p>
           )}
           <p className="text-xs text-slate-500">
             Halaman ini bisa di-refresh setelah membayar — status akan berubah otomatis begitu

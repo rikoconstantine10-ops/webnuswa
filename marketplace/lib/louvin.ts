@@ -53,11 +53,19 @@ export async function createLouvinTransaction(input: {
   return (await res.json()) as LouvinTransaction;
 }
 
-// Ekstrak ID transaksi dari respons Louvin (nama field bisa bervariasi).
+// Ekstrak ID transaksi dari respons Louvin.
+// Respons asli: { success, transaction: { id, reference, ... }, payment: { order_id, ... } }
 export function extractTrxId(trx: Record<string, unknown>): string | null {
+  const transaction = (trx.transaction ?? {}) as Record<string, unknown>;
   const payment = (trx.payment ?? {}) as Record<string, unknown>;
   const data = (trx.data ?? {}) as Record<string, unknown>;
   const candidate =
-    trx.transaction_id ?? trx.id ?? data.transaction_id ?? data.id ?? payment.transaction_id ?? payment.id;
+    transaction.id ??
+    trx.transaction_id ??
+    trx.id ??
+    data.transaction_id ??
+    data.id ??
+    payment.transaction_id ??
+    payment.id;
   return candidate ? String(candidate) : null;
 }
