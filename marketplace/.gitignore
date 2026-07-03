@@ -44,3 +44,5 @@ next-env.d.ts
 prisma/dev.db*
 uploads/
 !.env.example
+wa-service/node_modules/
+wa-service/wa-sessions/

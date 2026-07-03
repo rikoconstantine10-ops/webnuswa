@@ -135,6 +135,8 @@ model Order {
   buyer           User?         @relation(fields: [buyerId], references: [id])
   buyerName       String
   buyerEmail      String
+  buyerPhone      String?
+  waReminderSent  Boolean       @default(false)
   status          String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | PROCESSING | SHIPPED | COMPLETED | CANCELLED | EXPIRED
   subtotal        Int
   shippingCost    Int           @default(0)

@@ -20,9 +20,20 @@ const checkoutSchema = z.object({
   qty: z.coerce.number().int().min(1).max(999),
   buyerName: z.string().min(2),
   buyerEmail: z.string().email(),
+  buyerPhone: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => v.length >= 9 && v.length <= 15, "Nomor WhatsApp tidak valid"),
   paymentType: z.enum(PAYMENT_TYPES.map((p) => p.id) as [string, ...string[]]),
   shippingAddress: z.string().optional(),
 });
+
+// Normalisasi ke format internasional Indonesia: 08xx → 628xx.
+function normalizePhone(digits: string): string {
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  if (digits.startsWith("8")) return `62${digits}`;
+  return digits;
+}
 
 // Harga satuan dihitung ULANG di server (jangan percaya nilai dari client):
 // varian dipilih → harga varian; tanpa varian → harga grosir jika qty memenuhi tier.
@@ -36,6 +47,7 @@ export async function checkoutAction(
     qty: formData.get("qty"),
     buyerName: formData.get("buyerName"),
     buyerEmail: formData.get("buyerEmail"),
+    buyerPhone: formData.get("buyerPhone"),
     paymentType: formData.get("paymentType"),
     shippingAddress: formData.get("shippingAddress") || undefined,
   });
@@ -106,6 +118,7 @@ export async function checkoutAction(
       buyerId: user?.id ?? null,
       buyerName: input.buyerName,
       buyerEmail: input.buyerEmail,
+      buyerPhone: normalizePhone(input.buyerPhone),
       subtotal,
       shippingCost,
       total,

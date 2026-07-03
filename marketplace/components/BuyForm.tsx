@@ -120,6 +120,13 @@ export default function BuyForm({
         defaultValue={defaultEmail}
         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
       />
+      <input
+        type="tel"
+        name="buyerPhone"
+        required
+        placeholder="No. WhatsApp (mis. 08123456789)"
+        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+      />
 
       {productType === "PHYSICAL" && (
         <textarea

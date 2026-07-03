@@ -7,6 +7,7 @@ const NAV = [
   { href: "/dashboard/products", label: "Produk" },
   { href: "/dashboard/orders", label: "Pesanan" },
   { href: "/dashboard/analytics", label: "Analitik" },
+  { href: "/dashboard/whatsapp", label: "WhatsApp" },
   { href: "/dashboard/withdrawals", label: "Saldo & Penarikan" },
   { href: "/dashboard/store", label: "Pengaturan Toko" },
 ];
