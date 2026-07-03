@@ -1,6 +1,8 @@
 import { randomBytes } from "crypto";
 import { db } from "./db";
 import { getPlatformFeePercent } from "./ledger";
+import { notifyOrderPaid } from "./notify";
+import { trackEvent } from "./analytics";
 
 const DOWNLOAD_DAYS = 7;
 
@@ -51,11 +53,18 @@ export async function markOrderPaid(orderId: string) {
     });
 
     for (const item of order.items) {
-      if (item.product.type === "PHYSICAL" && item.product.stock !== null) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.qty } },
-        });
+      if (item.product.type === "PHYSICAL") {
+        if (item.variantName) {
+          await tx.productVariant.updateMany({
+            where: { productId: item.productId, name: item.variantName, stock: { not: null } },
+            data: { stock: { decrement: item.qty } },
+          });
+        } else if (item.product.stock !== null) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.qty } },
+          });
+        }
       }
       if (item.product.type === "DIGITAL" && item.product.digitalAsset) {
         await tx.downloadToken.create({
@@ -69,6 +78,11 @@ export async function markOrderPaid(orderId: string) {
       }
     }
   });
+
+  notifyOrderPaid(order.id);
+  for (const item of order.items) {
+    trackEvent({ type: "PURCHASE", storeId: order.storeId, productId: item.productId });
+  }
 
   return db.order.findUnique({ where: { id: orderId } });
 }

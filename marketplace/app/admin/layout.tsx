@@ -4,8 +4,12 @@ import { currentUser } from "@/lib/auth";
 
 const NAV = [
   { href: "/admin", label: "Ringkasan" },
+  { href: "/admin/transactions", label: "Transaksi" },
   { href: "/admin/sellers", label: "Seller" },
   { href: "/admin/withdrawals", label: "Penarikan Dana" },
+  { href: "/admin/categories", label: "Kategori" },
+  { href: "/admin/announcements", label: "Pengumuman" },
+  { href: "/admin/audit", label: "Log Aktivitas" },
   { href: "/admin/settings", label: "Pengaturan" },
 ];
 

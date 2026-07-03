@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { setStoreStatusAction } from "@/app/actions/admin";
@@ -33,7 +34,9 @@ export default async function AdminSellersPage() {
             {stores.map((s) => (
               <tr key={s.id} className="border-b border-slate-50">
                 <td className="px-4 py-3 font-medium">
-                  {s.name}
+                  <Link href={`/admin/sellers/${s.id}`} className="hover:text-teal-600">
+                    {s.name}
+                  </Link>
                   <span className="block text-xs text-slate-400 font-mono">/s/{s.slug}</span>
                 </td>
                 <td className="px-4 py-3 text-slate-600">{s.owner.email}</td>

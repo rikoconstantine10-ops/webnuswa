@@ -12,9 +12,11 @@ import {
   PAYMENT_TYPES,
 } from "@/lib/louvin";
 import { generateOrderCode } from "@/lib/orders";
+import { trackEvent } from "@/lib/analytics";
 
 const checkoutSchema = z.object({
   productId: z.string().min(1),
+  variantId: z.string().optional(),
   qty: z.coerce.number().int().min(1).max(999),
   buyerName: z.string().min(2),
   buyerEmail: z.string().email(),
@@ -22,12 +24,15 @@ const checkoutSchema = z.object({
   shippingAddress: z.string().optional(),
 });
 
+// Harga satuan dihitung ULANG di server (jangan percaya nilai dari client):
+// varian dipilih → harga varian; tanpa varian → harga grosir jika qty memenuhi tier.
 export async function checkoutAction(
   _prev: { error?: string },
   formData: FormData
 ): Promise<{ error?: string }> {
   const parsed = checkoutSchema.safeParse({
     productId: formData.get("productId"),
+    variantId: formData.get("variantId") || undefined,
     qty: formData.get("qty"),
     buyerName: formData.get("buyerName"),
     buyerEmail: formData.get("buyerEmail"),
@@ -39,22 +44,38 @@ export async function checkoutAction(
 
   const product = await db.product.findUnique({
     where: { id: input.productId },
-    include: { store: true },
+    include: { store: true, variants: true, wholesaleTiers: { orderBy: { minQty: "desc" } } },
   });
   if (!product || !product.active || product.store.status !== "ACTIVE") {
     return { error: "Produk tidak tersedia" };
   }
+
+  let unitPrice = product.price;
+  let variantName: string | null = null;
+  let availableStock = product.stock;
+
+  if (product.variants.length > 0) {
+    const variant = product.variants.find((v) => v.id === input.variantId);
+    if (!variant) return { error: "Silakan pilih varian dulu" };
+    unitPrice = variant.price;
+    variantName = variant.name;
+    availableStock = variant.stock;
+  } else {
+    const tier = product.wholesaleTiers.find((t) => input.qty >= t.minQty);
+    if (tier) unitPrice = tier.price;
+  }
+
   if (product.type === "PHYSICAL") {
     if (!input.shippingAddress || input.shippingAddress.trim().length < 10) {
       return { error: "Alamat pengiriman wajib diisi untuk produk fisik" };
     }
-    if (product.stock !== null && product.stock < input.qty) {
+    if (availableStock !== null && availableStock < input.qty) {
       return { error: "Stok tidak mencukupi" };
     }
   }
 
   const user = await currentUser();
-  const subtotal = product.price * input.qty;
+  const subtotal = unitPrice * input.qty;
   const shippingCost = 0; // MVP: ongkir flat 0 (Biteship menyusul di Fase 2)
   const total = subtotal + shippingCost;
 
@@ -64,14 +85,15 @@ export async function checkoutAction(
     };
   }
 
-  const code = generateOrderCode();
+  trackEvent({ type: "CHECKOUT", storeId: product.storeId, productId: product.id });
 
+  const code = generateOrderCode();
   const trx = await createLouvinTransaction({
     amount: total,
     payment_type: input.paymentType,
     customer_name: input.buyerName,
     customer_email: input.buyerEmail,
-    description: `Order ${code} - ${product.name} x${input.qty}`,
+    description: `Order ${code} - ${product.name}${variantName ? ` (${variantName})` : ""} x${input.qty}`,
   });
   if (!trx.success) {
     return { error: `Gagal membuat pembayaran: ${trx.error || trx.details || "unknown"}` };
@@ -93,7 +115,7 @@ export async function checkoutAction(
       shippingAddress: input.shippingAddress?.trim() || null,
       items: {
         create: [
-          { productId: product.id, name: product.name, price: product.price, qty: input.qty },
+          { productId: product.id, name: product.name, variantName, price: unitPrice, qty: input.qty },
         ],
       },
     },

@@ -5,20 +5,47 @@ import { checkoutAction } from "@/app/actions/checkout";
 import { PAYMENT_TYPES, MIN_VA_AMOUNT, isPaymentTypeAllowed } from "@/lib/louvin";
 import { formatRupiah } from "@/lib/money";
 
+type Variant = { id: string; name: string; price: number; stock: number | null };
+type Tier = { minQty: number; price: number };
+
 type Props = {
   productId: string;
   productType: string;
   price: number;
   maxQty: number | null;
+  variants: Variant[];
+  tiers: Tier[];
   defaultName?: string;
   defaultEmail?: string;
 };
 
-export default function BuyForm({ productId, productType, price, maxQty, defaultName, defaultEmail }: Props) {
+export default function BuyForm({
+  productId,
+  productType,
+  price,
+  maxQty,
+  variants,
+  tiers,
+  defaultName,
+  defaultEmail,
+}: Props) {
   const [state, formAction, pending] = useActionState(checkoutAction, {});
   const [qty, setQty] = useState(1);
+  const [variantId, setVariantId] = useState<string>(variants[0]?.id ?? "");
 
-  const subtotal = price * (Number.isFinite(qty) && qty > 0 ? qty : 1);
+  const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
+  const variant = variants.find((v) => v.id === variantId);
+
+  // Cermin dari logika server: varian > grosir > harga dasar.
+  let unitPrice = price;
+  if (variant) unitPrice = variant.price;
+  else {
+    const tier = [...tiers].sort((a, b) => b.minQty - a.minQty).find((t) => safeQty >= t.minQty);
+    if (tier) unitPrice = tier.price;
+  }
+  const subtotal = unitPrice * safeQty;
+  const effectiveMax = variant ? variant.stock : maxQty;
+
   const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, subtotal));
   const vaHidden = available.length < PAYMENT_TYPES.length;
 
@@ -26,13 +53,51 @@ export default function BuyForm({ productId, productType, price, maxQty, default
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="productId" value={productId} />
 
+      {variants.length > 0 && (
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Pilih varian</label>
+          <input type="hidden" name="variantId" value={variantId} />
+          <div className="flex flex-wrap gap-2">
+            {variants.map((v) => {
+              const out = productType === "PHYSICAL" && v.stock !== null && v.stock <= 0;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  disabled={out}
+                  onClick={() => setVariantId(v.id)}
+                  className={`text-sm px-3 py-2 rounded-lg border ${
+                    variantId === v.id
+                      ? "border-teal-600 bg-teal-50 text-teal-700 font-semibold"
+                      : "border-slate-300 text-slate-600"
+                  } ${out ? "opacity-40 line-through" : ""}`}
+                >
+                  {v.name} · {formatRupiah(v.price)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {tiers.length > 0 && variants.length === 0 && (
+        <div className="text-xs bg-amber-50 text-amber-800 rounded-lg px-3 py-2">
+          <p className="font-bold mb-1">💡 Harga grosir:</p>
+          {[...tiers].sort((a, b) => a.minQty - b.minQty).map((t) => (
+            <p key={t.minQty}>
+              Beli ≥ {t.minQty} → {formatRupiah(t.price)}/pcs
+            </p>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <label className="text-sm font-medium w-28">Jumlah</label>
         <input
           type="number"
           name="qty"
           min={1}
-          max={maxQty ?? undefined}
+          max={effectiveMax ?? undefined}
           value={qty}
           onChange={(e) => setQty(parseInt(e.target.value, 10) || 1)}
           className="w-24 border border-slate-300 rounded-lg px-3 py-2 text-sm"
@@ -87,7 +152,9 @@ export default function BuyForm({ productId, productType, price, maxQty, default
       </div>
 
       <div className="flex items-center justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
-        <span className="text-slate-500">Subtotal</span>
+        <span className="text-slate-500">
+          Subtotal ({formatRupiah(unitPrice)} × {safeQty})
+        </span>
         <span className="font-bold">{formatRupiah(subtotal)}</span>
       </div>
       <p className="text-xs text-slate-400">

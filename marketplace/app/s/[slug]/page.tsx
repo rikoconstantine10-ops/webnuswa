@@ -21,20 +21,51 @@ export default async function StorePage({
   });
   if (!store || store.status !== "ACTIVE") notFound();
 
+  const appUrl = process.env.APP_URL || "";
+  const shareText = encodeURIComponent(`Cek toko ${store.name}!\n${appUrl}/s/${store.slug}`);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center text-2xl overflow-hidden">
-          {store.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={store.logoUrl} alt={store.name} className="w-full h-full object-cover" />
-          ) : (
-            "🏪"
-          )}
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold">{store.name}</h1>
-          {store.description && <p className="text-sm text-slate-500">{store.description}</p>}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-8">
+        {store.bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={store.bannerUrl} alt="" className="w-full h-40 md:h-56 object-cover" />
+        ) : (
+          <div className="w-full h-24 bg-gradient-to-r from-teal-500 to-cyan-600" />
+        )}
+        <div className="p-6 flex flex-wrap items-center gap-4 -mt-12">
+          <div className="w-20 h-20 rounded-full bg-teal-100 border-4 border-white shadow flex items-center justify-center text-3xl overflow-hidden shrink-0">
+            {store.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={store.logoUrl} alt={store.name} className="w-full h-full object-cover" />
+            ) : (
+              "🏪"
+            )}
+          </div>
+          <div className="pt-10 flex-1 min-w-48">
+            <h1 className="text-2xl font-extrabold">{store.name}</h1>
+            {store.description && <p className="text-sm text-slate-500">{store.description}</p>}
+          </div>
+          <div className="pt-10 flex gap-2">
+            {store.whatsapp && (
+              <a
+                href={`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Halo ${store.name}!`)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-bold bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700"
+              >
+                💬 Chat Penjual
+              </a>
+            )}
+            <a
+              href={`https://wa.me/?text=${shareText}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-bold bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded-full hover:border-emerald-400"
+            >
+              📤 Bagikan
+            </a>
+          </div>
         </div>
       </div>
 

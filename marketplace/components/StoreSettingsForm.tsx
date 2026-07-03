@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateStoreAction } from "@/app/actions/seller";
 
 type Store = {
   name: string;
   description: string | null;
   logoUrl: string | null;
+  bannerUrl: string | null;
+  whatsapp: string | null;
   bankName: string | null;
   bankAccountNumber: string | null;
   bankAccountName: string | null;
@@ -14,6 +16,24 @@ type Store = {
 
 export default function StoreSettingsForm({ store }: { store: Store }) {
   const [state, formAction, pending] = useActionState(updateStoreAction, {});
+  const [logoUrl, setLogoUrl] = useState(store.logoUrl ?? "");
+  const [bannerUrl, setBannerUrl] = useState(store.bannerUrl ?? "");
+  const [uploading, setUploading] = useState(false);
+
+  async function upload(e: React.ChangeEvent<HTMLInputElement>, set: (u: string) => void) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload?kind=image", { method: "POST", body: fd });
+      const json = await res.json();
+      if (res.ok) set(json.url);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <form action={formAction} className="space-y-4 bg-white rounded-2xl border border-slate-200 p-6">
@@ -36,13 +56,34 @@ export default function StoreSettingsForm({ store }: { store: Store }) {
           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
         />
       </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium block mb-1">Logo toko</label>
+          <input type="hidden" name="logoUrl" value={logoUrl} />
+          {logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="logo" className="w-16 h-16 rounded-full object-cover border mb-2" />
+          )}
+          <input type="file" accept="image/*" onChange={(e) => upload(e, setLogoUrl)} className="w-full text-sm border border-dashed border-slate-300 rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">Banner toko</label>
+          <input type="hidden" name="bannerUrl" value={bannerUrl} />
+          {bannerUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={bannerUrl} alt="banner" className="w-full h-16 rounded-lg object-cover border mb-2" />
+          )}
+          <input type="file" accept="image/*" onChange={(e) => upload(e, setBannerUrl)} className="w-full text-sm border border-dashed border-slate-300 rounded-lg px-3 py-2" />
+        </div>
+      </div>
+
       <div>
-        <label className="text-sm font-medium block mb-1">URL Logo (opsional)</label>
+        <label className="text-sm font-medium block mb-1">Nomor WhatsApp toko (untuk tombol &quot;Chat Penjual&quot;)</label>
         <input
-          type="url"
-          name="logoUrl"
-          defaultValue={store.logoUrl ?? ""}
-          placeholder="https://..."
+          type="text"
+          name="whatsapp"
+          defaultValue={store.whatsapp ?? ""}
+          placeholder="628123456789"
           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
         />
       </div>
@@ -81,10 +122,10 @@ export default function StoreSettingsForm({ store }: { store: Store }) {
       )}
 
       <button
-        disabled={pending}
+        disabled={pending || uploading}
         className="bg-teal-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-teal-700 disabled:opacity-50"
       >
-        {pending ? "Menyimpan..." : "Simpan"}
+        {uploading ? "Mengunggah..." : pending ? "Menyimpan..." : "Simpan"}
       </button>
     </form>
   );

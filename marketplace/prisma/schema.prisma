@@ -46,6 +46,8 @@ model Store {
   slug              String        @unique
   description       String?
   logoUrl           String?
+  bannerUrl         String?
+  whatsapp          String? // nomor WA toko, format 628xxx
   customDomain      String?       @unique
   status            String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED
   bankName          String?
@@ -83,6 +85,36 @@ model Product {
   createdAt    DateTime      @default(now())
   digitalAsset DigitalAsset?
   orderItems   OrderItem[]
+  images       ProductImage[]
+  variants     ProductVariant[]
+  wholesaleTiers WholesaleTier[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  sort      Int     @default(0)
+}
+
+// Varian sederhana satu level: "Merah / XL" dengan harga & stok sendiri.
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Int
+  stock     Int?
+}
+
+// Harga grosir: beli >= minQty, harga satuan turun.
+model WholesaleTier {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  minQty    Int
+  price     Int
 }
 
 model DigitalAsset {
@@ -128,6 +160,7 @@ model OrderItem {
   productId      String
   product        Product         @relation(fields: [productId], references: [id])
   name           String // snapshot nama produk saat dibeli
+  variantName    String?
   price          Int
   qty            Int
   downloadTokens DownloadToken[]
@@ -186,4 +219,34 @@ model WebhookLog {
 model Setting {
   key   String @id
   value String
+}
+
+// Event analitik ringan: VIEW (halaman produk), CHECKOUT (mulai checkout), PURCHASE (order lunas).
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String
+  storeId   String?
+  productId String?
+  source    String? // asal traffic: instagram/tiktok/whatsapp/google/direct/...
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([productId, type])
+}
+
+// Pengumuman admin, tampil sebagai banner di dashboard seller.
+model Announcement {
+  id        String   @id @default(cuid())
+  message   String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// Jejak audit aksi penting (admin & keuangan).
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String // email pelaku
+  action    String // mis. STORE_APPROVED, WITHDRAWAL_PAID
+  detail    String?
+  createdAt DateTime @default(now())
 }

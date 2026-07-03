@@ -1,7 +1,7 @@
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
-import { shipOrderAction } from "@/app/actions/seller";
+import { markProcessingAction, shipOrderAction } from "@/app/actions/seller";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +71,14 @@ export default async function OrdersPage() {
                 </p>
               )}
 
+              {order.status === "PAID" && order.shippingAddress && (
+                <form action={markProcessingAction} className="mb-2">
+                  <input type="hidden" name="orderId" value={order.id} />
+                  <button className="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Tandai Diproses
+                  </button>
+                </form>
+              )}
               {["PAID", "PROCESSING"].includes(order.status) && order.shippingAddress && (
                 <form action={shipOrderAction} className="flex flex-wrap gap-2 items-center">
                   <input type="hidden" name="orderId" value={order.id} />

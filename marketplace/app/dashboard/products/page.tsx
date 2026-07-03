@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
-import { deleteProductAction } from "@/app/actions/products";
+import { deleteProductAction, duplicateProductAction } from "@/app/actions/products";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +63,12 @@ export default async function ProductsPage() {
                     >
                       Edit
                     </Link>
+                    <form action={duplicateProductAction} className="inline mr-3">
+                      <input type="hidden" name="id" value={p.id} />
+                      <button className="text-slate-500 font-semibold hover:underline cursor-pointer">
+                        Duplikat
+                      </button>
+                    </form>
                     <form action={deleteProductAction} className="inline">
                       <input type="hidden" name="id" value={p.id} />
                       <button className="text-red-500 font-semibold hover:underline cursor-pointer">

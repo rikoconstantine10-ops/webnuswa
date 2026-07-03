@@ -13,7 +13,12 @@ export default async function EditProductPage({
 
   const product = await db.product.findFirst({
     where: { id, storeId: store.id },
-    include: { digitalAsset: { select: { fileName: true } } },
+    include: {
+      digitalAsset: { select: { fileName: true } },
+      variants: { select: { name: true, price: true, stock: true } },
+      wholesaleTiers: { select: { minQty: true, price: true } },
+      images: { select: { url: true }, orderBy: { sort: "asc" } },
+    },
   });
   if (!product) notFound();
 

@@ -5,6 +5,18 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireSeller } from "@/lib/auth";
 import { storeBalance } from "@/lib/ledger";
+import { audit } from "@/lib/audit";
+
+export async function markProcessingAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const orderId = String(formData.get("orderId"));
+  const order = await db.order.findFirst({
+    where: { id: orderId, storeId: store.id, status: "PAID" },
+  });
+  if (!order) return;
+  await db.order.update({ where: { id: orderId }, data: { status: "PROCESSING" } });
+  revalidatePath("/dashboard/orders");
+}
 
 export async function shipOrderAction(formData: FormData) {
   const { store } = await requireSeller();
@@ -38,6 +50,8 @@ export async function updateStoreAction(
       name,
       description: String(formData.get("description") ?? "").trim() || null,
       logoUrl: String(formData.get("logoUrl") ?? "").trim() || null,
+      bannerUrl: String(formData.get("bannerUrl") ?? "").trim() || null,
+      whatsapp: String(formData.get("whatsapp") ?? "").replace(/\D/g, "") || null,
       bankName: String(formData.get("bankName") ?? "").trim() || null,
       bankAccountNumber: String(formData.get("bankAccountNumber") ?? "").trim() || null,
       bankAccountName: String(formData.get("bankAccountName") ?? "").trim() || null,
@@ -83,6 +97,7 @@ export async function requestWithdrawalAction(
       },
     }),
   ]);
+  await audit(store.name, "WITHDRAWAL_REQUESTED", `Rp${amount} → ${store.bankName} ${store.bankAccountNumber}`);
 
   redirect("/dashboard/withdrawals");
 }

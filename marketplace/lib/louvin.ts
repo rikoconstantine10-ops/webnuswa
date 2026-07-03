@@ -62,6 +62,27 @@ export async function createLouvinTransaction(input: {
   return (await res.json()) as LouvinTransaction;
 }
 
+// Saldo akun Louvin (untuk rekonsiliasi admin). Mengembalikan null jika
+// endpoint tidak tersedia / key tidak berlaku untuk akun-level API.
+export async function getLouvinBalance(): Promise<number | null> {
+  const apiKey = process.env.LOUVIN_API_KEY;
+  if (!apiKey) return null;
+  const baseUrl = process.env.LOUVIN_API_URL || "https://api.louvin.dev";
+  try {
+    const res = await fetch(`${baseUrl}/api-balance`, {
+      headers: { "x-api-key": apiKey },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as Record<string, unknown>;
+    const data = (json.data ?? json) as Record<string, unknown>;
+    const balance = data.balance ?? data.available_balance ?? json.balance;
+    return typeof balance === "number" ? balance : null;
+  } catch {
+    return null;
+  }
+}
+
 // Ekstrak ID transaksi dari respons Louvin.
 // Respons asli: { success, transaction: { id, reference, ... }, payment: { order_id, ... } }
 export function extractTrxId(trx: Record<string, unknown>): string | null {
