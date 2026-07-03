@@ -32,6 +32,9 @@ export default async function RootLayout({
               Nuswa<span className="text-slate-800">Market</span>
             </Link>
             <nav className="flex items-center gap-4 text-sm font-medium">
+              <Link href="/market" className="text-slate-600 hover:text-teal-600">
+                Belanja
+              </Link>
               {user ? (
                 <>
                   {user.role === "ADMIN" && (
