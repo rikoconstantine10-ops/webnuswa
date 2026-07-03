@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  role      String    @default("BUYER") // BUYER | SELLER | ADMIN
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+  store     Store?
+  orders    Order[]
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Store {
+  id                String        @id @default(cuid())
+  ownerId           String        @unique
+  owner             User          @relation(fields: [ownerId], references: [id])
+  name              String
+  slug              String        @unique
+  description       String?
+  logoUrl           String?
+  customDomain      String?       @unique
+  status            String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountName   String?
+  createdAt         DateTime      @default(now())
+  products          Product[]
+  orders            Order[]
+  ledgerEntries     LedgerEntry[]
+  withdrawals       Withdrawal[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  products Product[]
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  storeId      String
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  categoryId   String?
+  category     Category?     @relation(fields: [categoryId], references: [id])
+  name         String
+  slug         String        @unique
+  description  String?
+  type         String // DIGITAL | PHYSICAL
+  price        Int // rupiah
+  stock        Int? // null = tidak dibatasi (produk digital)
+  weightGrams  Int? // untuk produk fisik
+  imageUrl     String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  digitalAsset DigitalAsset?
+  orderItems   OrderItem[]
+}
+
+model DigitalAsset {
+  id           String  @id @default(cuid())
+  productId    String  @unique
+  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  fileName     String
+  filePath     String
+  maxDownloads Int     @default(5)
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  storeId         String
+  store           Store         @relation(fields: [storeId], references: [id])
+  buyerId         String?
+  buyer           User?         @relation(fields: [buyerId], references: [id])
+  buyerName       String
+  buyerEmail      String
+  status          String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | PROCESSING | SHIPPED | COMPLETED | CANCELLED | EXPIRED
+  subtotal        Int
+  shippingCost    Int           @default(0)
+  platformFee     Int           @default(0)
+  total           Int
+  paymentType     String?
+  louvinTrxId     String?       @unique
+  paymentInfo     String? // JSON respons Louvin (nomor VA / QRIS)
+  shippingAddress String?
+  courier         String?
+  trackingNumber  String?
+  paidAt          DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  items           OrderItem[]
+  ledgerEntries   LedgerEntry[]
+}
+
+model OrderItem {
+  id             String          @id @default(cuid())
+  orderId        String
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product         @relation(fields: [productId], references: [id])
+  name           String // snapshot nama produk saat dibeli
+  price          Int
+  qty            Int
+  downloadTokens DownloadToken[]
+}
+
+model DownloadToken {
+  id            String    @id @default(cuid())
+  orderItemId   String
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  token         String    @unique
+  downloadsUsed Int       @default(0)
+  maxDownloads  Int       @default(5)
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+}
+
+// Sumber kebenaran saldo seller: saldo = SUM(amount) per storeId.
+// amount positif = kredit ke seller, negatif = debit.
+model LedgerEntry {
+  id        String   @id @default(cuid())
+  storeId   String?
+  store     Store?   @relation(fields: [storeId], references: [id])
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  type      String // SALE_CREDIT | PLATFORM_FEE | WITHDRAWAL_DEBIT | ADJUSTMENT
+  amount    Int
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
+}
+
+model Withdrawal {
+  id                String    @id @default(cuid())
+  storeId           String
+  store             Store     @relation(fields: [storeId], references: [id])
+  amount            Int
+  bankName          String
+  bankAccountNumber String
+  bankAccountName   String
+  status            String    @default("PENDING") // PENDING | APPROVED | PAID | REJECTED
+  note              String?
+  createdAt         DateTime  @default(now())
+  processedAt       DateTime?
+}
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  source    String   @default("louvin")
+  payload   String
+  processed Boolean  @default(false)
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
