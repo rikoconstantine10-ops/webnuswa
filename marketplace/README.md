@@ -1,4 +1,4 @@
-# NuswaMarket
+# NuswaMart
 
 Marketplace multi-seller untuk produk **digital** (file download) dan **fisik** (pengiriman kurir),
 dengan pembayaran terpusat via [Louvin.dev](https://louvin.dev) (QRIS + Virtual Account) dan

@@ -5,7 +5,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Belanja — Nuswa Market",
+  title: "Belanja — NuswaMart",
 };
 
 export default async function MarketPage({
