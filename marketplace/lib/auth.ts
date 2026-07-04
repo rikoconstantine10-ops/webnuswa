@@ -69,6 +69,8 @@ export async function verifyOtp(email: string, code: string): Promise<boolean> {
     secure: process.env.NODE_ENV === "production",
     maxAge: SESSION_DAYS * 24 * 60 * 60,
     path: "/",
+    // Berlaku lintas subdomain (admin./seller./apex) jika COOKIE_DOMAIN diset.
+    ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
   });
 
   return true;
@@ -92,7 +94,11 @@ export async function logout() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (token) {
     await db.session.deleteMany({ where: { token } });
-    cookieStore.delete(SESSION_COOKIE);
+    cookieStore.set(SESSION_COOKIE, "", {
+      path: "/",
+      maxAge: 0,
+      ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
+    });
   }
 }
 
