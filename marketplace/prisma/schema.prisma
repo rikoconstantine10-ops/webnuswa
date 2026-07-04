@@ -51,6 +51,12 @@ model Store {
   customDomain      String?       @unique
   metaPixelId       String?
   metaCapiToken     String?
+  // Alamat asal toko (titik jemput kurir) untuk Biteship
+  originAreaId      String?
+  originPostalCode  String?
+  originAddress     String?
+  originContactName String?
+  originContactPhone String?
   status            String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED
   bankName          String?
   bankAccountNumber String?
@@ -163,8 +169,14 @@ model Order {
   louvinTrxId     String?       @unique
   paymentInfo     String? // JSON respons Louvin (nomor VA / QRIS)
   shippingAddress String?
-  courier         String?
+  destAreaId      String?
+  destPostalCode  String?
+  courier         String? // nama tampil kurir, mis. "JNE REG"
+  courierCompany  String? // kode Biteship, mis. "jne"
+  courierType     String? // kode layanan, mis. "reg"
   trackingNumber  String?
+  biteshipOrderId String?
+  shipmentStatus  String? // status dari Biteship (confirmed/allocated/picked/delivered/...)
   paidAt          DateTime?
   completedAt     DateTime?
   createdAt       DateTime      @default(now())

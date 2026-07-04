@@ -149,6 +149,7 @@ export default async function ProductPage({
               addons={product.addonLinks
                 .filter((a) => a.addonProduct.active)
                 .map((a) => ({ id: a.addonProductId, name: a.addonProduct.name, price: a.addonPrice }))}
+              storeCanShip={Boolean(product.store.originAreaId)}
               defaultName={user?.name ?? undefined}
               defaultEmail={user?.email}
             />

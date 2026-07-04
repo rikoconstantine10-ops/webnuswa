@@ -13,6 +13,7 @@ import {
 } from "@/lib/louvin";
 import { generateOrderCode } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
+import { getRates } from "@/lib/biteship";
 
 const checkoutSchema = z.object({
   productId: z.string().min(1),
@@ -26,6 +27,11 @@ const checkoutSchema = z.object({
     .refine((v) => v.length >= 9 && v.length <= 15, "Nomor WhatsApp tidak valid"),
   paymentType: z.enum(PAYMENT_TYPES.map((p) => p.id) as [string, ...string[]]),
   shippingAddress: z.string().optional(),
+  destAreaId: z.string().optional(),
+  destPostalCode: z.string().optional(),
+  courierCompany: z.string().optional(),
+  courierType: z.string().optional(),
+  courierName: z.string().optional(),
 });
 
 // Normalisasi ke format internasional Indonesia: 08xx → 628xx.
@@ -50,6 +56,11 @@ export async function checkoutAction(
     buyerPhone: formData.get("buyerPhone"),
     paymentType: formData.get("paymentType"),
     shippingAddress: formData.get("shippingAddress") || undefined,
+    destAreaId: formData.get("destAreaId") || undefined,
+    destPostalCode: formData.get("destPostalCode") || undefined,
+    courierCompany: formData.get("courierCompany") || undefined,
+    courierType: formData.get("courierType") || undefined,
+    courierName: formData.get("courierName") || undefined,
   });
   if (!parsed.success) return { error: "Data checkout tidak lengkap / tidak valid" };
   const input = parsed.data;
@@ -89,6 +100,9 @@ export async function checkoutAction(
     if (tier) unitPrice = tier.price;
   }
 
+  // Ongkir dihitung ULANG di server dari Biteship (jangan percaya harga dari client).
+  let shippingCost = 0;
+  let courierLabel: string | null = null;
   if (product.type === "PHYSICAL") {
     if (!input.shippingAddress || input.shippingAddress.trim().length < 10) {
       return { error: "Alamat pengiriman wajib diisi untuk produk fisik" };
@@ -96,11 +110,38 @@ export async function checkoutAction(
     if (availableStock !== null && availableStock < input.qty) {
       return { error: "Stok tidak mencukupi" };
     }
+    if (!product.store.originAreaId) {
+      return { error: "Toko belum mengatur alamat asal pengiriman" };
+    }
+    if (!input.destAreaId || !input.courierCompany || !input.courierType) {
+      return { error: "Pilih tujuan dan kurir pengiriman dulu" };
+    }
+    const rates = await getRates({
+      originAreaId: product.store.originAreaId,
+      destinationAreaId: input.destAreaId,
+      couriers: input.courierCompany,
+      items: [
+        {
+          name: product.name.slice(0, 40),
+          value: product.price,
+          weight: Math.max(100, product.weightGrams ?? 1000),
+          quantity: input.qty,
+        },
+      ],
+    });
+    if (!rates.success) {
+      return { error: `Gagal menghitung ongkir: ${rates.error}` };
+    }
+    const match = rates.pricing.find(
+      (r) => r.courier_code === input.courierCompany && r.courier_service_code === input.courierType
+    );
+    if (!match) return { error: "Layanan kurir tidak tersedia, silakan pilih ulang" };
+    shippingCost = match.price;
+    courierLabel = `${match.courier_name} ${match.courier_service_name}`;
   }
 
   const user = await currentUser();
   const subtotal = unitPrice * input.qty + addonTotal;
-  const shippingCost = 0; // MVP: ongkir flat 0 (Biteship menyusul di Fase 2)
   const total = subtotal + shippingCost;
 
   if (!isPaymentTypeAllowed(input.paymentType, total)) {
@@ -138,6 +179,11 @@ export async function checkoutAction(
       louvinTrxId: extractTrxId(trx),
       paymentInfo: JSON.stringify(trx),
       shippingAddress: input.shippingAddress?.trim() || null,
+      destAreaId: input.destAreaId || null,
+      destPostalCode: input.destPostalCode || null,
+      courier: courierLabel,
+      courierCompany: input.courierCompany || null,
+      courierType: input.courierType || null,
       items: {
         create: [
           { productId: product.id, name: product.name, variantName, price: unitPrice, qty: input.qty },

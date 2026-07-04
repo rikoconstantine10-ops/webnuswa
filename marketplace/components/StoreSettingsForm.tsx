@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { updateStoreAction } from "@/app/actions/seller";
+import AreaSearch from "@/components/AreaSearch";
 
 type Store = {
   name: string;
@@ -14,6 +15,11 @@ type Store = {
   bankAccountName: string | null;
   metaPixelId: string | null;
   metaCapiToken: string | null;
+  originAreaId: string | null;
+  originPostalCode: string | null;
+  originAddress: string | null;
+  originContactName: string | null;
+  originContactPhone: string | null;
 };
 
 export default function StoreSettingsForm({ store }: { store: Store }) {
@@ -115,6 +121,49 @@ export default function StoreSettingsForm({ store }: { store: Store }) {
           className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
         />
       </div>
+
+      <hr className="border-slate-100" />
+      <h2 className="font-bold text-sm">Alamat Asal Pengiriman (produk fisik)</h2>
+      <p className="text-xs text-slate-400 -mt-2">
+        Titik jemput kurir & dasar perhitungan ongkir. Wajib diisi jika kamu jual produk fisik.
+      </p>
+      <div className="grid md:grid-cols-2 gap-4">
+        <input
+          type="text"
+          name="originContactName"
+          placeholder="Nama pengirim / toko"
+          defaultValue={store.originContactName ?? ""}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+        />
+        <input
+          type="text"
+          name="originContactPhone"
+          placeholder="No. HP pengirim (628xxx)"
+          defaultValue={store.originContactPhone ?? ""}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium block mb-1">Kecamatan / Kota asal</label>
+        <AreaSearch
+          areaIdField="originAreaId"
+          postalField="originPostalCode"
+          defaultLabel={store.originAreaId ? `${store.originAddress ? "" : ""}Kode pos ${store.originPostalCode ?? ""}` : ""}
+          placeholder="Ketik kecamatan asal (min 3 huruf)"
+        />
+        {store.originAreaId && (
+          <p className="text-xs text-emerald-600 mt-1">
+            Area asal sudah tersimpan (kode pos {store.originPostalCode}). Ketik ulang untuk mengganti.
+          </p>
+        )}
+      </div>
+      <textarea
+        name="originAddress"
+        rows={2}
+        placeholder="Alamat detail asal (nama jalan, nomor, patokan)"
+        defaultValue={store.originAddress ?? ""}
+        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+      />
 
       <hr className="border-slate-100" />
       <h2 className="font-bold text-sm">Facebook / Meta Pixel (opsional)</h2>

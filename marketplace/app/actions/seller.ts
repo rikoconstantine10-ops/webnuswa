@@ -57,6 +57,11 @@ export async function updateStoreAction(
       bankAccountName: String(formData.get("bankAccountName") ?? "").trim() || null,
       metaPixelId: String(formData.get("metaPixelId") ?? "").replace(/\D/g, "") || null,
       metaCapiToken: String(formData.get("metaCapiToken") ?? "").trim() || null,
+      originAreaId: String(formData.get("originAreaId") ?? "").trim() || null,
+      originPostalCode: String(formData.get("originPostalCode") ?? "").trim() || null,
+      originAddress: String(formData.get("originAddress") ?? "").trim() || null,
+      originContactName: String(formData.get("originContactName") ?? "").trim() || null,
+      originContactPhone: String(formData.get("originContactPhone") ?? "").replace(/\D/g, "") || null,
     },
   });
   revalidatePath("/dashboard/store");

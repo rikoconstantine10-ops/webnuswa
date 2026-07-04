@@ -1,13 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { checkoutAction } from "@/app/actions/checkout";
 import { PAYMENT_TYPES, MIN_VA_AMOUNT, isPaymentTypeAllowed } from "@/lib/louvin";
 import { formatRupiah } from "@/lib/money";
+import AreaSearch from "@/components/AreaSearch";
 
 type Variant = { id: string; name: string; price: number; stock: number | null };
 type Tier = { minQty: number; price: number };
 type Addon = { id: string; name: string; price: number };
+type Rate = { company: string; type: string; name: string; price: number; duration: string };
 
 type Props = {
   productId: string;
@@ -17,6 +19,7 @@ type Props = {
   variants: Variant[];
   tiers: Tier[];
   addons?: Addon[];
+  storeCanShip: boolean;
   defaultName?: string;
   defaultEmail?: string;
 };
@@ -29,6 +32,7 @@ export default function BuyForm({
   variants,
   tiers,
   addons = [],
+  storeCanShip,
   defaultName,
   defaultEmail,
 }: Props) {
@@ -37,10 +41,17 @@ export default function BuyForm({
   const [variantId, setVariantId] = useState<string>(variants[0]?.id ?? "");
   const [addonSel, setAddonSel] = useState<Record<string, boolean>>({});
 
+  // Pengiriman (produk fisik)
+  const isPhysical = productType === "PHYSICAL";
+  const [destAreaId, setDestAreaId] = useState("");
+  const [rates, setRates] = useState<Rate[]>([]);
+  const [ratesLoading, setRatesLoading] = useState(false);
+  const [ratesError, setRatesError] = useState("");
+  const [courier, setCourier] = useState<Rate | null>(null);
+
   const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
   const variant = variants.find((v) => v.id === variantId);
 
-  // Cermin dari logika server: varian > grosir > harga dasar.
   let unitPrice = price;
   if (variant) unitPrice = variant.price;
   else {
@@ -48,11 +59,48 @@ export default function BuyForm({
     if (tier) unitPrice = tier.price;
   }
   const addonTotal = addons.reduce((s, a) => (addonSel[a.id] ? s + a.price : s), 0);
-  const subtotal = unitPrice * safeQty + addonTotal;
+  const itemsSubtotal = unitPrice * safeQty + addonTotal;
+  const shippingCost = isPhysical ? courier?.price ?? 0 : 0;
+  const grandTotal = itemsSubtotal + shippingCost;
   const effectiveMax = variant ? variant.stock : maxQty;
 
-  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, subtotal));
+  // Ambil ongkir saat area tujuan / jumlah berubah.
+  useEffect(() => {
+    if (!isPhysical || !destAreaId) return;
+    let cancelled = false;
+    setRatesLoading(true);
+    setRatesError("");
+    setCourier(null);
+    (async () => {
+      try {
+        const res = await fetch("/api/shipping/rates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, qty: safeQty, destAreaId }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.error && (!data.pricing || data.pricing.length === 0)) {
+          setRatesError(data.error);
+          setRates([]);
+        } else {
+          setRates(data.pricing ?? []);
+          if (!data.pricing?.length) setRatesError("Tidak ada layanan kurir untuk tujuan ini");
+        }
+      } catch {
+        if (!cancelled) setRatesError("Gagal mengambil ongkir");
+      } finally {
+        if (!cancelled) setRatesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isPhysical, destAreaId, safeQty, productId]);
+
+  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal));
   const vaHidden = available.length < PAYMENT_TYPES.length;
+  const shippingReady = !isPhysical || Boolean(courier);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -64,7 +112,7 @@ export default function BuyForm({
           <input type="hidden" name="variantId" value={variantId} />
           <div className="flex flex-wrap gap-2">
             {variants.map((v) => {
-              const out = productType === "PHYSICAL" && v.stock !== null && v.stock <= 0;
+              const out = isPhysical && v.stock !== null && v.stock <= 0;
               return (
                 <button
                   key={v.id}
@@ -154,14 +202,63 @@ export default function BuyForm({
         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
       />
 
-      {productType === "PHYSICAL" && (
-        <textarea
-          name="shippingAddress"
-          required
-          rows={3}
-          placeholder="Alamat pengiriman lengkap (jalan, kecamatan, kota, kode pos)"
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-        />
+      {isPhysical && (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <label className="text-sm font-bold block">Alamat Pengiriman</label>
+          {!storeCanShip ? (
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+              Toko ini belum mengatur alamat asal pengiriman, jadi ongkir belum bisa dihitung.
+            </p>
+          ) : (
+            <>
+              <AreaSearch
+                areaIdField="destAreaId"
+                postalField="destPostalCode"
+                placeholder="Kecamatan / kota tujuan (min 3 huruf)"
+                onSelect={(a) => setDestAreaId(a.id)}
+              />
+              <textarea
+                name="shippingAddress"
+                required
+                rows={2}
+                placeholder="Alamat detail (jalan, nomor, RT/RW, patokan)"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+              />
+
+              {destAreaId && (
+                <div>
+                  <label className="text-sm font-medium block mb-1">Pilih kurir</label>
+                  {ratesLoading && <p className="text-xs text-slate-500 animate-pulse">Menghitung ongkir…</p>}
+                  {ratesError && !ratesLoading && (
+                    <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{ratesError}</p>
+                  )}
+                  <div className="space-y-1.5 max-h-56 overflow-auto">
+                    {rates.map((r) => (
+                      <label
+                        key={`${r.company}-${r.type}`}
+                        className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50"
+                      >
+                        <input
+                          type="radio"
+                          name="courierPick"
+                          checked={courier?.company === r.company && courier?.type === r.type}
+                          onChange={() => setCourier(r)}
+                        />
+                        <span className="flex-1">
+                          {r.name} {r.duration && <span className="text-slate-400">· {r.duration}</span>}
+                        </span>
+                        <span className="font-bold">{formatRupiah(r.price)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <input type="hidden" name="courierCompany" value={courier?.company ?? ""} />
+              <input type="hidden" name="courierType" value={courier?.type ?? ""} />
+              <input type="hidden" name="courierName" value={courier?.name ?? ""} />
+            </>
+          )}
+        </div>
       )}
 
       <div>
@@ -179,30 +276,37 @@ export default function BuyForm({
         </div>
         {vaHidden && (
           <p className="text-xs text-slate-400 mt-1.5">
-            Virtual Account tersedia untuk pembelian minimal {formatRupiah(MIN_VA_AMOUNT)}.
+            Virtual Account tersedia untuk total minimal {formatRupiah(MIN_VA_AMOUNT)}.
           </p>
         )}
       </div>
 
-      <div className="flex items-center justify-between text-sm bg-slate-50 rounded-lg px-3 py-2">
-        <span className="text-slate-500">
-          Subtotal ({formatRupiah(unitPrice)} × {safeQty})
-        </span>
-        <span className="font-bold">{formatRupiah(subtotal)}</span>
+      <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm space-y-1">
+        <div className="flex justify-between">
+          <span className="text-slate-500">Subtotal produk</span>
+          <span>{formatRupiah(itemsSubtotal)}</span>
+        </div>
+        {isPhysical && (
+          <div className="flex justify-between">
+            <span className="text-slate-500">Ongkir {courier ? `(${courier.name})` : ""}</span>
+            <span>{courier ? formatRupiah(shippingCost) : "—"}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-extrabold border-t border-slate-200 pt-1">
+          <span>Total</span>
+          <span className="text-teal-600">{formatRupiah(grandTotal)}</span>
+        </div>
       </div>
-      <p className="text-xs text-slate-400">
-        Biaya admin pembayaran (jika ada) ditampilkan di halaman pembayaran.
-      </p>
 
       {state.error && (
         <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{state.error}</p>
       )}
 
       <button
-        disabled={pending}
+        disabled={pending || !shippingReady || (isPhysical && !storeCanShip)}
         className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 disabled:opacity-50"
       >
-        {pending ? "Memproses..." : "Beli Sekarang"}
+        {pending ? "Memproses..." : isPhysical && !courier ? "Pilih kurir dulu" : "Beli Sekarang"}
       </button>
     </form>
   );
