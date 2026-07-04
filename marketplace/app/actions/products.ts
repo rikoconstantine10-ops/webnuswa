@@ -171,6 +171,36 @@ export async function deleteProductAction(formData: FormData) {
   revalidatePath("/dashboard/products");
 }
 
+export async function saveAddonsAction(formData: FormData): Promise<void> {
+  const { store } = await requireSeller();
+  const productId = String(formData.get("productId"));
+  const product = await db.product.findFirst({ where: { id: productId, storeId: store.id } });
+  if (!product) return;
+
+  // Format: addonsJson = [{ addonProductId, addonPrice }]
+  const parsed = z
+    .array(z.object({ addonProductId: z.string().min(1), addonPrice: z.coerce.number().int().min(0) }))
+    .max(10)
+    .safeParse(JSON.parse(String(formData.get("addonsJson") || "[]")));
+  if (!parsed.success) return;
+
+  // Hanya boleh menawarkan add-on dari produk milik toko sendiri, bukan produk itu sendiri.
+  const owned = await db.product.findMany({
+    where: { storeId: store.id, id: { in: parsed.data.map((a) => a.addonProductId) } },
+    select: { id: true },
+  });
+  const ownedIds = new Set(owned.map((o) => o.id));
+  const valid = parsed.data.filter((a) => ownedIds.has(a.addonProductId) && a.addonProductId !== productId);
+
+  await db.$transaction([
+    db.productAddon.deleteMany({ where: { productId } }),
+    db.productAddon.createMany({
+      data: valid.map((a) => ({ productId, addonProductId: a.addonProductId, addonPrice: a.addonPrice })),
+    }),
+  ]);
+  revalidatePath(`/dashboard/products/${productId}/addons`);
+}
+
 export async function duplicateProductAction(formData: FormData) {
   const { store } = await requireSeller();
   const id = String(formData.get("id"));

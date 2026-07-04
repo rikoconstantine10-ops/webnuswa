@@ -12,6 +12,8 @@ type Store = {
   bankName: string | null;
   bankAccountNumber: string | null;
   bankAccountName: string | null;
+  metaPixelId: string | null;
+  metaCapiToken: string | null;
 };
 
 export default function StoreSettingsForm({ store }: { store: Store }) {
@@ -110,6 +112,29 @@ export default function StoreSettingsForm({ store }: { store: Store }) {
           name="bankAccountName"
           placeholder="Nama pemilik rekening"
           defaultValue={store.bankAccountName ?? ""}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+        />
+      </div>
+
+      <hr className="border-slate-100" />
+      <h2 className="font-bold text-sm">Facebook / Meta Pixel (opsional)</h2>
+      <p className="text-xs text-slate-400 -mt-2">
+        Untuk melacak konversi iklan Facebook/Instagram. Pixel dipasang di halaman produk & pembayaran;
+        event Purchase juga dikirim server-side (Conversions API) agar akurat meski ada ad-blocker.
+      </p>
+      <div className="grid md:grid-cols-2 gap-4">
+        <input
+          type="text"
+          name="metaPixelId"
+          placeholder="Pixel ID (angka)"
+          defaultValue={store.metaPixelId ?? ""}
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+        />
+        <input
+          type="text"
+          name="metaCapiToken"
+          placeholder="CAPI Access Token"
+          defaultValue={store.metaCapiToken ?? ""}
           className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
         />
       </div>

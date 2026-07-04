@@ -3,6 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { confirmReceivedAction } from "@/app/actions/checkout";
+import MetaPixel from "@/components/MetaPixel";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function OrderPage({
   const order = await db.order.findUnique({
     where: { code },
     include: {
-      store: { select: { name: true, slug: true } },
+      store: { select: { name: true, slug: true, metaPixelId: true } },
       items: {
         include: {
           product: { select: { type: true } },
@@ -70,6 +71,14 @@ export default async function OrderPage({
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      {isPaidOrDone && order.store.metaPixelId && (
+        <MetaPixel
+          pixelId={order.store.metaPixelId}
+          event="Purchase"
+          value={order.total}
+          eventId={`purchase_${order.id}`}
+        />
+      )}
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
@@ -90,6 +99,7 @@ export default async function OrderPage({
           </p>
           {order.items.map((item) => (
             <p key={item.id}>
+              {item.isAddon && <span className="text-teal-600 text-xs font-bold">+ add-on </span>}
               {item.name} × {item.qty} — {formatRupiah(item.price * item.qty)}
             </p>
           ))}

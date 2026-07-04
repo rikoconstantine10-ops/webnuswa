@@ -63,6 +63,12 @@ export default async function ProductsPage() {
                     >
                       Edit
                     </Link>
+                    <Link
+                      href={`/dashboard/products/${p.id}/addons`}
+                      className="text-slate-500 font-semibold hover:underline mr-3"
+                    >
+                      Add-on
+                    </Link>
                     <form action={duplicateProductAction} className="inline mr-3">
                       <input type="hidden" name="id" value={p.id} />
                       <button className="text-slate-500 font-semibold hover:underline cursor-pointer">

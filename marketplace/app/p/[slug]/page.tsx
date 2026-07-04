@@ -6,6 +6,7 @@ import { currentUser } from "@/lib/auth";
 import { formatRupiah } from "@/lib/money";
 import { detectSource, trackEvent } from "@/lib/analytics";
 import BuyForm from "@/components/BuyForm";
+import MetaPixel from "@/components/MetaPixel";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function ProductPage({
       images: { orderBy: { sort: "asc" } },
       variants: true,
       wholesaleTiers: { orderBy: { minQty: "asc" } },
+      addonLinks: { include: { addonProduct: { select: { id: true, name: true, active: true, imageUrl: true } } } },
     },
   });
   if (!product || !product.active || product.store.status !== "ACTIVE") notFound();
@@ -56,6 +58,9 @@ export default async function ProductPage({
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
+      {product.store.metaPixelId && (
+        <MetaPixel pixelId={product.store.metaPixelId} event="ViewContent" value={product.price} />
+      )}
       <div>
         <div className="aspect-square bg-white rounded-2xl border border-slate-200 flex items-center justify-center overflow-hidden">
           {gallery[0] ? (
@@ -141,6 +146,9 @@ export default async function ProductPage({
               maxQty={product.stock}
               variants={product.variants}
               tiers={product.wholesaleTiers.map((t) => ({ minQty: t.minQty, price: t.price }))}
+              addons={product.addonLinks
+                .filter((a) => a.addonProduct.active)
+                .map((a) => ({ id: a.addonProductId, name: a.addonProduct.name, price: a.addonPrice }))}
               defaultName={user?.name ?? undefined}
               defaultEmail={user?.email}
             />

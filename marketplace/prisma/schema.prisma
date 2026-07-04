@@ -49,6 +49,8 @@ model Store {
   bannerUrl         String?
   whatsapp          String? // nomor WA toko, format 628xxx
   customDomain      String?       @unique
+  metaPixelId       String?
+  metaCapiToken     String?
   status            String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED
   bankName          String?
   bankAccountNumber String?
@@ -88,6 +90,21 @@ model Product {
   images       ProductImage[]
   variants     ProductVariant[]
   wholesaleTiers WholesaleTier[]
+  // Order bump: produk ini menawarkan produk lain sebagai add-on saat checkout.
+  addonLinks   ProductAddon[] @relation("MainProduct")
+  offeredAs    ProductAddon[] @relation("AddonProduct")
+}
+
+// Order bump / add-on: saat checkout produk utama, tawarkan add-on dengan harga spesial.
+model ProductAddon {
+  id             String  @id @default(cuid())
+  productId      String
+  product        Product @relation("MainProduct", fields: [productId], references: [id], onDelete: Cascade)
+  addonProductId String
+  addonProduct   Product @relation("AddonProduct", fields: [addonProductId], references: [id], onDelete: Cascade)
+  addonPrice     Int // harga spesial add-on saat dibeli bersama produk utama
+
+  @@unique([productId, addonProductId])
 }
 
 model ProductImage {
@@ -163,6 +180,7 @@ model OrderItem {
   product        Product         @relation(fields: [productId], references: [id])
   name           String // snapshot nama produk saat dibeli
   variantName    String?
+  isAddon        Boolean @default(false)
   price          Int
   qty            Int
   downloadTokens DownloadToken[]

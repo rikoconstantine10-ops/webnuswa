@@ -56,11 +56,23 @@ export async function checkoutAction(
 
   const product = await db.product.findUnique({
     where: { id: input.productId },
-    include: { store: true, variants: true, wholesaleTiers: { orderBy: { minQty: "desc" } } },
+    include: {
+      store: true,
+      variants: true,
+      wholesaleTiers: { orderBy: { minQty: "desc" } },
+      addonLinks: { include: { addonProduct: true } },
+    },
   });
   if (!product || !product.active || product.store.status !== "ACTIVE") {
     return { error: "Produk tidak tersedia" };
   }
+
+  // Add-on yang dipilih pembeli (checkbox addonIds). Hanya add-on sah milik produk ini.
+  const chosenAddonIds = formData.getAll("addonIds").map(String);
+  const chosenAddons = product.addonLinks.filter(
+    (a) => chosenAddonIds.includes(a.addonProductId) && a.addonProduct.active
+  );
+  const addonTotal = chosenAddons.reduce((s, a) => s + a.addonPrice, 0);
 
   let unitPrice = product.price;
   let variantName: string | null = null;
@@ -87,7 +99,7 @@ export async function checkoutAction(
   }
 
   const user = await currentUser();
-  const subtotal = unitPrice * input.qty;
+  const subtotal = unitPrice * input.qty + addonTotal;
   const shippingCost = 0; // MVP: ongkir flat 0 (Biteship menyusul di Fase 2)
   const total = subtotal + shippingCost;
 
@@ -129,6 +141,13 @@ export async function checkoutAction(
       items: {
         create: [
           { productId: product.id, name: product.name, variantName, price: unitPrice, qty: input.qty },
+          ...chosenAddons.map((a) => ({
+            productId: a.addonProductId,
+            name: a.addonProduct.name,
+            isAddon: true,
+            price: a.addonPrice,
+            qty: 1,
+          })),
         ],
       },
     },

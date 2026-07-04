@@ -7,6 +7,7 @@ import { formatRupiah } from "@/lib/money";
 
 type Variant = { id: string; name: string; price: number; stock: number | null };
 type Tier = { minQty: number; price: number };
+type Addon = { id: string; name: string; price: number };
 
 type Props = {
   productId: string;
@@ -15,6 +16,7 @@ type Props = {
   maxQty: number | null;
   variants: Variant[];
   tiers: Tier[];
+  addons?: Addon[];
   defaultName?: string;
   defaultEmail?: string;
 };
@@ -26,12 +28,14 @@ export default function BuyForm({
   maxQty,
   variants,
   tiers,
+  addons = [],
   defaultName,
   defaultEmail,
 }: Props) {
   const [state, formAction, pending] = useActionState(checkoutAction, {});
   const [qty, setQty] = useState(1);
   const [variantId, setVariantId] = useState<string>(variants[0]?.id ?? "");
+  const [addonSel, setAddonSel] = useState<Record<string, boolean>>({});
 
   const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
   const variant = variants.find((v) => v.id === variantId);
@@ -43,7 +47,8 @@ export default function BuyForm({
     const tier = [...tiers].sort((a, b) => b.minQty - a.minQty).find((t) => safeQty >= t.minQty);
     if (tier) unitPrice = tier.price;
   }
-  const subtotal = unitPrice * safeQty;
+  const addonTotal = addons.reduce((s, a) => (addonSel[a.id] ? s + a.price : s), 0);
+  const subtotal = unitPrice * safeQty + addonTotal;
   const effectiveMax = variant ? variant.stock : maxQty;
 
   const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, subtotal));
@@ -103,6 +108,27 @@ export default function BuyForm({
           className="w-24 border border-slate-300 rounded-lg px-3 py-2 text-sm"
         />
       </div>
+
+      {addons.length > 0 && (
+        <div className="border border-dashed border-teal-300 bg-teal-50/50 rounded-lg p-3">
+          <p className="text-xs font-bold text-teal-700 mb-2">🎁 Sekalian tambah? Harga spesial:</p>
+          <div className="space-y-1.5">
+            {addons.map((a) => (
+              <label key={a.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="addonIds"
+                  value={a.id}
+                  checked={Boolean(addonSel[a.id])}
+                  onChange={(e) => setAddonSel({ ...addonSel, [a.id]: e.target.checked })}
+                />
+                <span className="flex-1">{a.name}</span>
+                <span className="font-bold text-teal-700">+{formatRupiah(a.price)}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       <input
         type="text"

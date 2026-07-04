@@ -3,6 +3,7 @@ import { db } from "./db";
 import { getPlatformFeePercent } from "./ledger";
 import { notifyOrderPaid } from "./notify";
 import { trackEvent } from "./analytics";
+import { capiPurchase } from "./capi";
 
 const DOWNLOAD_DAYS = 7;
 
@@ -82,6 +83,15 @@ export async function markOrderPaid(orderId: string) {
   notifyOrderPaid(order.id);
   for (const item of order.items) {
     trackEvent({ type: "PURCHASE", storeId: order.storeId, productId: item.productId });
+  }
+
+  // Facebook Conversions API (server-side Purchase) jika toko mengaktifkan Pixel.
+  const store = await db.store.findUnique({
+    where: { id: order.storeId },
+    select: { metaPixelId: true, metaCapiToken: true },
+  });
+  if (store?.metaPixelId && store.metaCapiToken) {
+    capiPurchase(store, order, `purchase_${order.id}`);
   }
 
   return db.order.findUnique({ where: { id: orderId } });
