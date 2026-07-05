@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     price: p.price,
     duration: p.duration || p.shipment_duration_range || "",
     instant: instantSet.has(p.courier_code),
+    cod: Boolean(p.available_for_cash_on_delivery),
   }));
   return NextResponse.json({ pricing });
 }

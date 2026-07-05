@@ -2,7 +2,7 @@
 // Docs: https://louvin.dev/docs
 
 export const PAYMENT_TYPES = [
-  { id: "qris", label: "QRIS" },
+  { id: "qris", label: "QRIS — GoPay/OVO/DANA/ShopeePay/m-banking" },
   { id: "bni_va", label: "BNI Virtual Account" },
   { id: "bri_va", label: "BRI Virtual Account" },
   { id: "mandiri_va", label: "Mandiri Virtual Account" },

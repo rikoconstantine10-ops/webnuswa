@@ -8,17 +8,25 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String?
-  role      String    @default("BUYER") // BUYER | SELLER | ADMIN
-  createdAt DateTime  @default(now())
-  sessions  Session[]
-  store     Store?
-  orders    Order[]
-  cartItems CartItem[]
-  reviews   Review[]
-  disputes  Dispute[]
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  role          String    @default("BUYER") // BUYER | SELLER | ADMIN
+  points        Int       @default(0) // poin loyalitas (1 poin = Rp1)
+  affiliateCode String?   @unique // kode afiliasi bila user ikut program
+  createdAt     DateTime  @default(now())
+  sessions      Session[]
+  store         Store?
+  orders        Order[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  disputes      Dispute[]
+  addresses     Address[]
+  wishlist      Wishlist[]
+  pointEntries  PointEntry[]
+  affiliateCommissions AffiliateCommission[]
+  referredOrders Order[]  @relation("AffiliateOrders")
+  questions     ProductQuestion[]
 }
 
 model OtpCode {
@@ -75,6 +83,9 @@ model Store {
   // Reputasi
   ratingAvg         Float         @default(0)
   ratingCount       Int           @default(0)
+  // Langganan
+  plan              String        @default("FREE") // FREE | PRO
+  planUntil         DateTime?
   createdAt         DateTime      @default(now())
   products          Product[]
   orders            Order[]
@@ -109,6 +120,13 @@ model Product {
   moderation   String        @default("APPROVED") // PENDING | APPROVED | REJECTED (moderasi admin)
   ratingAvg    Float         @default(0)
   ratingCount  Int           @default(0)
+  // Flash sale: harga diskon berjangka (aktif bila saleEndsAt > sekarang)
+  salePrice    Int?
+  saleEndsAt   DateTime?
+  // Afiliasi: komisi (persen) untuk yang mereferensikan produk ini
+  affiliatePct Int           @default(0)
+  // Promoted listing: tampil prioritas hingga waktu ini
+  boostedUntil DateTime?
   createdAt    DateTime      @default(now())
   digitalAsset DigitalAsset?
   orderItems   OrderItem[]
@@ -120,6 +138,8 @@ model Product {
   offeredAs    ProductAddon[] @relation("AddonProduct")
   cartItems    CartItem[]
   reviews      Review[]
+  wishlist     Wishlist[]
+  questions    ProductQuestion[]
 }
 
 // Order bump / add-on: saat checkout produk utama, tawarkan add-on dengan harga spesial.
@@ -185,8 +205,12 @@ model Order {
   subtotal        Int
   shippingCost    Int           @default(0)
   discountAmount  Int           @default(0)
+  pointsUsed      Int           @default(0) // poin loyalitas ditukar (Rp)
   platformFee     Int           @default(0)
   total           Int
+  // Afiliasi: user yang mereferensikan pembelian ini (dapat komisi saat selesai)
+  affiliateUserId String?
+  affiliate       User?         @relation("AffiliateOrders", fields: [affiliateUserId], references: [id])
   voucherId       String?
   voucher         Voucher?      @relation(fields: [voucherId], references: [id])
   checkoutId      String?
@@ -215,6 +239,8 @@ model Order {
   ledgerEntries   LedgerEntry[]
   reviews         Review[]
   dispute         Dispute?
+  affiliateCommission AffiliateCommission?
+  pointEntries    PointEntry[]
 }
 
 model OrderItem {
@@ -396,6 +422,82 @@ model DisputeMessage {
   author    String // "BUYER" | "SELLER" | "ADMIN"
   body      String
   createdAt DateTime @default(now())
+}
+
+// Alamat tersimpan pembeli (buku alamat).
+model Address {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label         String   @default("Rumah")
+  recipientName String
+  phone         String
+  areaId        String?
+  postalCode    String?
+  detail        String
+  lat           Float?
+  lng           Float?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Wishlist / favorit.
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+// Catatan poin loyalitas (audit earn/redeem). Saldo poin = User.points.
+model PointEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  amount    Int // + earn, - redeem
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Komisi afiliasi per order. Saldo afiliasi = SUM(amount) status AVAILABLE.
+model AffiliateCommission {
+  id              String   @id @default(cuid())
+  affiliateUserId String
+  affiliate       User     @relation(fields: [affiliateUserId], references: [id], onDelete: Cascade)
+  orderId         String   @unique
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount          Int
+  status          String   @default("PENDING") // PENDING | AVAILABLE | PAID | VOID
+  createdAt       DateTime @default(now())
+
+  @@index([affiliateUserId, status])
+}
+
+// Tanya-jawab pada halaman produk.
+model ProductQuestion {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  askerName  String
+  question   String
+  answer     String?
+  answeredAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([productId])
 }
 
 // Voucher/diskon: milik toko (storeId) atau platform (storeId null).

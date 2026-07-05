@@ -1,8 +1,9 @@
 import { db } from "./db";
 import { createBiteshipOrder, getBiteshipOrder, INSTANT_COURIER_CODES } from "./biteship";
 import { waSend } from "./wa";
-import { releaseOrderFunds } from "./ledger";
+import { releaseOrderFunds, getPlatformFeePercent } from "./ledger";
 import { notifyOrderShipped } from "./notify";
+import { finalizeOrderEarnings } from "./earnings";
 
 // Hari sebelum order "delivered" otomatis diselesaikan (rilis dana) bila pembeli diam.
 const AUTO_COMPLETE_DAYS = 3;
@@ -60,6 +61,7 @@ export async function createShipmentForOrder(orderId: string): Promise<{ ok: boo
     courierType: order.courierType,
     orderNote: `NuswaMart ${order.code}`,
     isInstant,
+    codAmount: order.paymentType === "cod" ? order.total : undefined,
     items: physical.map((i) => ({
       name: i.name.slice(0, 40),
       value: i.price,
@@ -96,7 +98,13 @@ export async function applyShipmentStatus(orderId: string, biteshipStatus: strin
   if (waybill && !order.trackingNumber) data.trackingNumber = waybill;
 
   if (mapped === "DELIVERED") {
-    // Barang sampai: mulai hitung mundur auto-selesai; pembeli boleh konfirmasi lebih cepat.
+    // COD: barang sampai = uang tunai tertagih → langsung selesaikan & kredit penjual.
+    if (order.paymentType === "cod" && order.status !== "COMPLETED") {
+      await db.order.update({ where: { id: order.id }, data });
+      await settleCodOrder(order.id);
+      return;
+    }
+    // Prabayar: mulai hitung mundur auto-selesai; pembeli boleh konfirmasi lebih cepat.
     if (order.status !== "COMPLETED") {
       data.status = "SHIPPED";
       if (!order.autoCompleteAt) {
@@ -116,6 +124,29 @@ export async function applyShipmentStatus(orderId: string, biteshipStatus: strin
       `✅ Pesanan ${order.code} sudah SAMPAI. Cek barangnya ya. Jika sudah sesuai, konfirmasi "Pesanan Diterima" di halaman pesanan. Dana akan otomatis diteruskan ke penjual dalam ${AUTO_COMPLETE_DAYS} hari.`
     );
   }
+}
+
+// Selesaikan order COD saat barang sampai: uang tunai tertagih kurir → kredit penjual.
+async function settleCodOrder(orderId: string): Promise<void> {
+  const order = await db.order.findUnique({ where: { id: orderId } });
+  if (!order || order.status === "COMPLETED" || order.paymentType !== "cod") return;
+  const feePercent = await getPlatformFeePercent();
+  const netSubtotal = Math.max(0, order.subtotal - order.discountAmount);
+  const fee = Math.round((netSubtotal * feePercent) / 100);
+  const now = new Date();
+  await db.$transaction([
+    db.order.update({
+      where: { id: order.id },
+      data: { status: "COMPLETED", paidAt: order.paidAt ?? now, completedAt: now, platformFee: fee, fundsReleased: true },
+    }),
+    db.ledgerEntry.create({
+      data: { storeId: order.storeId, orderId: order.id, type: "SALE_CREDIT", amount: netSubtotal + order.shippingCost, status: "AVAILABLE", note: `COD ${order.code}` },
+    }),
+    db.ledgerEntry.create({
+      data: { storeId: order.storeId, orderId: order.id, type: "PLATFORM_FEE", amount: -fee, status: "AVAILABLE", note: `Fee ${feePercent}% COD ${order.code}` },
+    }),
+  ]);
+  await finalizeOrderEarnings(order.id);
 }
 
 // Sinkronkan status dari Biteship untuk satu order (fallback bila webhook tidak jalan).
@@ -138,6 +169,7 @@ export async function autoCompleteDeliveredOrders(): Promise<number> {
       data: { status: "COMPLETED", completedAt: new Date() },
     });
     await releaseOrderFunds(o.id);
+    await finalizeOrderEarnings(o.id);
   }
   return due.length;
 }

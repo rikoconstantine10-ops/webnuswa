@@ -28,6 +28,7 @@ export type BiteshipRate = {
   duration?: string;
   shipment_duration_range?: string;
   shipment_duration_unit?: string;
+  available_for_cash_on_delivery?: boolean;
 };
 
 type BiteshipResponse = {
@@ -108,6 +109,7 @@ export type CreateOrderInput = {
   orderNote?: string;
   items: { name: string; value: number; weight: number; quantity: number }[];
   isInstant?: boolean;
+  codAmount?: number; // > 0 = order COD (tagih tunai ke penerima)
 };
 
 // Buat order pengiriman di Biteship (menjadwalkan penjemputan kurir).
@@ -137,6 +139,10 @@ export async function createBiteshipOrder(
   else if (input.origin.postalCode) body.origin_postal_code = Number(input.origin.postalCode);
   if (input.destination.areaId) body.destination_area_id = input.destination.areaId;
   else if (input.destination.postalCode) body.destination_postal_code = Number(input.destination.postalCode);
+  if (input.codAmount && input.codAmount > 0) {
+    body.destination_cash_on_delivery = input.codAmount;
+    body.destination_cash_on_delivery_type = "3_days";
+  }
   if (input.isInstant) {
     if (input.origin.lat != null && input.origin.lng != null) {
       body.origin_coordinate = { latitude: input.origin.lat, longitude: input.origin.lng };

@@ -16,6 +16,7 @@ import { generateOrderCode } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
+import { createShipmentForOrder } from "@/lib/shipping";
 
 function normalizePhone(digits: string): string {
   const d = digits.replace(/\D/g, "");
@@ -80,7 +81,7 @@ const cartCheckoutSchema = z.object({
   buyerName: z.string().min(2),
   buyerEmail: z.string().email(),
   buyerPhone: z.string(),
-  paymentType: z.enum(PAYMENT_TYPES.map((p) => p.id) as [string, ...string[]]),
+  paymentType: z.enum([...PAYMENT_TYPES.map((p) => p.id), "cod"] as unknown as [string, ...string[]]),
   shippingAddress: z.string().optional(),
   destAreaId: z.string().optional(),
   destPostalCode: z.string().optional(),
@@ -131,6 +132,7 @@ export async function checkoutCartAction(
   // Ongkir (produk fisik) dihitung ULANG di server dari Biteship.
   let shippingCost = 0;
   let courierLabel: string | null = null;
+  let codCapable = false;
   if (hasPhysical) {
     if (!input.shippingAddress || input.shippingAddress.trim().length < 10) return { error: "Alamat pengiriman wajib diisi" };
     if (!store.originAreaId) return { error: "Toko belum mengatur alamat asal pengiriman" };
@@ -151,6 +153,12 @@ export async function checkoutCartAction(
     if (!match) return { error: "Layanan kurir tidak tersedia, pilih ulang" };
     shippingCost = match.price;
     courierLabel = `${match.courier_name} ${match.courier_service_name}`;
+    codCapable = Boolean(match.available_for_cash_on_delivery);
+  }
+
+  const isCod = input.paymentType === "cod";
+  if (isCod && (!hasPhysical || !codCapable)) {
+    return { error: "COD tidak tersedia untuk kurir ini. Pilih pembayaran online." };
   }
 
   // Voucher
@@ -164,13 +172,43 @@ export async function checkoutCartAction(
   }
 
   const total = subtotal - discountAmount + shippingCost;
-  if (!isPaymentTypeAllowed(input.paymentType, total)) {
+  if (!isCod && !isPaymentTypeAllowed(input.paymentType, total)) {
     return { error: `Virtual Account minimal Rp ${MIN_VA_AMOUNT.toLocaleString("id-ID")} — pilih QRIS` };
   }
 
   trackEvent({ type: "CHECKOUT", storeId: store.id });
 
   const code = generateOrderCode();
+
+  // COD: tanpa pembayaran online. Order langsung diproses; stok dikurangi.
+  if (isCod) {
+    const codOrder = await db.order.create({
+      data: {
+        code, storeId: store.id, buyerId: user.id,
+        buyerName: input.buyerName, buyerEmail: input.buyerEmail, buyerPhone: normalizePhone(input.buyerPhone),
+        subtotal, shippingCost, discountAmount, voucherId, total,
+        paymentType: "cod", status: "PROCESSING",
+        shippingAddress: input.shippingAddress?.trim() || null,
+        destAreaId: input.destAreaId || null, destPostalCode: input.destPostalCode || null,
+        destLat: input.destLat || null, destLng: input.destLng || null,
+        courier: courierLabel, courierCompany: input.courierCompany || null, courierType: input.courierType || null,
+        items: { create: orderItemsData },
+      },
+    });
+    for (const it of cartItems) {
+      if (it.product.type !== "PHYSICAL") continue;
+      if (it.variantId) {
+        await db.productVariant.updateMany({ where: { id: it.variantId, stock: { not: null } }, data: { stock: { decrement: it.qty } } });
+      } else if (it.product.stock !== null) {
+        await db.product.update({ where: { id: it.product.id }, data: { stock: { decrement: it.qty } } });
+      }
+    }
+    if (voucherId) await db.voucher.update({ where: { id: voucherId }, data: { used: { increment: 1 } } });
+    createShipmentForOrder(codOrder.id).catch(() => {});
+    await db.cartItem.deleteMany({ where: { userId: user.id, product: { storeId: store.id } } });
+    redirect(`/order/${code}`);
+  }
+
   const trx = await createLouvinTransaction({
     amount: total,
     payment_type: input.paymentType,

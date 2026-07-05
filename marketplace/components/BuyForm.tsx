@@ -9,7 +9,7 @@ import AreaSearch from "@/components/AreaSearch";
 type Variant = { id: string; name: string; price: number; stock: number | null };
 type Tier = { minQty: number; price: number };
 type Addon = { id: string; name: string; price: number };
-type Rate = { company: string; type: string; name: string; price: number; duration: string; instant?: boolean };
+type Rate = { company: string; type: string; name: string; price: number; duration: string; instant?: boolean; cod?: boolean };
 
 type Props = {
   productId: string;
@@ -403,6 +403,12 @@ export default function BuyForm({
               {pt.label}
             </label>
           ))}
+          {isPhysical && courier?.cod && (
+            <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
+              <input type="radio" name="paymentType" value="cod" required />
+              💵 COD — Bayar di Tempat (tunai ke kurir saat barang sampai)
+            </label>
+          )}
         </div>
         {vaHidden && (
           <p className="text-xs text-slate-400 mt-1.5">

@@ -15,6 +15,7 @@ import { generateOrderCode, completeOrder } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
+import { createShipmentForOrder } from "@/lib/shipping";
 
 const checkoutSchema = z.object({
   productId: z.string().min(1),
@@ -26,7 +27,7 @@ const checkoutSchema = z.object({
     .string()
     .transform((v) => v.replace(/\D/g, ""))
     .refine((v) => v.length >= 9 && v.length <= 15, "Nomor WhatsApp tidak valid"),
-  paymentType: z.enum(PAYMENT_TYPES.map((p) => p.id) as [string, ...string[]]),
+  paymentType: z.enum([...PAYMENT_TYPES.map((p) => p.id), "cod"] as unknown as [string, ...string[]]),
   shippingAddress: z.string().optional(),
   destAreaId: z.string().optional(),
   destPostalCode: z.string().optional(),
@@ -110,6 +111,7 @@ export async function checkoutAction(
   // Ongkir dihitung ULANG di server dari Biteship (jangan percaya harga dari client).
   let shippingCost = 0;
   let courierLabel: string | null = null;
+  let codCapable = false;
   if (product.type === "PHYSICAL") {
     if (!input.shippingAddress || input.shippingAddress.trim().length < 10) {
       return { error: "Alamat pengiriman wajib diisi untuk produk fisik" };
@@ -157,6 +159,12 @@ export async function checkoutAction(
     if (!match) return { error: "Layanan kurir tidak tersedia, silakan pilih ulang" };
     shippingCost = match.price;
     courierLabel = `${match.courier_name} ${match.courier_service_name}`;
+    codCapable = Boolean(match.available_for_cash_on_delivery);
+  }
+
+  const isCod = input.paymentType === "cod";
+  if (isCod && (product.type !== "PHYSICAL" || !codCapable)) {
+    return { error: "COD tidak tersedia untuk produk/kurir ini. Pilih pembayaran online." };
   }
 
   const user = await currentUser();
@@ -177,7 +185,7 @@ export async function checkoutAction(
 
   const total = subtotal - discountAmount + shippingCost;
 
-  if (!isPaymentTypeAllowed(input.paymentType, total)) {
+  if (!isCod && !isPaymentTypeAllowed(input.paymentType, total)) {
     return {
       error: `Virtual Account hanya tersedia untuk pembelian minimal Rp ${MIN_VA_AMOUNT.toLocaleString("id-ID")} — silakan pilih QRIS`,
     };
@@ -186,6 +194,52 @@ export async function checkoutAction(
   trackEvent({ type: "CHECKOUT", storeId: product.storeId, productId: product.id });
 
   const code = generateOrderCode();
+
+  // COD: tanpa pembayaran online. Order langsung diproses; stok dikurangi;
+  // order Biteship COD dibuat; dana penjual dikredit saat barang sampai (delivered).
+  if (isCod) {
+    const order = await db.order.create({
+      data: {
+        code,
+        storeId: product.storeId,
+        buyerId: user?.id ?? null,
+        buyerName: input.buyerName,
+        buyerEmail: input.buyerEmail,
+        buyerPhone: normalizePhone(input.buyerPhone),
+        subtotal,
+        shippingCost,
+        discountAmount,
+        voucherId,
+        total,
+        paymentType: "cod",
+        status: "PROCESSING",
+        shippingAddress: input.shippingAddress?.trim() || null,
+        destAreaId: input.destAreaId || null,
+        destPostalCode: input.destPostalCode || null,
+        destLat: input.destLat ?? null,
+        destLng: input.destLng ?? null,
+        courier: courierLabel,
+        courierCompany: input.courierCompany || null,
+        courierType: input.courierType || null,
+        items: {
+          create: [
+            { productId: product.id, name: product.name, variantName, price: unitPrice, qty: input.qty },
+            ...chosenAddons.map((a) => ({ productId: a.addonProductId, name: a.addonProduct.name, isAddon: true, price: a.addonPrice, qty: 1 })),
+          ],
+        },
+      },
+    });
+    // Kurangi stok (COD memesan stok saat order dibuat).
+    if (variantName) {
+      await db.productVariant.updateMany({ where: { productId: product.id, name: variantName, stock: { not: null } }, data: { stock: { decrement: input.qty } } });
+    } else if (product.stock !== null) {
+      await db.product.update({ where: { id: product.id }, data: { stock: { decrement: input.qty } } });
+    }
+    if (voucherId) await db.voucher.update({ where: { id: voucherId }, data: { used: { increment: 1 } } });
+    createShipmentForOrder(order.id).catch(() => {});
+    redirect(`/order/${code}`);
+  }
+
   const trx = await createLouvinTransaction({
     amount: total,
     payment_type: input.paymentType,

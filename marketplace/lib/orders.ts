@@ -5,6 +5,7 @@ import { notifyOrderPaid } from "./notify";
 import { trackEvent } from "./analytics";
 import { capiPurchase } from "./capi";
 import { createShipmentForOrder } from "./shipping";
+import { finalizeOrderEarnings } from "./earnings";
 
 const DOWNLOAD_DAYS = 7;
 
@@ -111,6 +112,9 @@ export async function markOrderPaid(orderId: string) {
   // Produk fisik: coba buat order pengiriman di Biteship secara otomatis (best-effort).
   if (!allDigital) {
     createShipmentForOrder(order.id).catch(() => {});
+  } else {
+    // Digital langsung selesai → cairkan komisi afiliasi & poin loyalti.
+    finalizeOrderEarnings(order.id).catch(() => {});
   }
 
   return db.order.findUnique({ where: { id: orderId } });
@@ -127,6 +131,7 @@ export async function completeOrder(orderId: string): Promise<void> {
     data: { status: "COMPLETED", completedAt: new Date() },
   });
   if (!order.fundsReleased) await releaseOrderFunds(orderId);
+  await finalizeOrderEarnings(orderId);
 }
 
 export function generateOrderCode(): string {
