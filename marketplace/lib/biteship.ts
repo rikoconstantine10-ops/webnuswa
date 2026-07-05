@@ -6,9 +6,12 @@ const BASE = process.env.BITESHIP_API_URL || "https://api.biteship.com";
 const KEY = process.env.BITESHIP_API_KEY || "";
 
 // Kurir reguler/ekspedisi (pakai area_id kecamatan). Kode sesuai Biteship /v1/couriers.
-// Kurir instant (gojek, grab, lalamove, borzo, deliveree) TIDAK dimasukkan di sini
-// karena butuh titik koordinat lat/long, bukan area_id — itu fitur terpisah.
-const DEFAULT_COURIERS = "jne,jnt,sicepat,anteraja,idexpress,ninja,pos,tiki,lion,wahana,sap,rpx";
+export const REGULAR_COURIERS = "jne,jnt,sicepat,anteraja,idexpress,ninja,pos,tiki,lion,wahana,sap,rpx";
+// Kurir instan/on-demand (butuh titik koordinat lat/long, bukan area_id).
+export const INSTANT_COURIERS = "gojek,grab,lalamove";
+// Kode kurir yang tergolong instan — dipakai untuk cek apakah suatu order butuh koordinat.
+export const INSTANT_COURIER_CODES = new Set(["gojek", "grab", "lalamove", "borzo", "deliveree", "paxel"]);
+const DEFAULT_COURIERS = REGULAR_COURIERS;
 
 export type BiteshipArea = {
   id: string;
@@ -60,8 +63,12 @@ export async function searchAreas(input: string): Promise<BiteshipArea[]> {
 export type RatesInput = {
   originAreaId?: string;
   originPostalCode?: string | number;
+  originLatitude?: number;
+  originLongitude?: number;
   destinationAreaId?: string;
   destinationPostalCode?: string | number;
+  destinationLatitude?: number;
+  destinationLongitude?: number;
   couriers?: string; // "jne,jnt,sicepat,..."
   items: { name: string; value: number; weight: number; quantity: number; length?: number; width?: number; height?: number }[];
 };
@@ -73,10 +80,20 @@ export async function getRates(
     couriers: input.couriers || DEFAULT_COURIERS,
     items: input.items,
   };
+  // Koordinat & area boleh dikirim bersamaan: Biteship pakai area_id untuk kurir reguler
+  // dan lat/long untuk kurir instan, lalu mengembalikan keduanya dalam satu respons.
   if (input.originAreaId) body.origin_area_id = input.originAreaId;
   else if (input.originPostalCode) body.origin_postal_code = Number(input.originPostalCode);
+  if (typeof input.originLatitude === "number" && typeof input.originLongitude === "number") {
+    body.origin_latitude = input.originLatitude;
+    body.origin_longitude = input.originLongitude;
+  }
   if (input.destinationAreaId) body.destination_area_id = input.destinationAreaId;
   else if (input.destinationPostalCode) body.destination_postal_code = Number(input.destinationPostalCode);
+  if (typeof input.destinationLatitude === "number" && typeof input.destinationLongitude === "number") {
+    body.destination_latitude = input.destinationLatitude;
+    body.destination_longitude = input.destinationLongitude;
+  }
 
   const data = await call("/v1/rates/couriers", { method: "POST", body: JSON.stringify(body) });
   if (!data.success) return { success: false, error: data.error || "gagal cek ongkir", pricing: [] };

@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getRates } from "@/lib/biteship";
+import { getRates, INSTANT_COURIERS, REGULAR_COURIERS } from "@/lib/biteship";
 
 // Hitung ongkir untuk sebuah produk fisik ke area tujuan pembeli.
 // Origin diambil dari alamat toko (server-side, bukan dari client).
+// Jika toko punya koordinat titik jemput DAN pembeli mengirim koordinat tujuan,
+// kurir instan (Gojek/Grab/Lalamove) ikut dihitung bersama kurir reguler.
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
     productId?: string;
     qty?: number;
     destAreaId?: string;
+    destLat?: number;
+    destLng?: number;
   };
   const qty = Math.max(1, Math.min(999, Number(body.qty) || 1));
+  const destLat = Number(body.destLat);
+  const destLng = Number(body.destLng);
+  const hasDestCoord = Number.isFinite(destLat) && Number.isFinite(destLng);
 
-  if (!body.productId || !body.destAreaId) {
+  if (!body.productId || (!body.destAreaId && !hasDestCoord)) {
     return NextResponse.json({ error: "produk & tujuan wajib" }, { status: 400 });
   }
 
@@ -32,10 +39,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Kurir instan hanya bisa dihitung bila toko & pembeli sama-sama punya koordinat.
+  const canInstant =
+    typeof store.originLat === "number" &&
+    typeof store.originLng === "number" &&
+    hasDestCoord;
+
   const weight = Math.max(100, product.weightGrams ?? 1000);
   const result = await getRates({
     originAreaId: store.originAreaId,
-    destinationAreaId: body.destAreaId,
+    originLatitude: canInstant ? store.originLat! : undefined,
+    originLongitude: canInstant ? store.originLng! : undefined,
+    destinationAreaId: body.destAreaId || undefined,
+    destinationLatitude: hasDestCoord ? destLat : undefined,
+    destinationLongitude: hasDestCoord ? destLng : undefined,
+    // Kurir reguler selalu; tambah instan bila koordinat toko & tujuan lengkap.
+    couriers: canInstant ? `${REGULAR_COURIERS},${INSTANT_COURIERS}` : REGULAR_COURIERS,
     items: [
       {
         name: product.name.slice(0, 40),
@@ -51,12 +70,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Sederhanakan payload untuk client.
+  const instantSet = new Set(INSTANT_COURIERS.split(","));
   const pricing = result.pricing.map((p) => ({
     company: p.courier_code,
     type: p.courier_service_code,
     name: `${p.courier_name} ${p.courier_service_name}`,
     price: p.price,
     duration: p.duration || p.shipment_duration_range || "",
+    instant: instantSet.has(p.courier_code),
   }));
 
   return NextResponse.json({ pricing });

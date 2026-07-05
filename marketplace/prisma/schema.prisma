@@ -57,6 +57,9 @@ model Store {
   originAddress     String?
   originContactName String?
   originContactPhone String?
+  // Koordinat titik jemput — wajib untuk kurir instan (Gojek/Grab/Lalamove)
+  originLat         Float?
+  originLng         Float?
   status            String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED
   bankName          String?
   bankAccountNumber String?
@@ -171,6 +174,8 @@ model Order {
   shippingAddress String?
   destAreaId      String?
   destPostalCode  String?
+  destLat         Float? // koordinat tujuan — untuk kurir instan
+  destLng         Float?
   courier         String? // nama tampil kurir, mis. "JNE REG"
   courierCompany  String? // kode Biteship, mis. "jne"
   courierType     String? // kode layanan, mis. "reg"

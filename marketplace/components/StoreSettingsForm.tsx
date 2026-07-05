@@ -20,6 +20,8 @@ type Store = {
   originAddress: string | null;
   originContactName: string | null;
   originContactPhone: string | null;
+  originLat: number | null;
+  originLng: number | null;
 };
 
 export default function StoreSettingsForm({ store }: { store: Store }) {
@@ -27,6 +29,31 @@ export default function StoreSettingsForm({ store }: { store: Store }) {
   const [logoUrl, setLogoUrl] = useState(store.logoUrl ?? "");
   const [bannerUrl, setBannerUrl] = useState(store.bannerUrl ?? "");
   const [uploading, setUploading] = useState(false);
+  const [lat, setLat] = useState(store.originLat != null ? String(store.originLat) : "");
+  const [lng, setLng] = useState(store.originLng != null ? String(store.originLng) : "");
+  const [geoErr, setGeoErr] = useState("");
+  const [geoLoading, setGeoLoading] = useState(false);
+
+  function pinLocation() {
+    if (!navigator.geolocation) {
+      setGeoErr("Browser tidak mendukung GPS");
+      return;
+    }
+    setGeoErr("");
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude.toFixed(6));
+        setLng(pos.coords.longitude.toFixed(6));
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoErr(err.code === 1 ? "Izin lokasi ditolak" : "Gagal ambil lokasi");
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   async function upload(e: React.ChangeEvent<HTMLInputElement>, set: (u: string) => void) {
     const file = e.target.files?.[0];
@@ -164,6 +191,57 @@ export default function StoreSettingsForm({ store }: { store: Store }) {
         defaultValue={store.originAddress ?? ""}
         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
       />
+
+      <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-sm font-medium">
+            Titik jemput (GPS) — untuk kurir instan Gojek/Grab
+          </label>
+          <button
+            type="button"
+            onClick={pinLocation}
+            disabled={geoLoading}
+            className="text-xs font-bold bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 disabled:opacity-50 whitespace-nowrap"
+          >
+            {geoLoading ? "Mengambil…" : "📍 Pin lokasi toko"}
+          </button>
+        </div>
+        <p className="text-xs text-slate-400">
+          Buka halaman ini saat berada di lokasi toko lalu klik &quot;Pin lokasi toko&quot;, atau isi
+          koordinat manual. Tanpa titik ini, opsi Gojek/Grab tidak muncul di checkout.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="text"
+            name="originLat"
+            inputMode="decimal"
+            placeholder="Latitude (mis. -6.244100)"
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          />
+          <input
+            type="text"
+            name="originLng"
+            inputMode="decimal"
+            placeholder="Longitude (mis. 106.799700)"
+            value={lng}
+            onChange={(e) => setLng(e.target.value)}
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+        {geoErr && <p className="text-xs text-red-600">{geoErr}</p>}
+        {lat && lng && !geoErr && (
+          <a
+            href={`https://www.google.com/maps?q=${lat},${lng}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-teal-600 hover:underline"
+          >
+            Cek titik di Google Maps ↗
+          </a>
+        )}
+      </div>
 
       <hr className="border-slate-100" />
       <h2 className="font-bold text-sm">Facebook / Meta Pixel (opsional)</h2>

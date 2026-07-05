@@ -7,6 +7,13 @@ import { requireSeller } from "@/lib/auth";
 import { storeBalance } from "@/lib/ledger";
 import { audit } from "@/lib/audit";
 
+// Parse koordinat lat/long dari form. Kosong/invalid → null. Rentang wajar dunia dijaga.
+function parseCoord(v: FormDataEntryValue | null): number | null {
+  const n = parseFloat(String(v ?? "").trim());
+  if (!Number.isFinite(n) || n < -180 || n > 180 || n === 0) return null;
+  return n;
+}
+
 export async function markProcessingAction(formData: FormData) {
   const { store } = await requireSeller();
   const orderId = String(formData.get("orderId"));
@@ -62,6 +69,8 @@ export async function updateStoreAction(
       originAddress: String(formData.get("originAddress") ?? "").trim() || null,
       originContactName: String(formData.get("originContactName") ?? "").trim() || null,
       originContactPhone: String(formData.get("originContactPhone") ?? "").replace(/\D/g, "") || null,
+      originLat: parseCoord(formData.get("originLat")),
+      originLng: parseCoord(formData.get("originLng")),
     },
   });
   revalidatePath("/dashboard/store");

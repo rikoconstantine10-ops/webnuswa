@@ -9,7 +9,7 @@ import AreaSearch from "@/components/AreaSearch";
 type Variant = { id: string; name: string; price: number; stock: number | null };
 type Tier = { minQty: number; price: number };
 type Addon = { id: string; name: string; price: number };
-type Rate = { company: string; type: string; name: string; price: number; duration: string };
+type Rate = { company: string; type: string; name: string; price: number; duration: string; instant?: boolean };
 
 type Props = {
   productId: string;
@@ -20,6 +20,7 @@ type Props = {
   tiers: Tier[];
   addons?: Addon[];
   storeCanShip: boolean;
+  storeCanInstant?: boolean;
   defaultName?: string;
   defaultEmail?: string;
 };
@@ -33,6 +34,7 @@ export default function BuyForm({
   tiers,
   addons = [],
   storeCanShip,
+  storeCanInstant = false,
   defaultName,
   defaultEmail,
 }: Props) {
@@ -49,6 +51,33 @@ export default function BuyForm({
   const [ratesError, setRatesError] = useState("");
   const [courier, setCourier] = useState<Rate | null>(null);
 
+  // Koordinat tujuan pembeli (untuk kurir instan Gojek/Grab)
+  const [destLat, setDestLat] = useState("");
+  const [destLng, setDestLng] = useState("");
+  const [geoErr, setGeoErr] = useState("");
+  const [geoLoading, setGeoLoading] = useState(false);
+
+  function pinBuyerLocation() {
+    if (!navigator.geolocation) {
+      setGeoErr("Browser tidak mendukung GPS");
+      return;
+    }
+    setGeoErr("");
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setDestLat(pos.coords.latitude.toFixed(6));
+        setDestLng(pos.coords.longitude.toFixed(6));
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoErr(err.code === 1 ? "Izin lokasi ditolak" : "Gagal ambil lokasi");
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
   const variant = variants.find((v) => v.id === variantId);
 
@@ -64,7 +93,9 @@ export default function BuyForm({
   const grandTotal = itemsSubtotal + shippingCost;
   const effectiveMax = variant ? variant.stock : maxQty;
 
-  // Ambil ongkir saat area tujuan / jumlah berubah.
+  const hasBuyerCoord = Boolean(destLat && destLng);
+
+  // Ambil ongkir saat area tujuan / jumlah / koordinat berubah.
   useEffect(() => {
     if (!isPhysical || !destAreaId) return;
     let cancelled = false;
@@ -76,7 +107,12 @@ export default function BuyForm({
         const res = await fetch("/api/shipping/rates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId, qty: safeQty, destAreaId }),
+          body: JSON.stringify({
+            productId,
+            qty: safeQty,
+            destAreaId,
+            ...(hasBuyerCoord ? { destLat: Number(destLat), destLng: Number(destLng) } : {}),
+          }),
         });
         const data = await res.json();
         if (cancelled) return;
@@ -96,7 +132,7 @@ export default function BuyForm({
     return () => {
       cancelled = true;
     };
-  }, [isPhysical, destAreaId, safeQty, productId]);
+  }, [isPhysical, destAreaId, safeQty, productId, destLat, destLng, hasBuyerCoord]);
 
   const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal));
   const vaHidden = available.length < PAYMENT_TYPES.length;
@@ -225,6 +261,32 @@ export default function BuyForm({
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
               />
 
+              {storeCanInstant && (
+                <div className="bg-emerald-50/60 border border-emerald-200 rounded-lg p-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-emerald-800">
+                      ⚡ Mau kurir instan (Gojek/Grab)?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={pinBuyerLocation}
+                      disabled={geoLoading}
+                      className="text-xs font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {geoLoading ? "…" : hasBuyerCoord ? "📍 Ganti lokasi" : "📍 Pin lokasi saya"}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-emerald-700/80">
+                    Aktifkan lokasi untuk melihat opsi antar cepat hari ini. Tanpa ini, hanya kurir
+                    reguler yang muncul.
+                  </p>
+                  {hasBuyerCoord && !geoErr && (
+                    <p className="text-[11px] text-emerald-700">✓ Lokasi terpasang ({destLat}, {destLng})</p>
+                  )}
+                  {geoErr && <p className="text-[11px] text-red-600">{geoErr}</p>}
+                </div>
+              )}
+
               {destAreaId && (
                 <div>
                   <label className="text-sm font-medium block mb-1">Pilih kurir</label>
@@ -245,6 +307,11 @@ export default function BuyForm({
                           onChange={() => setCourier(r)}
                         />
                         <span className="flex-1">
+                          {r.instant && (
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded mr-1">
+                              INSTAN
+                            </span>
+                          )}
                           {r.name} {r.duration && <span className="text-slate-400">· {r.duration}</span>}
                         </span>
                         <span className="font-bold">{formatRupiah(r.price)}</span>
@@ -256,6 +323,8 @@ export default function BuyForm({
               <input type="hidden" name="courierCompany" value={courier?.company ?? ""} />
               <input type="hidden" name="courierType" value={courier?.type ?? ""} />
               <input type="hidden" name="courierName" value={courier?.name ?? ""} />
+              <input type="hidden" name="destLat" value={hasBuyerCoord ? destLat : ""} />
+              <input type="hidden" name="destLng" value={hasBuyerCoord ? destLng : ""} />
             </>
           )}
         </div>

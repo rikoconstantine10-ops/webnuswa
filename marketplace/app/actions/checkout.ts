@@ -13,7 +13,7 @@ import {
 } from "@/lib/louvin";
 import { generateOrderCode } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
-import { getRates } from "@/lib/biteship";
+import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 
 const checkoutSchema = z.object({
   productId: z.string().min(1),
@@ -29,6 +29,8 @@ const checkoutSchema = z.object({
   shippingAddress: z.string().optional(),
   destAreaId: z.string().optional(),
   destPostalCode: z.string().optional(),
+  destLat: z.coerce.number().optional(),
+  destLng: z.coerce.number().optional(),
   courierCompany: z.string().optional(),
   courierType: z.string().optional(),
   courierName: z.string().optional(),
@@ -58,6 +60,8 @@ export async function checkoutAction(
     shippingAddress: formData.get("shippingAddress") || undefined,
     destAreaId: formData.get("destAreaId") || undefined,
     destPostalCode: formData.get("destPostalCode") || undefined,
+    destLat: formData.get("destLat") || undefined,
+    destLng: formData.get("destLng") || undefined,
     courierCompany: formData.get("courierCompany") || undefined,
     courierType: formData.get("courierType") || undefined,
     courierName: formData.get("courierName") || undefined,
@@ -116,9 +120,21 @@ export async function checkoutAction(
     if (!input.destAreaId || !input.courierCompany || !input.courierType) {
       return { error: "Pilih tujuan dan kurir pengiriman dulu" };
     }
+    // Kurir instan (Gojek/Grab/Lalamove) butuh koordinat toko & pembeli.
+    const isInstant = INSTANT_COURIER_CODES.has(input.courierCompany);
+    const hasStoreCoord =
+      typeof product.store.originLat === "number" && typeof product.store.originLng === "number";
+    const hasBuyerCoord = typeof input.destLat === "number" && typeof input.destLng === "number";
+    if (isInstant && (!hasStoreCoord || !hasBuyerCoord)) {
+      return { error: "Kurir instan butuh titik lokasi toko & pembeli. Pilih kurir reguler atau pin lokasi." };
+    }
     const rates = await getRates({
       originAreaId: product.store.originAreaId,
+      originLatitude: isInstant ? product.store.originLat! : undefined,
+      originLongitude: isInstant ? product.store.originLng! : undefined,
       destinationAreaId: input.destAreaId,
+      destinationLatitude: isInstant ? input.destLat : undefined,
+      destinationLongitude: isInstant ? input.destLng : undefined,
       couriers: input.courierCompany,
       items: [
         {
@@ -181,6 +197,8 @@ export async function checkoutAction(
       shippingAddress: input.shippingAddress?.trim() || null,
       destAreaId: input.destAreaId || null,
       destPostalCode: input.destPostalCode || null,
+      destLat: input.destLat ?? null,
+      destLng: input.destLng ?? null,
       courier: courierLabel,
       courierCompany: input.courierCompany || null,
       courierType: input.courierType || null,
