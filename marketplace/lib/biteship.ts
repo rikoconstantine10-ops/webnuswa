@@ -99,3 +99,72 @@ export async function getRates(
   if (!data.success) return { success: false, error: data.error || "gagal cek ongkir", pricing: [] };
   return { success: true, pricing: data.pricing ?? [] };
 }
+
+export type CreateOrderInput = {
+  origin: { contactName: string; contactPhone: string; address: string; areaId?: string; postalCode?: string | number; lat?: number; lng?: number };
+  destination: { contactName: string; contactPhone: string; address: string; areaId?: string; postalCode?: string | number; lat?: number; lng?: number };
+  courierCompany: string;
+  courierType: string;
+  orderNote?: string;
+  items: { name: string; value: number; weight: number; quantity: number }[];
+  isInstant?: boolean;
+};
+
+// Buat order pengiriman di Biteship (menjadwalkan penjemputan kurir).
+export async function createBiteshipOrder(
+  input: CreateOrderInput
+): Promise<{ success: boolean; error?: string; orderId?: string; waybill?: string; trackingId?: string; status?: string }> {
+  const now = new Date();
+  const body: Record<string, unknown> = {
+    shipper_contact_name: input.origin.contactName,
+    shipper_contact_phone: input.origin.contactPhone,
+    origin_contact_name: input.origin.contactName,
+    origin_contact_phone: input.origin.contactPhone,
+    origin_address: input.origin.address,
+    destination_contact_name: input.destination.contactName,
+    destination_contact_phone: input.destination.contactPhone,
+    destination_address: input.destination.address,
+    courier_company: input.courierCompany,
+    courier_type: input.courierType,
+    courier_insurance: 0,
+    delivery_type: "now",
+    delivery_date: now.toISOString().slice(0, 10),
+    delivery_time: `${String(now.getHours()).padStart(2, "0")}:00`,
+    order_note: input.orderNote || "",
+    items: input.items,
+  };
+  if (input.origin.areaId) body.origin_area_id = input.origin.areaId;
+  else if (input.origin.postalCode) body.origin_postal_code = Number(input.origin.postalCode);
+  if (input.destination.areaId) body.destination_area_id = input.destination.areaId;
+  else if (input.destination.postalCode) body.destination_postal_code = Number(input.destination.postalCode);
+  if (input.isInstant) {
+    if (input.origin.lat != null && input.origin.lng != null) {
+      body.origin_coordinate = { latitude: input.origin.lat, longitude: input.origin.lng };
+    }
+    if (input.destination.lat != null && input.destination.lng != null) {
+      body.destination_coordinate = { latitude: input.destination.lat, longitude: input.destination.lng };
+    }
+  }
+  const data = await call("/v1/orders", { method: "POST", body: JSON.stringify(body) });
+  if (!data.success && data.success !== undefined) {
+    return { success: false, error: data.error || "gagal membuat order kurir" };
+  }
+  const courier = (data.courier ?? {}) as Record<string, unknown>;
+  return {
+    success: true,
+    orderId: String(data.id ?? ""),
+    waybill: courier.waybill_id ? String(courier.waybill_id) : undefined,
+    trackingId: courier.tracking_id ? String(courier.tracking_id) : undefined,
+    status: data.status ? String(data.status) : undefined,
+  };
+}
+
+// Ambil status tracking terkini order Biteship.
+export async function getBiteshipOrder(
+  orderId: string
+): Promise<{ success: boolean; status?: string; waybill?: string; error?: string }> {
+  const data = await call(`/v1/orders/${orderId}`);
+  if (data.success === false) return { success: false, error: data.error };
+  const courier = (data.courier ?? {}) as Record<string, unknown>;
+  return { success: true, status: data.status ? String(data.status) : undefined, waybill: courier.waybill_id ? String(courier.waybill_id) : undefined };
+}

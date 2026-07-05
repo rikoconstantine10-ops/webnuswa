@@ -16,6 +16,9 @@ model User {
   sessions  Session[]
   store     Store?
   orders    Order[]
+  cartItems CartItem[]
+  reviews   Review[]
+  disputes  Dispute[]
 }
 
 model OtpCode {
@@ -64,11 +67,21 @@ model Store {
   bankName          String?
   bankAccountNumber String?
   bankAccountName   String?
+  // Verifikasi identitas penjual (KYC)
+  kycStatus         String        @default("UNVERIFIED") // UNVERIFIED | PENDING | VERIFIED | REJECTED
+  kycName           String?
+  kycIdNumber       String? // NIK
+  kycIdImageUrl     String? // foto KTP
+  // Reputasi
+  ratingAvg         Float         @default(0)
+  ratingCount       Int           @default(0)
   createdAt         DateTime      @default(now())
   products          Product[]
   orders            Order[]
   ledgerEntries     LedgerEntry[]
   withdrawals       Withdrawal[]
+  reviews           Review[]
+  vouchers          Voucher[]
 }
 
 model Category {
@@ -92,7 +105,10 @@ model Product {
   stock        Int? // null = tidak dibatasi (produk digital)
   weightGrams  Int? // untuk produk fisik
   imageUrl     String?
-  active       Boolean       @default(true)
+  active       Boolean       @default(true) // toggle tampil/sembunyi oleh seller
+  moderation   String        @default("APPROVED") // PENDING | APPROVED | REJECTED (moderasi admin)
+  ratingAvg    Float         @default(0)
+  ratingCount  Int           @default(0)
   createdAt    DateTime      @default(now())
   digitalAsset DigitalAsset?
   orderItems   OrderItem[]
@@ -102,6 +118,8 @@ model Product {
   // Order bump: produk ini menawarkan produk lain sebagai add-on saat checkout.
   addonLinks   ProductAddon[] @relation("MainProduct")
   offeredAs    ProductAddon[] @relation("AddonProduct")
+  cartItems    CartItem[]
+  reviews      Review[]
 }
 
 // Order bump / add-on: saat checkout produk utama, tawarkan add-on dengan harga spesial.
@@ -163,11 +181,19 @@ model Order {
   buyerEmail      String
   buyerPhone      String?
   waReminderSent  Boolean       @default(false)
-  status          String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | PROCESSING | SHIPPED | COMPLETED | CANCELLED | EXPIRED
+  status          String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | PROCESSING | SHIPPED | COMPLETED | CANCELLED | EXPIRED | DISPUTED | REFUNDED
   subtotal        Int
   shippingCost    Int           @default(0)
+  discountAmount  Int           @default(0)
   platformFee     Int           @default(0)
   total           Int
+  voucherId       String?
+  voucher         Voucher?      @relation(fields: [voucherId], references: [id])
+  checkoutId      String?
+  checkout        Checkout?     @relation(fields: [checkoutId], references: [id])
+  // Escrow: dana ditahan sampai pesanan selesai, lalu dirilis ke saldo seller.
+  fundsReleased   Boolean       @default(false)
+  autoCompleteAt  DateTime? // auto-selesai (rilis dana) jika pembeli tak konfirmasi
   paymentType     String?
   louvinTrxId     String?       @unique
   paymentInfo     String? // JSON respons Louvin (nomor VA / QRIS)
@@ -187,6 +213,8 @@ model Order {
   createdAt       DateTime      @default(now())
   items           OrderItem[]
   ledgerEntries   LedgerEntry[]
+  reviews         Review[]
+  dispute         Dispute?
 }
 
 model OrderItem {
@@ -222,12 +250,15 @@ model LedgerEntry {
   store     Store?   @relation(fields: [storeId], references: [id])
   orderId   String?
   order     Order?   @relation(fields: [orderId], references: [id])
-  type      String // SALE_CREDIT | PLATFORM_FEE | WITHDRAWAL_DEBIT | ADJUSTMENT
+  type      String // SALE_CREDIT | PLATFORM_FEE | WITHDRAWAL_DEBIT | ADJUSTMENT | REFUND_DEBIT
   amount    Int
+  // Escrow: HELD = belum bisa ditarik (order belum selesai), AVAILABLE = saldo aktif.
+  status    String   @default("AVAILABLE") // HELD | AVAILABLE
   note      String?
   createdAt DateTime @default(now())
 
   @@index([storeId])
+  @@index([storeId, status])
 }
 
 model Withdrawal {
@@ -286,4 +317,102 @@ model AuditLog {
   action    String // mis. STORE_APPROVED, WITHDRAWAL_PAID
   detail    String?
   createdAt DateTime @default(now())
+}
+
+// Keranjang: item disimpan per pengguna login (tamu pakai localStorage di client).
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  qty       Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId, variantId])
+  @@index([userId])
+}
+
+// Satu sesi checkout dari keranjang bisa memuat beberapa Order (per toko),
+// tetapi hanya satu transaksi pembayaran Louvin.
+model Checkout {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  buyerId     String?
+  buyerName   String
+  buyerEmail  String
+  buyerPhone  String?
+  total       Int
+  paymentType String?
+  louvinTrxId String?  @unique
+  paymentInfo String?
+  status      String   @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | EXPIRED
+  createdAt   DateTime @default(now())
+  orders      Order[]
+}
+
+// Ulasan pembeli untuk produk (dan otomatis mengagregasi rating toko).
+model Review {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  buyerId    String?
+  buyer      User?    @relation(fields: [buyerId], references: [id])
+  buyerName  String
+  rating     Int // 1..5
+  comment    String?
+  sellerReply String?
+  createdAt  DateTime @default(now())
+
+  @@unique([orderId, productId])
+  @@index([productId])
+  @@index([storeId])
+}
+
+// Sengketa/komplain pesanan; dimediasi admin.
+model Dispute {
+  id         String           @id @default(cuid())
+  orderId    String           @unique
+  order      Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyerId    String?
+  buyer      User?            @relation(fields: [buyerId], references: [id])
+  reason     String
+  status     String           @default("OPEN") // OPEN | RESOLVED_REFUND | RESOLVED_RELEASE | REJECTED
+  resolution String?
+  createdAt  DateTime         @default(now())
+  resolvedAt DateTime?
+  messages   DisputeMessage[]
+}
+
+model DisputeMessage {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  author    String // "BUYER" | "SELLER" | "ADMIN"
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// Voucher/diskon: milik toko (storeId) atau platform (storeId null).
+model Voucher {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  storeId     String? // null = voucher platform (berlaku semua toko)
+  store       Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type        String // PERCENT | FIXED
+  value       Int // persen (1..100) atau rupiah
+  minSpend    Int      @default(0)
+  maxDiscount Int      @default(0) // 0 = tak terbatas (untuk PERCENT)
+  quota       Int      @default(0) // 0 = tak terbatas
+  used        Int      @default(0)
+  active      Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  orders      Order[]
 }

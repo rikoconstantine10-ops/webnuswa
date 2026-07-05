@@ -1,9 +1,10 @@
 import { randomBytes } from "crypto";
 import { db } from "./db";
-import { getPlatformFeePercent } from "./ledger";
+import { getPlatformFeePercent, releaseOrderFunds } from "./ledger";
 import { notifyOrderPaid } from "./notify";
 import { trackEvent } from "./analytics";
 import { capiPurchase } from "./capi";
+import { createShipmentForOrder } from "./shipping";
 
 const DOWNLOAD_DAYS = 7;
 
@@ -21,6 +22,9 @@ export async function markOrderPaid(orderId: string) {
   const fee = Math.round((order.subtotal * feePercent) / 100);
   const allDigital = order.items.every((i) => i.product.type === "DIGITAL");
   const now = new Date();
+  // Produk digital dianggap langsung "diterima" → dana boleh langsung dirilis.
+  // Produk fisik masuk ESCROW (HELD) sampai pesanan selesai/diterima.
+  const escrowStatus = allDigital ? "AVAILABLE" : "HELD";
 
   await db.$transaction(async (tx) => {
     await tx.order.update({
@@ -30,6 +34,7 @@ export async function markOrderPaid(orderId: string) {
         platformFee: fee,
         paidAt: now,
         completedAt: allDigital ? now : null,
+        fundsReleased: allDigital,
       },
     });
 
@@ -40,6 +45,7 @@ export async function markOrderPaid(orderId: string) {
         orderId: order.id,
         type: "SALE_CREDIT",
         amount: order.subtotal + order.shippingCost,
+        status: escrowStatus,
         note: `Penjualan order ${order.code}`,
       },
     });
@@ -49,6 +55,7 @@ export async function markOrderPaid(orderId: string) {
         orderId: order.id,
         type: "PLATFORM_FEE",
         amount: -fee,
+        status: escrowStatus,
         note: `Platform fee ${feePercent}% order ${order.code}`,
       },
     });
@@ -94,7 +101,25 @@ export async function markOrderPaid(orderId: string) {
     capiPurchase(store, order, `purchase_${order.id}`);
   }
 
+  // Produk fisik: coba buat order pengiriman di Biteship secara otomatis (best-effort).
+  if (!allDigital) {
+    createShipmentForOrder(order.id).catch(() => {});
+  }
+
   return db.order.findUnique({ where: { id: orderId } });
+}
+
+// Tandai order selesai & rilis dana escrow ke saldo seller. Idempotent.
+// Dipanggil saat pembeli konfirmasi terima, kurir "delivered", atau auto-complete.
+export async function completeOrder(orderId: string): Promise<void> {
+  const order = await db.order.findUnique({ where: { id: orderId } });
+  if (!order) return;
+  if (["COMPLETED", "CANCELLED", "REFUNDED"].includes(order.status)) return;
+  await db.order.update({
+    where: { id: orderId },
+    data: { status: "COMPLETED", completedAt: new Date() },
+  });
+  if (!order.fundsReleased) await releaseOrderFunds(orderId);
 }
 
 export function generateOrderCode(): string {

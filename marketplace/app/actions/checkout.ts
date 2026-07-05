@@ -11,7 +11,7 @@ import {
   MIN_VA_AMOUNT,
   PAYMENT_TYPES,
 } from "@/lib/louvin";
-import { generateOrderCode } from "@/lib/orders";
+import { generateOrderCode, completeOrder } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 
@@ -223,11 +223,9 @@ export async function checkoutAction(
 export async function confirmReceivedAction(formData: FormData) {
   const code = String(formData.get("code") ?? "");
   const order = await db.order.findUnique({ where: { code } });
-  if (order && order.status === "SHIPPED") {
-    await db.order.update({
-      where: { id: order.id },
-      data: { status: "COMPLETED", completedAt: new Date() },
-    });
+  // Pembeli konfirmasi terima → order selesai & dana escrow dirilis ke penjual.
+  if (order && ["SHIPPED", "PROCESSING"].includes(order.status)) {
+    await completeOrder(order.id);
   }
   redirect(`/order/${code}`);
 }

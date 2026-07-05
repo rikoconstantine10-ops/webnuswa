@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { storeBalance } from "@/lib/ledger";
+import { storeBalance, storeHeldBalance } from "@/lib/ledger";
 import { formatRupiah } from "@/lib/money";
 import SalesChart from "@/components/SalesChart";
 
@@ -11,9 +11,10 @@ export default async function DashboardHome() {
   const { store } = await requireSeller();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [balance, productCount, pendingOrders, totalSales, paidOrders, topItems, announcements] =
+  const [balance, heldBalance, productCount, pendingOrders, totalSales, paidOrders, topItems, announcements] =
     await Promise.all([
       storeBalance(store.id),
+      storeHeldBalance(store.id),
       db.product.count({ where: { storeId: store.id, active: true } }),
       db.order.count({ where: { storeId: store.id, status: { in: ["PAID", "PROCESSING"] } } }),
       db.ledgerEntry.aggregate({
@@ -48,6 +49,7 @@ export default async function DashboardHome() {
 
   const stats = [
     { label: "Saldo Tersedia", value: formatRupiah(balance), accent: "text-teal-600" },
+    { label: "Saldo Tertahan (Escrow)", value: formatRupiah(heldBalance), accent: heldBalance > 0 ? "text-amber-600" : undefined },
     { label: "Total Penjualan", value: formatRupiah(totalSales._sum.amount ?? 0) },
     { label: "Produk Aktif", value: String(productCount) },
     { label: "Pesanan Perlu Diproses", value: String(pendingOrders), accent: pendingOrders > 0 ? "text-amber-600" : undefined },
