@@ -3,6 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { confirmReceivedAction } from "@/app/actions/checkout";
+import { openDisputeAction, addDisputeMessageAction } from "@/app/actions/disputes";
 import MetaPixel from "@/components/MetaPixel";
 import ReviewForm from "@/components/ReviewForm";
 
@@ -64,11 +65,13 @@ export default async function OrderPage({
         },
       },
       reviews: { select: { productId: true } },
+      dispute: { include: { messages: { orderBy: { createdAt: "asc" } } } },
     },
   });
   if (!order) notFound();
 
   const reviewedProductIds = new Set(order.reviews.map((r) => r.productId));
+  const canDispute = ["PAID", "PROCESSING", "SHIPPED"].includes(order.status) && !order.dispute;
 
   const status = STATUS_LABEL[order.status] ?? { label: order.status, cls: "bg-slate-200" };
   const pay = extractPaymentDisplay(order.paymentInfo);
@@ -200,6 +203,71 @@ export default async function OrderPage({
             </button>
           </form>
         </div>
+      )}
+
+      {order.dispute && (
+        <div className="bg-white rounded-2xl border border-orange-200 p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-orange-700">Komplain / Sengketa</h2>
+            <span className="text-xs font-bold px-2 py-1 rounded-full bg-orange-100 text-orange-700">
+              {order.dispute.status === "OPEN"
+                ? "Sedang ditinjau admin"
+                : order.dispute.status === "RESOLVED_REFUND"
+                  ? "Selesai — dana dikembalikan"
+                  : "Selesai — diteruskan ke penjual"}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {order.dispute.messages.map((m) => (
+              <div key={m.id} className="text-sm">
+                <span className="font-semibold text-slate-600">
+                  {m.author === "BUYER" ? "Kamu" : m.author === "SELLER" ? "Penjual" : "Admin"}:
+                </span>{" "}
+                <span className="text-slate-700">{m.body}</span>
+              </div>
+            ))}
+          </div>
+          {order.dispute.resolution && (
+            <p className="text-sm bg-slate-50 rounded-lg px-3 py-2">
+              <b>Keputusan admin:</b> {order.dispute.resolution}
+            </p>
+          )}
+          {order.dispute.status === "OPEN" && (
+            <form action={addDisputeMessageAction} className="flex gap-2">
+              <input type="hidden" name="disputeId" value={order.dispute.id} />
+              <input type="hidden" name="role" value="BUYER" />
+              <input type="hidden" name="code" value={order.code} />
+              <input
+                type="text"
+                name="body"
+                required
+                placeholder="Tambah pesan…"
+                className="flex-1 border border-slate-300 rounded-lg px-3 py-1.5 text-sm"
+              />
+              <button className="bg-slate-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg">Kirim</button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {canDispute && (
+        <details className="bg-white rounded-2xl border border-slate-200 p-6">
+          <summary className="font-bold cursor-pointer text-slate-700">Ada masalah dengan pesanan ini? Ajukan komplain</summary>
+          <form action={openDisputeAction} className="mt-3 space-y-2">
+            <input type="hidden" name="code" value={order.code} />
+            <textarea
+              name="reason"
+              required
+              minLength={10}
+              rows={3}
+              placeholder="Jelaskan masalahnya (barang tidak sampai, rusak, tidak sesuai, dll). Min 10 karakter."
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            />
+            <button className="bg-orange-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-orange-700">
+              Ajukan Komplain
+            </button>
+          </form>
+        </details>
       )}
 
       {order.status === "COMPLETED" && (
