@@ -23,6 +23,7 @@ type Props = {
   storeCanInstant?: boolean;
   defaultName?: string;
   defaultEmail?: string;
+  userPoints?: number;
 };
 
 export default function BuyForm({
@@ -37,11 +38,14 @@ export default function BuyForm({
   storeCanInstant = false,
   defaultName,
   defaultEmail,
+  userPoints = 0,
 }: Props) {
   const [state, formAction, pending] = useActionState(checkoutAction, {});
   const [qty, setQty] = useState(1);
   const [variantId, setVariantId] = useState<string>(variants[0]?.id ?? "");
   const [addonSel, setAddonSel] = useState<Record<string, boolean>>({});
+  const [usePoints, setUsePoints] = useState(false);
+  const [payMethod, setPayMethod] = useState<string>("");
 
   // Pengiriman (produk fisik)
   const isPhysical = productType === "PHYSICAL";
@@ -98,7 +102,11 @@ export default function BuyForm({
   const itemsSubtotal = unitPrice * safeQty + addonTotal;
   const shippingCost = isPhysical ? courier?.price ?? 0 : 0;
   const discount = Math.min(voucherDiscount, itemsSubtotal);
-  const grandTotal = itemsSubtotal - discount + shippingCost;
+  // Poin loyalti hanya untuk pembayaran online (bukan COD) & maksimal senilai subtotal setelah diskon.
+  const isCodSel = payMethod === "cod";
+  const maxPoints = Math.max(0, Math.min(userPoints, itemsSubtotal - discount));
+  const pointsRedeemed = usePoints && !isCodSel ? maxPoints : 0;
+  const grandTotal = itemsSubtotal - discount + shippingCost - pointsRedeemed;
 
   async function applyVoucher() {
     const code = voucherInput.trim();
@@ -391,6 +399,19 @@ export default function BuyForm({
         )}
       </div>
 
+      <input type="hidden" name="usePoints" value={pointsRedeemed > 0 ? "1" : ""} />
+      {userPoints > 0 && (
+        <label className={`flex items-center justify-between gap-2 border rounded-lg px-3 py-2 text-sm cursor-pointer ${isCodSel ? "border-slate-200 opacity-50" : "border-teal-200 bg-teal-50/50"}`}>
+          <span className="flex items-center gap-2">
+            <input type="checkbox" checked={usePoints} disabled={isCodSel} onChange={(e) => setUsePoints(e.target.checked)} />
+            Tukar poin loyalti {isCodSel && <span className="text-xs text-slate-400">(tidak berlaku untuk COD)</span>}
+          </span>
+          <span className="text-teal-700 font-semibold">
+            ⭐ {userPoints.toLocaleString("id-ID")} tersedia (−{formatRupiah(maxPoints)})
+          </span>
+        </label>
+      )}
+
       <div>
         <label className="text-sm font-medium block mb-1.5">Metode pembayaran</label>
         <div className="grid grid-cols-2 gap-2">
@@ -399,13 +420,13 @@ export default function BuyForm({
               key={pt.id}
               className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50"
             >
-              <input type="radio" name="paymentType" value={pt.id} defaultChecked={i === 0} required />
+              <input type="radio" name="paymentType" value={pt.id} defaultChecked={i === 0} onChange={() => setPayMethod(pt.id)} required />
               {pt.label}
             </label>
           ))}
           {isPhysical && courier?.cod && (
             <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
-              <input type="radio" name="paymentType" value="cod" required />
+              <input type="radio" name="paymentType" value="cod" onChange={() => setPayMethod("cod")} required />
               💵 COD — Bayar di Tempat (tunai ke kurir saat barang sampai)
             </label>
           )}
@@ -426,6 +447,12 @@ export default function BuyForm({
           <div className="flex justify-between text-emerald-600">
             <span>Diskon voucher</span>
             <span>−{formatRupiah(discount)}</span>
+          </div>
+        )}
+        {pointsRedeemed > 0 && (
+          <div className="flex justify-between text-teal-600">
+            <span>Poin loyalti</span>
+            <span>−{formatRupiah(pointsRedeemed)}</span>
           </div>
         )}
         {isPhysical && (

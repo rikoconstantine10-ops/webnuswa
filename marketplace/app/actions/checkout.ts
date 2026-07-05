@@ -18,6 +18,7 @@ import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
 import { createShipmentForOrder } from "@/lib/shipping";
+import { effectivePrice } from "@/lib/pricing";
 
 const checkoutSchema = z.object({
   productId: z.string().min(1),
@@ -39,6 +40,7 @@ const checkoutSchema = z.object({
   courierType: z.string().optional(),
   courierName: z.string().optional(),
   voucherCode: z.string().optional(),
+  usePoints: z.string().optional(),
 });
 
 // Normalisasi ke format internasional Indonesia: 08xx → 628xx.
@@ -71,6 +73,7 @@ export async function checkoutAction(
     courierType: formData.get("courierType") || undefined,
     courierName: formData.get("courierName") || undefined,
     voucherCode: formData.get("voucherCode") || undefined,
+    usePoints: formData.get("usePoints") || undefined,
   });
   if (!parsed.success) return { error: "Data checkout tidak lengkap / tidak valid" };
   const input = parsed.data;
@@ -95,7 +98,7 @@ export async function checkoutAction(
   );
   const addonTotal = chosenAddons.reduce((s, a) => s + a.addonPrice, 0);
 
-  let unitPrice = product.price;
+  let unitPrice = effectivePrice(product);
   let variantName: string | null = null;
   let availableStock = product.stock;
 
@@ -106,8 +109,9 @@ export async function checkoutAction(
     variantName = variant.name;
     availableStock = variant.stock;
   } else {
+    // Grosir bila lebih murah dari harga (sale) satuan.
     const tier = product.wholesaleTiers.find((t) => input.qty >= t.minQty);
-    if (tier) unitPrice = tier.price;
+    if (tier && tier.price < unitPrice) unitPrice = tier.price;
   }
 
   // Ongkir dihitung ULANG di server dari Biteship (jangan percaya harga dari client).
@@ -187,7 +191,13 @@ export async function checkoutAction(
     }
   }
 
-  const total = subtotal - discountAmount + shippingCost;
+  // Poin loyalti (hanya pembayaran online, bukan COD). Dihitung ULANG di server.
+  let pointsUsed = 0;
+  if (input.usePoints && !isCod && user && user.points > 0) {
+    pointsUsed = Math.max(0, Math.min(user.points, subtotal - discountAmount));
+  }
+
+  const total = subtotal - discountAmount - pointsUsed + shippingCost;
 
   if (!isCod && !isPaymentTypeAllowed(input.paymentType, total)) {
     return {
@@ -256,7 +266,7 @@ export async function checkoutAction(
     return { error: `Gagal membuat pembayaran: ${trx.error || trx.details || "unknown"}` };
   }
 
-  await db.order.create({
+  const created = await db.order.create({
     data: {
       code,
       storeId: product.storeId,
@@ -267,6 +277,7 @@ export async function checkoutAction(
       subtotal,
       shippingCost,
       discountAmount,
+      pointsUsed,
       voucherId,
       total,
       paymentType: input.paymentType,
@@ -295,6 +306,16 @@ export async function checkoutAction(
       },
     },
   });
+
+  // Poin ditukar: kurangi saldo poin pembeli & catat riwayat (di-refund bila order kedaluwarsa).
+  if (pointsUsed > 0 && user) {
+    await db.$transaction([
+      db.user.update({ where: { id: user.id }, data: { points: { decrement: pointsUsed } } }),
+      db.pointEntry.create({
+        data: { userId: user.id, orderId: created.id, amount: -pointsUsed, note: `Tukar poin order ${code}` },
+      }),
+    ]);
+  }
 
   redirect(`/order/${code}`);
 }

@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { db } from "./db";
-import { getPlatformFeePercent, releaseOrderFunds } from "./ledger";
+import { getStoreFeePercent, releaseOrderFunds } from "./ledger";
 import { notifyOrderPaid } from "./notify";
 import { trackEvent } from "./analytics";
 import { capiPurchase } from "./capi";
@@ -19,7 +19,7 @@ export async function markOrderPaid(orderId: string) {
   });
   if (!order || order.status !== "PENDING_PAYMENT") return order;
 
-  const feePercent = await getPlatformFeePercent();
+  const feePercent = await getStoreFeePercent(order.storeId);
   // Diskon voucher TOKO ditanggung penjual; voucher PLATFORM (storeId null) ditanggung platform.
   const voucher = order.voucherId ? await db.voucher.findUnique({ where: { id: order.voucherId } }) : null;
   const sellerBorneDiscount = voucher && voucher.storeId ? order.discountAmount : 0;

@@ -18,6 +18,7 @@ import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
 import { createShipmentForOrder } from "@/lib/shipping";
 import { resolveAffiliateUserId } from "@/lib/affiliate";
+import { effectivePrice } from "@/lib/pricing";
 import { cookies } from "next/headers";
 
 function normalizePhone(digits: string): string {
@@ -29,7 +30,7 @@ function normalizePhone(digits: string): string {
 
 // Harga satuan item dihitung ULANG di server (varian > tier grosir > harga dasar).
 function unitPriceFor(
-  product: { price: number; variants: { id: string; name: string; price: number; stock: number | null }[]; wholesaleTiers: { minQty: number; price: number }[] },
+  product: { price: number; salePrice: number | null; saleEndsAt: Date | null; variants: { id: string; name: string; price: number; stock: number | null }[]; wholesaleTiers: { minQty: number; price: number }[] },
   variantId: string | null,
   qty: number
 ): { price: number; variantName: string | null; stock: number | null } | null {
@@ -38,8 +39,11 @@ function unitPriceFor(
     if (!v) return null;
     return { price: v.price, variantName: v.name, stock: v.stock };
   }
+  // Harga dasar = harga flash sale bila aktif; grosir menimpa bila lebih murah.
+  let price = effectivePrice(product);
   const tier = [...product.wholesaleTiers].sort((a, b) => b.minQty - a.minQty).find((t) => qty >= t.minQty);
-  return { price: tier ? tier.price : product.price, variantName: null, stock: null };
+  if (tier && tier.price < price) price = tier.price;
+  return { price, variantName: null, stock: null };
 }
 
 export async function addToCartAction(formData: FormData) {

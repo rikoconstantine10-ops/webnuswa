@@ -39,6 +39,11 @@ export default async function MarketPage({
     db.category.findMany({ orderBy: { name: "asc" } }),
   ]);
 
+  // Produk yang sedang di-boost tampil paling depan (urutan lain tetap stabil).
+  const now = Date.now();
+  const isBoosted = (p: { boostedUntil: Date | null }) => (p.boostedUntil ? p.boostedUntil.getTime() > now : false);
+  products.sort((a, b) => Number(isBoosted(b)) - Number(isBoosted(a)));
+
   const qs = (extra: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
     if (q) p.set("q", q);

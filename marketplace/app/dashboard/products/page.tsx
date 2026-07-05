@@ -3,6 +3,7 @@ import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { deleteProductAction, duplicateProductAction } from "@/app/actions/products";
+import BoostButton from "@/components/BoostButton";
 
 export const dynamic = "force-dynamic";
 
@@ -17,12 +18,20 @@ export default async function ProductsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-extrabold">Produk</h1>
-        <Link
-          href="/dashboard/products/new"
-          className="bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700"
-        >
-          + Tambah Produk
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/dashboard/products/import"
+            className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-50"
+          >
+            ⬆ Impor CSV
+          </Link>
+          <Link
+            href="/dashboard/products/new"
+            className="bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700"
+          >
+            + Tambah Produk
+          </Link>
+        </div>
       </div>
 
       {products.length === 0 ? (
@@ -69,6 +78,9 @@ export default async function ProductsPage() {
                     >
                       Add-on
                     </Link>
+                    <span className="mr-3 inline-block">
+                      <BoostButton productId={p.id} boostedUntil={p.boostedUntil} />
+                    </span>
                     <form action={duplicateProductAction} className="inline mr-3">
                       <input type="hidden" name="id" value={p.id} />
                       <button className="text-slate-500 font-semibold hover:underline cursor-pointer">

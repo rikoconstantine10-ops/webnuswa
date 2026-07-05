@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { createBiteshipOrder, getBiteshipOrder, INSTANT_COURIER_CODES } from "./biteship";
 import { waSend } from "./wa";
-import { releaseOrderFunds, getPlatformFeePercent } from "./ledger";
+import { releaseOrderFunds, getStoreFeePercent } from "./ledger";
 import { notifyOrderShipped } from "./notify";
 import { finalizeOrderEarnings } from "./earnings";
 
@@ -130,7 +130,7 @@ export async function applyShipmentStatus(orderId: string, biteshipStatus: strin
 async function settleCodOrder(orderId: string): Promise<void> {
   const order = await db.order.findUnique({ where: { id: orderId } });
   if (!order || order.status === "COMPLETED" || order.paymentType !== "cod") return;
-  const feePercent = await getPlatformFeePercent();
+  const feePercent = await getStoreFeePercent(order.storeId);
   const netSubtotal = Math.max(0, order.subtotal - order.discountAmount);
   const fee = Math.round((netSubtotal * feePercent) / 100);
   const now = new Date();

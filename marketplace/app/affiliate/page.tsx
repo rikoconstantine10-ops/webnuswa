@@ -88,7 +88,7 @@ export default async function AffiliatePage() {
           </table>
         )}
       </div>
-      <p className="text-xs text-slate-400">Penarikan komisi: hubungi admin (cs@nuswamart.com) dengan info rekening — akan diproses & ditandai "Dibayar".</p>
+      <p className="text-xs text-slate-400">Penarikan komisi: hubungi admin (cs@nuswamart.com) dengan info rekening — akan diproses &amp; ditandai &quot;Dibayar&quot;.</p>
     </div>
   );
 }

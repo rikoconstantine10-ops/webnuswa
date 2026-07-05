@@ -62,12 +62,16 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const products = await db.product.findMany({
+  const latest = await db.product.findMany({
     where: { active: true, moderation: "APPROVED", store: { status: "ACTIVE" } },
     include: { store: { select: { name: true, slug: true } } },
     orderBy: { createdAt: "desc" },
-    take: 6,
+    take: 24,
   });
+  // Produk yang sedang di-boost tampil paling depan.
+  const now = Date.now();
+  const isBoosted = (p: { boostedUntil: Date | null }) => (p.boostedUntil ? p.boostedUntil.getTime() > now : false);
+  const products = [...latest].sort((a, b) => Number(isBoosted(b)) - Number(isBoosted(a))).slice(0, 6);
 
   return (
     <div>

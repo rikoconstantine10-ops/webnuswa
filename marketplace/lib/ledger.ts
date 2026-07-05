@@ -6,6 +6,20 @@ export async function getPlatformFeePercent(): Promise<number> {
   return Number.isFinite(value) ? value : 5;
 }
 
+async function settingNumber(key: string, fallback: number): Promise<number> {
+  const s = await db.setting.findUnique({ where: { key } });
+  const v = s ? parseFloat(s.value) : NaN;
+  return Number.isFinite(v) ? v : fallback;
+}
+
+// Fee platform efektif untuk sebuah toko: lebih rendah bila langganan PRO aktif.
+export async function getStoreFeePercent(storeId: string): Promise<number> {
+  const store = await db.store.findUnique({ where: { id: storeId }, select: { plan: true, planUntil: true } });
+  const proActive = store?.plan === "PRO" && store.planUntil && store.planUntil > new Date();
+  if (proActive) return settingNumber("platform_fee_percent_pro", 3);
+  return getPlatformFeePercent();
+}
+
 // Saldo yang bisa ditarik: hanya entri AVAILABLE (dana escrow yang sudah dirilis).
 export async function storeBalance(storeId: string): Promise<number> {
   const agg = await db.ledgerEntry.aggregate({

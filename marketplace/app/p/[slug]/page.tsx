@@ -10,6 +10,9 @@ import MetaPixel from "@/components/MetaPixel";
 import Stars from "@/components/Stars";
 import { addToCartAction } from "@/app/actions/cart";
 import AffTracker from "@/components/AffTracker";
+import WishlistButton from "@/components/WishlistButton";
+import QuestionForm from "@/components/QuestionForm";
+import { isSaleActive, effectivePrice } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +55,7 @@ export default async function ProductPage({
       wholesaleTiers: { orderBy: { minQty: "asc" } },
       addonLinks: { include: { addonProduct: { select: { id: true, name: true, active: true, imageUrl: true } } } },
       reviews: { orderBy: { createdAt: "desc" }, take: 20 },
+      questions: { orderBy: { createdAt: "desc" }, take: 30 },
     },
   });
   if (!product || !product.active || product.moderation !== "APPROVED" || product.store.status !== "ACTIVE") notFound();
@@ -65,6 +69,11 @@ export default async function ProductPage({
   });
 
   const user = await currentUser();
+  const inWishlist = user
+    ? !!(await db.wishlist.findUnique({ where: { userId_productId: { userId: user.id, productId: product.id } } }))
+    : false;
+  const saleActive = isSaleActive(product);
+  const effPrice = effectivePrice(product);
   const outOfStock =
     product.type === "PHYSICAL" &&
     (product.variants.length > 0
@@ -134,11 +143,27 @@ export default async function ProductPage({
           {product.type === "DIGITAL" ? "Produk Digital" : "Produk Fisik"}
         </span>
         <h1 className="text-2xl font-extrabold mb-2">{product.name}</h1>
-        <p className="text-3xl font-extrabold text-teal-600 mb-4">
-          {product.variants.length > 0
-            ? `${formatRupiah(Math.min(...product.variants.map((v) => v.price)))}${product.variants.length > 1 ? " +" : ""}`
-            : formatRupiah(product.price)}
-        </p>
+        {product.variants.length > 0 ? (
+          <p className="text-3xl font-extrabold text-teal-600 mb-4">
+            {formatRupiah(Math.min(...product.variants.map((v) => v.price)))}
+            {product.variants.length > 1 ? " +" : ""}
+          </p>
+        ) : saleActive ? (
+          <div className="mb-4 flex items-center gap-3 flex-wrap">
+            <span className="text-3xl font-extrabold text-rose-600">{formatRupiah(effPrice)}</span>
+            <span className="text-lg text-slate-400 line-through">{formatRupiah(product.price)}</span>
+            <span className="text-[11px] font-bold uppercase bg-rose-600 text-white px-2 py-1 rounded-full">
+              Hemat {Math.round(((product.price - effPrice) / product.price) * 100)}%
+            </span>
+            {product.saleEndsAt && (
+              <span className="text-xs text-rose-600 font-semibold basis-full">
+                ⏰ Berakhir {product.saleEndsAt.toLocaleDateString("id-ID", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="text-3xl font-extrabold text-teal-600 mb-4">{formatRupiah(product.price)}</p>
+        )}
 
         {product.ratingCount > 0 && (
           <p className="flex items-center gap-2 mb-1">
@@ -198,7 +223,7 @@ export default async function ProductPage({
             <BuyForm
               productId={product.id}
               productType={product.type}
-              price={product.price}
+              price={effPrice}
               maxQty={product.stock}
               variants={product.variants}
               tiers={product.wholesaleTiers.map((t) => ({ minQty: t.minQty, price: t.price }))}
@@ -209,6 +234,7 @@ export default async function ProductPage({
               storeCanInstant={Boolean(product.store.originLat && product.store.originLng)}
               defaultName={user?.name ?? undefined}
               defaultEmail={user?.email}
+              userPoints={user?.points ?? 0}
             />
           )}
           {!outOfStock && (
@@ -221,6 +247,7 @@ export default async function ProductPage({
               </button>
             </form>
           )}
+          <WishlistButton productId={product.id} initial={inWishlist} />
         </div>
       </div>
 
@@ -249,6 +276,34 @@ export default async function ProductPage({
           </div>
         </div>
       )}
+
+      <div className="md:col-span-2">
+        <h2 className="text-lg font-extrabold mb-3">Tanya Jawab Produk</h2>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+          <QuestionForm productId={product.id} loggedIn={!!user} />
+        </div>
+        {product.questions.length === 0 ? (
+          <p className="text-sm text-slate-500">Belum ada pertanyaan. Jadi yang pertama bertanya!</p>
+        ) : (
+          <div className="space-y-3">
+            {product.questions.map((q) => (
+              <div key={q.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                <p className="text-sm">
+                  <span className="font-semibold">{q.askerName}:</span> {q.question}
+                </p>
+                {q.answer ? (
+                  <div className="mt-2 ml-3 pl-3 border-l-2 border-teal-200 text-sm">
+                    <span className="font-semibold text-teal-700">Penjual:</span>{" "}
+                    <span className="text-slate-600">{q.answer}</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 mt-1">Menunggu jawaban penjual…</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
