@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { confirmReceivedAction } from "@/app/actions/checkout";
 import MetaPixel from "@/components/MetaPixel";
+import ReviewForm from "@/components/ReviewForm";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,8 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   COMPLETED: { label: "Selesai", cls: "bg-emerald-100 text-emerald-700" },
   CANCELLED: { label: "Dibatalkan", cls: "bg-red-100 text-red-700" },
   EXPIRED: { label: "Kedaluwarsa", cls: "bg-slate-200 text-slate-600" },
+  DISPUTED: { label: "Komplain", cls: "bg-orange-100 text-orange-700" },
+  REFUNDED: { label: "Dana Dikembalikan", cls: "bg-slate-200 text-slate-600" },
 };
 
 function extractPaymentDisplay(paymentInfo: string | null) {
@@ -60,9 +63,12 @@ export default async function OrderPage({
           downloadTokens: true,
         },
       },
+      reviews: { select: { productId: true } },
     },
   });
   if (!order) notFound();
+
+  const reviewedProductIds = new Set(order.reviews.map((r) => r.productId));
 
   const status = STATUS_LABEL[order.status] ?? { label: order.status, cls: "bg-slate-200" };
   const pay = extractPaymentDisplay(order.paymentInfo);
@@ -193,6 +199,20 @@ export default async function OrderPage({
               ✓ Pesanan Sudah Diterima
             </button>
           </form>
+        </div>
+      )}
+
+      {order.status === "COMPLETED" && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
+          <h2 className="font-bold">Beri Ulasan</h2>
+          {order.items
+            .filter((i) => !i.isAddon && !reviewedProductIds.has(i.productId))
+            .map((i) => (
+              <ReviewForm key={i.id} code={order.code} productId={i.productId} productName={i.name} />
+            ))}
+          {order.items.filter((i) => !i.isAddon && !reviewedProductIds.has(i.productId)).length === 0 && (
+            <p className="text-sm text-slate-400">Terima kasih, semua produk sudah kamu ulas. 🙏</p>
+          )}
         </div>
       )}
     </div>

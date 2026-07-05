@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatRupiah } from "@/lib/money";
+import Stars from "@/components/Stars";
 
 type Props = {
   product: {
@@ -8,6 +9,8 @@ type Props = {
     price: number;
     type: string;
     imageUrl: string | null;
+    ratingAvg?: number;
+    ratingCount?: number;
     store: { name: string; slug: string };
   };
 };
@@ -38,6 +41,12 @@ export default function ProductCard({ product }: Props) {
         </span>
         <h3 className="font-semibold text-sm line-clamp-2">{product.name}</h3>
         <p className="text-teal-600 font-bold">{formatRupiah(product.price)}</p>
+        {product.ratingCount ? (
+          <p className="flex items-center gap-1 text-xs text-slate-500">
+            <Stars rating={product.ratingAvg ?? 0} size="text-xs" />
+            <span>({product.ratingCount})</span>
+          </p>
+        ) : null}
         <p className="text-xs text-slate-500 mt-auto">{product.store.name}</p>
       </div>
     </Link>

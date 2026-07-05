@@ -7,6 +7,7 @@ import { formatRupiah } from "@/lib/money";
 import { detectSource, trackEvent } from "@/lib/analytics";
 import BuyForm from "@/components/BuyForm";
 import MetaPixel from "@/components/MetaPixel";
+import Stars from "@/components/Stars";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function ProductPage({
       variants: true,
       wholesaleTiers: { orderBy: { minQty: "asc" } },
       addonLinks: { include: { addonProduct: { select: { id: true, name: true, active: true, imageUrl: true } } } },
+      reviews: { orderBy: { createdAt: "desc" }, take: 20 },
     },
   });
   if (!product || !product.active || product.store.status !== "ACTIVE") notFound();
@@ -97,6 +99,14 @@ export default async function ProductPage({
             : formatRupiah(product.price)}
         </p>
 
+        {product.ratingCount > 0 && (
+          <p className="flex items-center gap-2 mb-1">
+            <Stars rating={product.ratingAvg} />
+            <span className="text-sm text-slate-500">
+              {product.ratingAvg.toFixed(1)} · {product.ratingCount} ulasan
+            </span>
+          </p>
+        )}
         <p className="text-sm text-slate-500 mb-1">
           Dijual oleh{" "}
           <Link href={`/s/${product.store.slug}`} className="text-teal-600 font-semibold hover:underline">
@@ -157,6 +167,32 @@ export default async function ProductPage({
           )}
         </div>
       </div>
+
+      {product.reviews.length > 0 && (
+        <div className="md:col-span-2">
+          <h2 className="text-lg font-extrabold mb-3">Ulasan Pembeli ({product.ratingCount})</h2>
+          <div className="space-y-3">
+            {product.reviews.map((r) => (
+              <div key={r.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm">{r.buyerName}</span>
+                  <Stars rating={r.rating} />
+                </div>
+                {r.comment && <p className="text-sm text-slate-600 mt-1">{r.comment}</p>}
+                <p className="text-xs text-slate-400 mt-1">
+                  {new Date(r.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+                {r.sellerReply && (
+                  <div className="mt-2 ml-3 pl-3 border-l-2 border-teal-200 text-sm">
+                    <span className="font-semibold text-teal-700">Balasan penjual:</span>{" "}
+                    <span className="text-slate-600">{r.sellerReply}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
