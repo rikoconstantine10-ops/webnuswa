@@ -17,6 +17,29 @@ export async function setStoreStatusAction(formData: FormData) {
   revalidatePath("/admin/sellers");
 }
 
+// Verifikasi identitas penjual (KYC).
+export async function verifyKycAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const storeId = String(formData.get("storeId"));
+  const decision = String(formData.get("decision")); // VERIFIED | REJECTED
+  if (!["VERIFIED", "REJECTED"].includes(decision)) return;
+  const store = await db.store.update({ where: { id: storeId }, data: { kycStatus: decision } });
+  await audit(admin.email, `KYC_${decision}`, `Toko: ${store.name}`);
+  revalidatePath("/admin/moderation");
+  revalidatePath(`/admin/sellers/${storeId}`);
+}
+
+// Moderasi produk.
+export async function moderateProductAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const productId = String(formData.get("productId"));
+  const decision = String(formData.get("decision")); // APPROVED | REJECTED
+  if (!["APPROVED", "REJECTED"].includes(decision)) return;
+  const product = await db.product.update({ where: { id: productId }, data: { moderation: decision } });
+  await audit(admin.email, `PRODUCT_${decision}`, `Produk: ${product.name}`);
+  revalidatePath("/admin/moderation");
+}
+
 export async function processWithdrawalAction(formData: FormData) {
   const admin = await requireAdmin();
   const id = String(formData.get("id"));

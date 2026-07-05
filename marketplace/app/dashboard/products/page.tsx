@@ -50,11 +50,17 @@ export default async function ProductsPage() {
                   <td className="px-4 py-3">{formatRupiah(p.price)}</td>
                   <td className="px-4 py-3">{p.type === "DIGITAL" ? "∞" : (p.stock ?? 0)}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}
-                    >
-                      {p.active ? "Aktif" : "Nonaktif"}
-                    </span>
+                    {p.moderation === "PENDING" ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Menunggu moderasi</span>
+                    ) : p.moderation === "REJECTED" ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Ditolak</span>
+                    ) : (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}
+                      >
+                        {p.active ? "Aktif" : "Nonaktif"}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Link

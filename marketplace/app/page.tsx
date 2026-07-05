@@ -63,7 +63,7 @@ const STEPS = [
 
 export default async function HomePage() {
   const products = await db.product.findMany({
-    where: { active: true, store: { status: "ACTIVE" } },
+    where: { active: true, moderation: "APPROVED", store: { status: "ACTIVE" } },
     include: { store: { select: { name: true, slug: true } } },
     orderBy: { createdAt: "desc" },
     take: 6,

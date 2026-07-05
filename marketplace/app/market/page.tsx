@@ -19,6 +19,7 @@ export default async function MarketPage({
     db.product.findMany({
       where: {
         active: true,
+        moderation: "APPROVED",
         store: { status: "ACTIVE" },
         ...(q ? { name: { contains: q } } : {}),
         ...(kategori ? { category: { slug: kategori } } : {}),

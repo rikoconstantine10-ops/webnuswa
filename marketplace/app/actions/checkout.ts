@@ -81,7 +81,7 @@ export async function checkoutAction(
       addonLinks: { include: { addonProduct: true } },
     },
   });
-  if (!product || !product.active || product.store.status !== "ACTIVE") {
+  if (!product || !product.active || product.moderation !== "APPROVED" || product.store.status !== "ACTIVE") {
     return { error: "Produk tidak tersedia" };
   }
 

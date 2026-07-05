@@ -81,6 +81,8 @@ export async function createProductAction(
   await db.product.create({
     data: {
       storeId: store.id,
+      // Penjual terverifikasi (KYC) → produk langsung tayang; selainnya menunggu moderasi.
+      moderation: store.kycStatus === "VERIFIED" ? "APPROVED" : "PENDING",
       name: input.name,
       slug,
       description: input.description || null,
@@ -223,6 +225,7 @@ export async function duplicateProductAction(formData: FormData) {
       weightGrams: product.weightGrams,
       imageUrl: product.imageUrl,
       categoryId: product.categoryId,
+      moderation: store.kycStatus === "VERIFIED" ? "APPROVED" : "PENDING",
       active: false, // salinan mulai nonaktif agar bisa diedit dulu
       digitalAsset: product.digitalAsset
         ? { create: { filePath: product.digitalAsset.filePath, fileName: product.digitalAsset.fileName, maxDownloads: product.digitalAsset.maxDownloads } }

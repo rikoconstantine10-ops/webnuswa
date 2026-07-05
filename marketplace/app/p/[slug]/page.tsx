@@ -32,7 +32,7 @@ export default async function ProductPage({
       reviews: { orderBy: { createdAt: "desc" }, take: 20 },
     },
   });
-  if (!product || !product.active || product.store.status !== "ACTIVE") notFound();
+  if (!product || !product.active || product.moderation !== "APPROVED" || product.store.status !== "ACTIVE") notFound();
 
   const hdrs = await headers();
   trackEvent({

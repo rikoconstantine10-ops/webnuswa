@@ -14,7 +14,7 @@ export default async function StorePage({
     where: { slug },
     include: {
       products: {
-        where: { active: true },
+        where: { active: true, moderation: "APPROVED" },
         orderBy: { createdAt: "desc" },
       },
     },
