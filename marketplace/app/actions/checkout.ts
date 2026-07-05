@@ -14,6 +14,7 @@ import {
 import { generateOrderCode, completeOrder } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
+import { validateVoucher } from "@/lib/voucher";
 
 const checkoutSchema = z.object({
   productId: z.string().min(1),
@@ -34,6 +35,7 @@ const checkoutSchema = z.object({
   courierCompany: z.string().optional(),
   courierType: z.string().optional(),
   courierName: z.string().optional(),
+  voucherCode: z.string().optional(),
 });
 
 // Normalisasi ke format internasional Indonesia: 08xx → 628xx.
@@ -65,6 +67,7 @@ export async function checkoutAction(
     courierCompany: formData.get("courierCompany") || undefined,
     courierType: formData.get("courierType") || undefined,
     courierName: formData.get("courierName") || undefined,
+    voucherCode: formData.get("voucherCode") || undefined,
   });
   if (!parsed.success) return { error: "Data checkout tidak lengkap / tidak valid" };
   const input = parsed.data;
@@ -158,7 +161,21 @@ export async function checkoutAction(
 
   const user = await currentUser();
   const subtotal = unitPrice * input.qty + addonTotal;
-  const total = subtotal + shippingCost;
+
+  // Voucher: validasi & hitung diskon ULANG di server.
+  let discountAmount = 0;
+  let voucherId: string | null = null;
+  if (input.voucherCode) {
+    const v = await validateVoucher(input.voucherCode, product.storeId, subtotal);
+    if (v.ok) {
+      discountAmount = v.discount;
+      voucherId = v.voucherId;
+    } else {
+      return { error: `Voucher: ${v.message}` };
+    }
+  }
+
+  const total = subtotal - discountAmount + shippingCost;
 
   if (!isPaymentTypeAllowed(input.paymentType, total)) {
     return {
@@ -190,6 +207,8 @@ export async function checkoutAction(
       buyerPhone: normalizePhone(input.buyerPhone),
       subtotal,
       shippingCost,
+      discountAmount,
+      voucherId,
       total,
       paymentType: input.paymentType,
       louvinTrxId: extractTrxId(trx),

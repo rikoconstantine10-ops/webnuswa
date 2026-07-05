@@ -19,7 +19,9 @@ export async function markOrderPaid(orderId: string) {
   if (!order || order.status !== "PENDING_PAYMENT") return order;
 
   const feePercent = await getPlatformFeePercent();
-  const fee = Math.round((order.subtotal * feePercent) / 100);
+  // Diskon voucher ditanggung penjual: kredit & fee dihitung dari subtotal setelah diskon.
+  const netSubtotal = Math.max(0, order.subtotal - order.discountAmount);
+  const fee = Math.round((netSubtotal * feePercent) / 100);
   const allDigital = order.items.every((i) => i.product.type === "DIGITAL");
   const now = new Date();
   // Produk digital dianggap langsung "diterima" → dana boleh langsung dirilis.
@@ -44,11 +46,14 @@ export async function markOrderPaid(orderId: string) {
         storeId: order.storeId,
         orderId: order.id,
         type: "SALE_CREDIT",
-        amount: order.subtotal + order.shippingCost,
+        amount: netSubtotal + order.shippingCost,
         status: escrowStatus,
-        note: `Penjualan order ${order.code}`,
+        note: `Penjualan order ${order.code}${order.discountAmount ? ` (diskon Rp${order.discountAmount.toLocaleString("id-ID")})` : ""}`,
       },
     });
+    if (order.voucherId) {
+      await tx.voucher.update({ where: { id: order.voucherId }, data: { used: { increment: 1 } } });
+    }
     await tx.ledgerEntry.create({
       data: {
         storeId: order.storeId,

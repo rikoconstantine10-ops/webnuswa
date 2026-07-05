@@ -78,6 +78,13 @@ export default function BuyForm({
     );
   }
 
+  // Voucher
+  const [voucherInput, setVoucherInput] = useState("");
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const [voucherMsg, setVoucherMsg] = useState("");
+  const [voucherChecking, setVoucherChecking] = useState(false);
+
   const safeQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
   const variant = variants.find((v) => v.id === variantId);
 
@@ -90,7 +97,36 @@ export default function BuyForm({
   const addonTotal = addons.reduce((s, a) => (addonSel[a.id] ? s + a.price : s), 0);
   const itemsSubtotal = unitPrice * safeQty + addonTotal;
   const shippingCost = isPhysical ? courier?.price ?? 0 : 0;
-  const grandTotal = itemsSubtotal + shippingCost;
+  const discount = Math.min(voucherDiscount, itemsSubtotal);
+  const grandTotal = itemsSubtotal - discount + shippingCost;
+
+  async function applyVoucher() {
+    const code = voucherInput.trim();
+    if (!code) return;
+    setVoucherChecking(true);
+    setVoucherMsg("");
+    try {
+      const res = await fetch("/api/voucher/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, productId, subtotal: itemsSubtotal }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setVoucherCode(code);
+        setVoucherDiscount(data.discount);
+        setVoucherMsg(`✓ Voucher ${data.label} diterapkan`);
+      } else {
+        setVoucherCode("");
+        setVoucherDiscount(0);
+        setVoucherMsg(data.message || "Voucher tidak valid");
+      }
+    } catch {
+      setVoucherMsg("Gagal cek voucher");
+    } finally {
+      setVoucherChecking(false);
+    }
+  }
   const effectiveMax = variant ? variant.stock : maxQty;
 
   const hasBuyerCoord = Boolean(destLat && destLng);
@@ -330,6 +366,31 @@ export default function BuyForm({
         </div>
       )}
 
+      <input type="hidden" name="voucherCode" value={voucherCode} />
+      <div>
+        <label className="text-sm font-medium block mb-1.5">Punya kode voucher?</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={voucherInput}
+            onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+            placeholder="Masukkan kode"
+            className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm uppercase"
+          />
+          <button
+            type="button"
+            onClick={applyVoucher}
+            disabled={voucherChecking || !voucherInput.trim()}
+            className="bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50"
+          >
+            {voucherChecking ? "…" : "Pakai"}
+          </button>
+        </div>
+        {voucherMsg && (
+          <p className={`text-xs mt-1 ${voucherCode ? "text-emerald-600" : "text-red-600"}`}>{voucherMsg}</p>
+        )}
+      </div>
+
       <div>
         <label className="text-sm font-medium block mb-1.5">Metode pembayaran</label>
         <div className="grid grid-cols-2 gap-2">
@@ -355,6 +416,12 @@ export default function BuyForm({
           <span className="text-slate-500">Subtotal produk</span>
           <span>{formatRupiah(itemsSubtotal)}</span>
         </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-emerald-600">
+            <span>Diskon voucher</span>
+            <span>−{formatRupiah(discount)}</span>
+          </div>
+        )}
         {isPhysical && (
           <div className="flex justify-between">
             <span className="text-slate-500">Ongkir {courier ? `(${courier.name})` : ""}</span>
