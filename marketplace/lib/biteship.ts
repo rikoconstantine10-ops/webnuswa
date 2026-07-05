@@ -5,6 +5,11 @@
 const BASE = process.env.BITESHIP_API_URL || "https://api.biteship.com";
 const KEY = process.env.BITESHIP_API_KEY || "";
 
+// Kurir reguler/ekspedisi (pakai area_id kecamatan). Kode sesuai Biteship /v1/couriers.
+// Kurir instant (gojek, grab, lalamove, borzo, deliveree) TIDAK dimasukkan di sini
+// karena butuh titik koordinat lat/long, bukan area_id — itu fitur terpisah.
+const DEFAULT_COURIERS = "jne,jnt,sicepat,anteraja,idexpress,ninja,pos,tiki,lion,wahana,sap,rpx";
+
 export type BiteshipArea = {
   id: string;
   name: string;
@@ -65,7 +70,7 @@ export async function getRates(
   input: RatesInput
 ): Promise<{ success: boolean; error?: string; pricing: BiteshipRate[] }> {
   const body: Record<string, unknown> = {
-    couriers: input.couriers || "jne,jnt,sicepat,anteraja,ninja,pos,ide,lion,wahana",
+    couriers: input.couriers || DEFAULT_COURIERS,
     items: input.items,
   };
   if (input.originAreaId) body.origin_area_id = input.originAreaId;
