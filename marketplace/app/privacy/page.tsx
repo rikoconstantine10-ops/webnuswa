@@ -7,7 +7,7 @@ export default function PrivacyPage() {
       <p className="text-slate-500">Bagaimana NuswaMart mengelola data kamu.</p>
 
       <h2 className="font-bold mt-6">Data yang Kami Kumpulkan</h2>
-      <p>Nama, email, nomor WhatsApp, alamat pengiriman, dan data identitas (KYC) untuk penjual. Data transaksi disimpan untuk keperluan pesanan, pengiriman, dan pembayaran.</p>
+      <p>Nama, email, nomor WhatsApp, alamat pengiriman, dan data rekening penjual. Data transaksi disimpan untuk keperluan pesanan, pengiriman, dan pembayaran.</p>
 
       <h2 className="font-bold mt-6">Penggunaan Data</h2>
       <p>Data digunakan untuk memproses pesanan, menghitung ongkir, mengirim notifikasi (email/WhatsApp), dan mendukung layanan pelanggan. Data identitas penjual hanya dipakai untuk verifikasi.</p>

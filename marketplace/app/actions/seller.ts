@@ -77,27 +77,6 @@ export async function updateStoreAction(
   return { saved: true };
 }
 
-// Penjual mengirim data verifikasi identitas (KYC) → menunggu tinjauan admin.
-export async function submitKycAction(
-  _prev: { error?: string; ok?: boolean },
-  formData: FormData
-): Promise<{ error?: string; ok?: boolean }> {
-  const { store } = await requireSeller();
-  const kycName = String(formData.get("kycName") ?? "").trim();
-  const kycIdNumber = String(formData.get("kycIdNumber") ?? "").replace(/\s/g, "");
-  const kycIdImageUrl = String(formData.get("kycIdImageUrl") ?? "").trim();
-  if (kycName.length < 3) return { error: "Nama sesuai KTP wajib diisi" };
-  if (!/^\d{16}$/.test(kycIdNumber)) return { error: "NIK harus 16 digit angka" };
-  if (!kycIdImageUrl) return { error: "Foto KTP wajib diunggah" };
-
-  await db.store.update({
-    where: { id: store.id },
-    data: { kycName, kycIdNumber, kycIdImageUrl, kycStatus: "PENDING" },
-  });
-  revalidatePath("/dashboard/store");
-  return { ok: true };
-}
-
 export async function requestWithdrawalAction(
   _prev: { error?: string },
   formData: FormData

@@ -10,7 +10,7 @@ export default function TermsPage() {
       <p>NuswaMart adalah marketplace yang mempertemukan penjual (UMKM) dan pembeli untuk produk digital maupun fisik. NuswaMart menyediakan platform, sistem pembayaran terpusat, dan integrasi pengiriman.</p>
 
       <h2 className="font-bold mt-6">2. Akun &amp; Verifikasi</h2>
-      <p>Penjual wajib melakukan verifikasi identitas (KYC) sebelum dana dapat dicairkan. Pembeli bertanggung jawab menjaga kerahasiaan akunnya.</p>
+      <p>Penjual bertanggung jawab atas keaslian data toko, produk, dan rekening penarikan. Pembeli bertanggung jawab menjaga kerahasiaan akunnya.</p>
 
       <h2 className="font-bold mt-6">3. Pembayaran &amp; Dana Ditahan (Escrow)</h2>
       <p>Pembayaran diproses melalui gateway resmi. Untuk produk fisik, dana ditahan platform dan baru diteruskan ke penjual setelah pembeli menerima pesanan atau setelah masa konfirmasi berakhir. Produk digital diteruskan segera setelah pembayaran.</p>

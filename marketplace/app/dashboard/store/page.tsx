@@ -1,6 +1,5 @@
 import { requireSeller } from "@/lib/auth";
 import StoreSettingsForm from "@/components/StoreSettingsForm";
-import KycForm from "@/components/KycForm";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +14,6 @@ export default async function StoreSettingsPage() {
           Halaman tokomu: <span className="font-mono text-teal-600">/s/{store.slug}</span>
         </p>
       </div>
-      <KycForm kycStatus={store.kycStatus} kycName={store.kycName} kycIdNumber={store.kycIdNumber} />
       <StoreSettingsForm store={store} />
     </div>
   );

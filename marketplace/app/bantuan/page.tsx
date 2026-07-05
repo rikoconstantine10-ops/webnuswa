@@ -4,7 +4,7 @@ const FAQ = [
   { q: "Bagaimana cara berbelanja?", a: "Cari produk di halaman Belanja, buka produk, lalu klik Beli Sekarang atau Masukkan Keranjang. Selesaikan pembayaran melalui QRIS atau Virtual Account." },
   { q: "Apakah dana saya aman?", a: "Untuk produk fisik, dana kamu ditahan platform (escrow) dan baru diteruskan ke penjual setelah kamu menerima barang atau setelah masa konfirmasi berakhir." },
   { q: "Bagaimana jika barang tidak sampai atau rusak?", a: "Buka halaman pesananmu dan klik 'Ajukan Komplain'. Admin akan memediasi dan bisa memutuskan pengembalian dana." },
-  { q: "Bagaimana cara berjualan?", a: "Klik 'Buka Toko', lengkapi profil toko, lakukan verifikasi identitas (KYC), lalu tambahkan produk. Produk dari penjual terverifikasi langsung tayang." },
+  { q: "Bagaimana cara berjualan?", a: "Klik 'Buka Toko', lengkapi profil toko & rekening, lalu tambahkan produk. Produk langsung tayang di marketplace — tanpa proses verifikasi yang ribet." },
   { q: "Bagaimana pencairan dana penjual?", a: "Saldo tersedia (dana yang sudah dirilis dari escrow) dapat ditarik ke rekening bank melalui menu Saldo & Penarikan di dashboard." },
 ];
 
