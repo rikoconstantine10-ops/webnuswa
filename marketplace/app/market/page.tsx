@@ -8,12 +8,20 @@ export const metadata = {
   title: "Belanja — NuswaMart",
 };
 
+const SORTS: Record<string, { label: string; orderBy: object }> = {
+  baru: { label: "Terbaru", orderBy: { createdAt: "desc" } },
+  murah: { label: "Termurah", orderBy: { price: "asc" } },
+  mahal: { label: "Termahal", orderBy: { price: "desc" } },
+  rating: { label: "Rating Tertinggi", orderBy: { ratingAvg: "desc" } },
+};
+
 export default async function MarketPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; kategori?: string }>;
+  searchParams: Promise<{ q?: string; kategori?: string; sort?: string }>;
 }) {
-  const { q, kategori } = await searchParams;
+  const { q, kategori, sort } = await searchParams;
+  const activeSort = sort && SORTS[sort] ? sort : "baru";
 
   const [products, categories] = await Promise.all([
     db.product.findMany({
@@ -25,11 +33,24 @@ export default async function MarketPage({
         ...(kategori ? { category: { slug: kategori } } : {}),
       },
       include: { store: { select: { name: true, slug: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy: SORTS[activeSort].orderBy,
       take: 48,
     }),
     db.category.findMany({ orderBy: { name: "asc" } }),
   ]);
+
+  const qs = (extra: Record<string, string | undefined>) => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (kategori) p.set("kategori", kategori);
+    if (activeSort !== "baru") p.set("sort", activeSort);
+    for (const [k, v] of Object.entries(extra)) {
+      if (v) p.set(k, v);
+      else p.delete(k);
+    }
+    const s = p.toString();
+    return s ? `/market?${s}` : "/market";
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -51,7 +72,7 @@ export default async function MarketPage({
       {categories.length > 0 && (
         <div className="flex gap-2 flex-wrap mb-6">
           <Link
-            href="/market"
+            href={qs({ kategori: undefined })}
             className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${!kategori ? "bg-teal-600 text-white border-teal-600" : "bg-white border-slate-300 text-slate-600"}`}
           >
             Semua
@@ -59,7 +80,7 @@ export default async function MarketPage({
           {categories.map((c) => (
             <Link
               key={c.id}
-              href={`/market?kategori=${c.slug}`}
+              href={qs({ kategori: c.slug })}
               className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${kategori === c.slug ? "bg-teal-600 text-white border-teal-600" : "bg-white border-slate-300 text-slate-600"}`}
             >
               {c.name}
@@ -67,6 +88,19 @@ export default async function MarketPage({
           ))}
         </div>
       )}
+
+      <div className="flex items-center gap-2 mb-5 text-xs">
+        <span className="text-slate-400 font-semibold">Urutkan:</span>
+        {Object.entries(SORTS).map(([key, s]) => (
+          <Link
+            key={key}
+            href={qs({ sort: key === "baru" ? undefined : key })}
+            className={`font-semibold px-3 py-1.5 rounded-full border ${activeSort === key ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300 text-slate-600"}`}
+          >
+            {s.label}
+          </Link>
+        ))}
+      </div>
 
       {products.length === 0 ? (
         <p className="text-center text-slate-500 py-16">Belum ada produk.</p>

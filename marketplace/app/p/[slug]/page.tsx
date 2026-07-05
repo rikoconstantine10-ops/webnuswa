@@ -12,6 +12,26 @@ import { addToCartAction } from "@/app/actions/cart";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = await db.product.findUnique({
+    where: { slug },
+    select: { name: true, description: true, imageUrl: true, price: true, store: { select: { name: true } } },
+  });
+  if (!product) return { title: "Produk tidak ditemukan — NuswaMart" };
+  const desc = (product.description || `${product.name} dari ${product.store.name} di NuswaMart.`).slice(0, 160);
+  return {
+    title: `${product.name} — NuswaMart`,
+    description: desc,
+    openGraph: {
+      title: product.name,
+      description: desc,
+      images: product.imageUrl ? [product.imageUrl] : [],
+      type: "website",
+    },
+  };
+}
+
 export default async function ProductPage({
   params,
   searchParams,
@@ -59,8 +79,26 @@ export default async function ProductPage({
     ...product.images.map((i) => i.url),
   ];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || product.name,
+    image: gallery[0] || undefined,
+    offers: {
+      "@type": "Offer",
+      price: product.price,
+      priceCurrency: "IDR",
+      availability: outOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+    },
+    ...(product.ratingCount > 0 && {
+      aggregateRating: { "@type": "AggregateRating", ratingValue: product.ratingAvg.toFixed(1), reviewCount: product.ratingCount },
+    }),
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {product.store.metaPixelId && (
         <MetaPixel pixelId={product.store.metaPixelId} event="ViewContent" value={product.price} />
       )}

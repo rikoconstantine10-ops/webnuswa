@@ -72,8 +72,14 @@ export default async function RootLayout({
           </div>
         </header>
         <main className="flex-1">{children}</main>
-        <footer className="bg-white border-t border-slate-200 py-6 text-center text-sm text-slate-500">
-          © {new Date().getFullYear()} NuswaMart — Marketplace produk digital & fisik
+        <footer className="bg-white border-t border-slate-200 py-6 text-center text-sm text-slate-500 space-y-2">
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Link href="/market" className="hover:text-teal-600">Belanja</Link>
+            <Link href="/bantuan" className="hover:text-teal-600">Bantuan</Link>
+            <Link href="/terms" className="hover:text-teal-600">Syarat &amp; Ketentuan</Link>
+            <Link href="/privacy" className="hover:text-teal-600">Privasi</Link>
+          </div>
+          <p>© {new Date().getFullYear()} NuswaMart — Marketplace produk digital &amp; fisik</p>
         </footer>
       </body>
     </html>
