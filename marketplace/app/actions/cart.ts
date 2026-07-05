@@ -17,6 +17,8 @@ import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
 import { createShipmentForOrder } from "@/lib/shipping";
+import { resolveAffiliateUserId } from "@/lib/affiliate";
+import { cookies } from "next/headers";
 
 function normalizePhone(digits: string): string {
   const d = digits.replace(/\D/g, "");
@@ -178,6 +180,9 @@ export async function checkoutCartAction(
 
   trackEvent({ type: "CHECKOUT", storeId: store.id });
 
+  const affCode = (await cookies()).get("nm_aff")?.value;
+  const affiliateUserId = await resolveAffiliateUserId(affCode, user.id);
+
   const code = generateOrderCode();
 
   // COD: tanpa pembayaran online. Order langsung diproses; stok dikurangi.
@@ -187,7 +192,7 @@ export async function checkoutCartAction(
         code, storeId: store.id, buyerId: user.id,
         buyerName: input.buyerName, buyerEmail: input.buyerEmail, buyerPhone: normalizePhone(input.buyerPhone),
         subtotal, shippingCost, discountAmount, voucherId, total,
-        paymentType: "cod", status: "PROCESSING",
+        paymentType: "cod", status: "PROCESSING", affiliateUserId,
         shippingAddress: input.shippingAddress?.trim() || null,
         destAreaId: input.destAreaId || null, destPostalCode: input.destPostalCode || null,
         destLat: input.destLat || null, destLng: input.destLng || null,
@@ -232,6 +237,7 @@ export async function checkoutCartAction(
       voucherId,
       total,
       paymentType: input.paymentType,
+      affiliateUserId,
       louvinTrxId: extractTrxId(trx),
       paymentInfo: JSON.stringify(trx),
       shippingAddress: input.shippingAddress?.trim() || null,

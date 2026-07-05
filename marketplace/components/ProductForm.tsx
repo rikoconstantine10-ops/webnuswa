@@ -17,6 +17,8 @@ type Product = {
   imageUrl: string | null;
   categoryId: string | null;
   active: boolean;
+  affiliatePct: number;
+  salePrice: number | null;
   digitalAsset: { fileName: string } | null;
   variants: Variant[];
   wholesaleTiers: Tier[];
@@ -157,6 +159,22 @@ export default function ProductForm({
           </div>
         </div>
       )}
+
+      <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4">
+        <div>
+          <label className="text-sm font-medium block mb-1">💥 Harga flash sale (Rp)</label>
+          <input type="number" name="salePrice" min={0} defaultValue={product?.salePrice ?? ""} placeholder="Kosongkan jika tidak ada" className={inputCls} />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">Durasi flash sale (hari)</label>
+          <input type="number" name="saleDays" min={0} max={90} defaultValue={7} placeholder="mis. 7" className={inputCls} />
+        </div>
+        <div className="col-span-2">
+          <label className="text-sm font-medium block mb-1">🤝 Komisi afiliasi (%)</label>
+          <input type="number" name="affiliatePct" min={0} max={50} defaultValue={product?.affiliatePct ?? 0} className={inputCls} />
+          <p className="text-xs text-slate-400 mt-1">Komisi untuk orang yang mereferensikan produk ini (0 = nonaktif). Diambil dari bagianmu.</p>
+        </div>
+      </div>
 
       {type === "DIGITAL" && (
         <div>

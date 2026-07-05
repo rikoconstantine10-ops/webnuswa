@@ -28,6 +28,9 @@ const productSchema = z.object({
   categoryId: z.string().optional(),
   digitalFilePath: z.string().optional(),
   digitalFileName: z.string().optional(),
+  affiliatePct: z.coerce.number().int().min(0).max(50).optional(),
+  salePrice: z.coerce.number().int().min(0).optional(),
+  saleDays: z.coerce.number().int().min(0).max(90).optional(),
 });
 
 function parseJson<T>(raw: FormDataEntryValue | null, schema: z.ZodType<T>, fallback: T): T {
@@ -53,6 +56,9 @@ function parseProductForm(formData: FormData) {
       categoryId: formData.get("categoryId") || undefined,
       digitalFilePath: formData.get("digitalFilePath") || undefined,
       digitalFileName: formData.get("digitalFileName") || undefined,
+      affiliatePct: formData.get("affiliatePct") || undefined,
+      salePrice: formData.get("salePrice") || undefined,
+      saleDays: formData.get("saleDays") || undefined,
     }),
     variants: parseJson(formData.get("variantsJson"), variantSchema, []),
     tiers: parseJson(formData.get("tiersJson"), tierSchema, []),
@@ -90,6 +96,9 @@ export async function createProductAction(
       weightGrams: input.type === "PHYSICAL" ? input.weightGrams ?? null : null,
       imageUrl: input.imageUrl || null,
       categoryId: input.categoryId || null,
+      affiliatePct: input.affiliatePct ?? 0,
+      salePrice: input.salePrice && input.salePrice > 0 ? input.salePrice : null,
+      saleEndsAt: input.salePrice && input.salePrice > 0 && input.saleDays ? new Date(Date.now() + input.saleDays * 86400000) : null,
       digitalAsset:
         input.type === "DIGITAL" && input.digitalFilePath
           ? { create: { filePath: input.digitalFilePath, fileName: input.digitalFileName || "file" } }
@@ -126,6 +135,9 @@ export async function updateProductAction(
         price: input.price,
         stock: product.type === "PHYSICAL" ? input.stock ?? product.stock : null,
         weightGrams: product.type === "PHYSICAL" ? input.weightGrams ?? null : null,
+        affiliatePct: input.affiliatePct ?? 0,
+        salePrice: input.salePrice && input.salePrice > 0 ? input.salePrice : null,
+        saleEndsAt: input.salePrice && input.salePrice > 0 && input.saleDays ? new Date(Date.now() + input.saleDays * 86400000) : null,
         imageUrl: input.imageUrl || null,
         categoryId: input.categoryId || null,
         active: formData.get("active") === "on",

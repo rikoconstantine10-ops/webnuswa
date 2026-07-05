@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { resolveAffiliateUserId } from "@/lib/affiliate";
 import {
   createLouvinTransaction,
   extractTrxId,
@@ -168,6 +170,8 @@ export async function checkoutAction(
   }
 
   const user = await currentUser();
+  const affCode = (await cookies()).get("nm_aff")?.value;
+  const affiliateUserId = await resolveAffiliateUserId(affCode, user?.id ?? null);
   const subtotal = unitPrice * input.qty + addonTotal;
 
   // Voucher: validasi & hitung diskon ULANG di server.
@@ -212,6 +216,7 @@ export async function checkoutAction(
         voucherId,
         total,
         paymentType: "cod",
+        affiliateUserId,
         status: "PROCESSING",
         shippingAddress: input.shippingAddress?.trim() || null,
         destAreaId: input.destAreaId || null,
@@ -265,6 +270,7 @@ export async function checkoutAction(
       voucherId,
       total,
       paymentType: input.paymentType,
+      affiliateUserId,
       louvinTrxId: extractTrxId(trx),
       paymentInfo: JSON.stringify(trx),
       shippingAddress: input.shippingAddress?.trim() || null,

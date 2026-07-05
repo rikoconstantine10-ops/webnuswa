@@ -58,6 +58,18 @@ export async function deleteAdminVoucherAction(formData: FormData) {
   revalidatePath("/admin/vouchers");
 }
 
+// Tandai komisi afiliasi seorang user sebagai sudah dibayar.
+export async function markAffiliatePaidAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId"));
+  const res = await db.affiliateCommission.updateMany({
+    where: { affiliateUserId: userId, status: "AVAILABLE" },
+    data: { status: "PAID" },
+  });
+  await audit(admin.email, "AFFILIATE_PAID", `User ${userId}, ${res.count} komisi`);
+  revalidatePath("/admin/affiliates");
+}
+
 export async function processWithdrawalAction(formData: FormData) {
   const admin = await requireAdmin();
   const id = String(formData.get("id"));

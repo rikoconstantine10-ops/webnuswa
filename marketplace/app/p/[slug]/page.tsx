@@ -9,6 +9,7 @@ import BuyForm from "@/components/BuyForm";
 import MetaPixel from "@/components/MetaPixel";
 import Stars from "@/components/Stars";
 import { addToCartAction } from "@/app/actions/cart";
+import AffTracker from "@/components/AffTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,7 @@ export default async function ProductPage({
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
+      <AffTracker />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {product.store.metaPixelId && (
         <MetaPixel pixelId={product.store.metaPixelId} event="ViewContent" value={product.price} />
@@ -157,6 +159,11 @@ export default async function ProductPage({
             Stok: {product.stock ?? "∞"}
             {product.weightGrams ? ` · Berat: ${product.weightGrams} gram` : ""}
           </p>
+        )}
+        {product.affiliatePct > 0 && (
+          <Link href="/affiliate" className="inline-block text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full mb-2 hover:bg-purple-100">
+            🤝 Bagikan produk ini & dapat komisi {product.affiliatePct}% — Jadi Afiliasi
+          </Link>
         )}
 
         <div className="flex gap-2 mb-4">

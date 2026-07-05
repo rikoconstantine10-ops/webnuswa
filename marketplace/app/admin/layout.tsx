@@ -7,6 +7,7 @@ const NAV = [
   { href: "/admin/transactions", label: "Transaksi" },
   { href: "/admin/sellers", label: "Seller" },
   { href: "/admin/disputes", label: "Sengketa" },
+  { href: "/admin/affiliates", label: "Afiliasi" },
   { href: "/admin/withdrawals", label: "Penarikan Dana" },
   { href: "/admin/categories", label: "Kategori" },
   { href: "/admin/vouchers", label: "Voucher Platform" },
