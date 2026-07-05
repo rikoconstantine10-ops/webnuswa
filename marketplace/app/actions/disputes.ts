@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requireAdmin, requireSeller } from "@/lib/auth";
 import { releaseOrderFunds, voidOrderFunds } from "@/lib/ledger";
 import { audit } from "@/lib/audit";
+import { notifyDisputeOpened, notifyDisputeResolved } from "@/lib/notify";
 
 // Pembeli membuka komplain/sengketa dari halaman pesanan (punya kode order).
 export async function openDisputeAction(formData: FormData) {
@@ -31,6 +32,7 @@ export async function openDisputeAction(formData: FormData) {
     }),
     db.order.update({ where: { id: order.id }, data: { status: "DISPUTED" } }),
   ]);
+  notifyDisputeOpened(order.id);
   revalidatePath(`/order/${code}`);
   redirect(`/order/${code}`);
 }
@@ -91,6 +93,7 @@ export async function resolveDisputeAction(formData: FormData) {
       data: { status: "RESOLVED_REFUND", resolution: resolution || "Refund ke pembeli", resolvedAt: new Date() },
     });
     await audit(admin.email, "DISPUTE_REFUND", `Order ${order.code}`);
+    notifyDisputeResolved(order.id, true);
   } else {
     // RELEASE atau REJECT → dana diteruskan ke seller & order diselesaikan.
     if (!order.fundsReleased) await releaseOrderFunds(order.id);
@@ -104,6 +107,7 @@ export async function resolveDisputeAction(formData: FormData) {
       },
     });
     await audit(admin.email, "DISPUTE_RELEASE", `Order ${order.code}`);
+    notifyDisputeResolved(order.id, false);
   }
   redirect(`/admin/disputes`);
 }

@@ -33,3 +33,49 @@ export function notifyOrderPaid(orderId: string) {
     ]);
   })().catch((e) => console.error("[NOTIFY] gagal:", e));
 }
+
+// Email pembeli saat pesanan dikirim (resi tersedia).
+export function notifyOrderShipped(orderId: string) {
+  (async () => {
+    const order = await db.order.findUnique({ where: { id: orderId }, include: { store: { select: { name: true } } } });
+    if (!order) return;
+    const appUrl = process.env.APP_URL || "";
+    const text = `Pesanan ${order.code} di ${order.store.name} sudah dikirim! 📦\n\nKurir: ${order.courier ?? "-"}\nNo. resi: ${order.trackingNumber ?? "-"}\n\nLacak & konfirmasi penerimaan di:\n${appUrl}/order/${order.code}`;
+    await Promise.allSettled([sendMail(order.buyerEmail, `Pesanan dikirim — ${order.code}`, text)]);
+  })().catch((e) => console.error("[NOTIFY shipped] gagal:", e));
+}
+
+// Email saat sengketa dibuka (ke penjual + admin).
+export function notifyDisputeOpened(orderId: string) {
+  (async () => {
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      include: { store: { include: { owner: { select: { email: true } } } }, dispute: true },
+    });
+    if (!order || !order.dispute) return;
+    const appUrl = process.env.APP_URL || "";
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const text = `⚠️ Komplain baru untuk pesanan ${order.code} (${order.store.name}).\n\nAlasan: ${order.dispute.reason}\n\nTinjau: ${appUrl}/admin/disputes`;
+    await Promise.allSettled([
+      sendMail(order.store.owner.email, `Komplain pesanan ${order.code}`, text),
+      adminEmail ? sendMail(adminEmail, `[Admin] Komplain ${order.code}`, text) : Promise.resolve(),
+      waSendToSelf(order.storeId, text),
+    ]);
+  })().catch((e) => console.error("[NOTIFY dispute] gagal:", e));
+}
+
+// Email pembeli saat sengketa diputus.
+export function notifyDisputeResolved(orderId: string, refunded: boolean) {
+  (async () => {
+    const order = await db.order.findUnique({ where: { id: orderId }, include: { store: { select: { name: true } } } });
+    if (!order) return;
+    const appUrl = process.env.APP_URL || "";
+    const text = refunded
+      ? `Komplain pesanan ${order.code} telah diputus: DANA DIKEMBALIKAN.\n\nTim kami akan memproses pengembalian dana ${formatRupiah(order.total)} ke kamu. Detail: ${appUrl}/order/${order.code}`
+      : `Komplain pesanan ${order.code} telah diputus: pesanan diselesaikan & dana diteruskan ke penjual.\n\nDetail: ${appUrl}/order/${order.code}`;
+    await Promise.allSettled([
+      sendMail(order.buyerEmail, `Hasil komplain — ${order.code}`, text),
+      order.buyerPhone ? waSend(order.storeId, order.buyerPhone, text) : Promise.resolve(false),
+    ]);
+  })().catch((e) => console.error("[NOTIFY dispute resolved] gagal:", e));
+}

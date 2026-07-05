@@ -10,6 +10,7 @@ const NAV = [
   { href: "/admin/disputes", label: "Sengketa" },
   { href: "/admin/withdrawals", label: "Penarikan Dana" },
   { href: "/admin/categories", label: "Kategori" },
+  { href: "/admin/vouchers", label: "Voucher Platform" },
   { href: "/admin/announcements", label: "Pengumuman" },
   { href: "/admin/audit", label: "Log Aktivitas" },
   { href: "/admin/settings", label: "Pengaturan" },

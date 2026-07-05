@@ -2,6 +2,7 @@ import { db } from "./db";
 import { createBiteshipOrder, getBiteshipOrder, INSTANT_COURIER_CODES } from "./biteship";
 import { waSend } from "./wa";
 import { releaseOrderFunds } from "./ledger";
+import { notifyOrderShipped } from "./notify";
 
 // Hari sebelum order "delivered" otomatis diselesaikan (rilis dana) bila pembeli diam.
 const AUTO_COMPLETE_DAYS = 3;
@@ -82,6 +83,7 @@ export async function createShipmentForOrder(orderId: string): Promise<{ ok: boo
     order,
     `📦 Pesanan ${order.code} sedang disiapkan kurir ${order.courier ?? ""}.${res.waybill ? ` No. resi: ${res.waybill}` : ""}`
   );
+  notifyOrderShipped(order.id);
   return { ok: true };
 }
 

@@ -17,6 +17,47 @@ export async function setStoreStatusAction(formData: FormData) {
   revalidatePath("/admin/sellers");
 }
 
+// Voucher platform (berlaku di semua toko; storeId null). Diskon ditanggung platform.
+export async function createPlatformVoucherAction(
+  _prev: { error?: string; ok?: boolean },
+  formData: FormData
+): Promise<{ error?: string; ok?: boolean }> {
+  await requireAdmin();
+  const code = String(formData.get("code") ?? "").trim().toUpperCase().replace(/\s+/g, "");
+  const type = String(formData.get("type") ?? "PERCENT");
+  const value = parseInt(String(formData.get("value") ?? "0"), 10);
+  const minSpend = parseInt(String(formData.get("minSpend") ?? "0"), 10) || 0;
+  const maxDiscount = parseInt(String(formData.get("maxDiscount") ?? "0"), 10) || 0;
+  const quota = parseInt(String(formData.get("quota") ?? "0"), 10) || 0;
+  const endsAt = String(formData.get("endsAt") ?? "");
+  if (code.length < 3) return { error: "Kode minimal 3 karakter" };
+  if (!["PERCENT", "FIXED"].includes(type) || !Number.isFinite(value) || value < 1) return { error: "Nilai tidak valid" };
+  if (type === "PERCENT" && value > 100) return { error: "Persentase maksimal 100" };
+  if (await db.voucher.findUnique({ where: { code } })) return { error: "Kode sudah dipakai" };
+
+  await db.voucher.create({
+    data: { code, storeId: null, type, value, minSpend, maxDiscount, quota, endsAt: endsAt ? new Date(endsAt) : null },
+  });
+  revalidatePath("/admin/vouchers");
+  return { ok: true };
+}
+
+export async function toggleAdminVoucherAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const v = await db.voucher.findUnique({ where: { id } });
+  if (v && v.storeId === null) await db.voucher.update({ where: { id }, data: { active: !v.active } });
+  revalidatePath("/admin/vouchers");
+}
+
+export async function deleteAdminVoucherAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const v = await db.voucher.findUnique({ where: { id } });
+  if (v && v.storeId === null) await db.voucher.delete({ where: { id } });
+  revalidatePath("/admin/vouchers");
+}
+
 // Verifikasi identitas penjual (KYC).
 export async function verifyKycAction(formData: FormData) {
   const admin = await requireAdmin();
