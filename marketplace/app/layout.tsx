@@ -35,6 +35,9 @@ export default async function RootLayout({
               <Link href="/market" className="text-slate-600 hover:text-teal-600">
                 Belanja
               </Link>
+              <Link href="/cart" className="text-slate-600 hover:text-teal-600">
+                🛒 Keranjang
+              </Link>
               {user ? (
                 <>
                   {user.role === "ADMIN" && (

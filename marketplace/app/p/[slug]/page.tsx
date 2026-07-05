@@ -8,6 +8,7 @@ import { detectSource, trackEvent } from "@/lib/analytics";
 import BuyForm from "@/components/BuyForm";
 import MetaPixel from "@/components/MetaPixel";
 import Stars from "@/components/Stars";
+import { addToCartAction } from "@/app/actions/cart";
 
 export const dynamic = "force-dynamic";
 
@@ -164,6 +165,16 @@ export default async function ProductPage({
               defaultName={user?.name ?? undefined}
               defaultEmail={user?.email}
             />
+          )}
+          {!outOfStock && (
+            <form action={addToCartAction} className="mt-3">
+              <input type="hidden" name="productId" value={product.id} />
+              <input type="hidden" name="variantId" value={product.variants[0]?.id ?? ""} />
+              <input type="hidden" name="qty" value={1} />
+              <button className="w-full border border-teal-600 text-teal-700 font-bold py-2.5 rounded-xl hover:bg-teal-50">
+                🛒 Masukkan Keranjang
+              </button>
+            </form>
           )}
         </div>
       </div>
