@@ -244,11 +244,14 @@ export async function checkoutAction(
         },
       },
     });
-    // Kurangi stok (COD memesan stok saat order dibuat).
+    // Kurangi stok (COD memesan stok saat order dibuat) + catat terjual.
     if (variantName) {
       await db.productVariant.updateMany({ where: { productId: product.id, name: variantName, stock: { not: null } }, data: { stock: { decrement: input.qty } } });
+      await db.product.update({ where: { id: product.id }, data: { soldCount: { increment: input.qty } } });
     } else if (product.stock !== null) {
-      await db.product.update({ where: { id: product.id }, data: { stock: { decrement: input.qty } } });
+      await db.product.update({ where: { id: product.id }, data: { stock: { decrement: input.qty }, soldCount: { increment: input.qty } } });
+    } else {
+      await db.product.update({ where: { id: product.id }, data: { soldCount: { increment: input.qty } } });
     }
     if (voucherId) await db.voucher.update({ where: { id: voucherId }, data: { used: { increment: 1 } } });
     createShipmentForOrder(order.id).catch(() => {});

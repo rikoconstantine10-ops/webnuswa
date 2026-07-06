@@ -83,6 +83,9 @@ model Store {
   // Reputasi
   ratingAvg         Float         @default(0)
   ratingCount       Int           @default(0)
+  // Kepercayaan: badge "Terverifikasi" (sinyal kepercayaan, bukan gerbang jualan)
+  verified          Boolean       @default(false)
+  verifiedAt        DateTime?
   // Langganan
   plan              String        @default("FREE") // FREE | PRO
   planUntil         DateTime?
@@ -93,6 +96,7 @@ model Store {
   withdrawals       Withdrawal[]
   reviews           Review[]
   vouchers          Voucher[]
+  reports           ProductReport[]
 }
 
 model Category {
@@ -120,6 +124,8 @@ model Product {
   moderation   String        @default("APPROVED") // PENDING | APPROVED | REJECTED (moderasi admin)
   ratingAvg    Float         @default(0)
   ratingCount  Int           @default(0)
+  // Jumlah terjual (untuk "Terlaris" & rekomendasi) — di-increment saat order dibayar
+  soldCount    Int           @default(0)
   // Flash sale: harga diskon berjangka (aktif bila saleEndsAt > sekarang)
   salePrice    Int?
   saleEndsAt   DateTime?
@@ -140,6 +146,7 @@ model Product {
   reviews      Review[]
   wishlist     Wishlist[]
   questions    ProductQuestion[]
+  reports      ProductReport[]
 }
 
 // Order bump / add-on: saat checkout produk utama, tawarkan add-on dengan harga spesial.
@@ -295,10 +302,55 @@ model Withdrawal {
   bankName          String
   bankAccountNumber String
   bankAccountName   String
-  status            String    @default("PENDING") // PENDING | APPROVED | PAID | REJECTED
+  status            String    @default("PENDING") // PENDING | APPROVED | PROCESSING | PAID | FAILED | REJECTED
   note              String?
+  // Pencairan otomatis (disbursement)
+  provider          String? // mis. "flip" | "xendit" | "manual"
+  providerRef       String?   @unique // id transaksi di provider (idempotensi webhook)
+  failureReason     String?
+  autoProcessed     Boolean   @default(false)
   createdAt         DateTime  @default(now())
   processedAt       DateTime?
+}
+
+// Laporan penyalahgunaan produk oleh pembeli/pengunjung.
+model ProductReport {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reason      String // SPAM | PROHIBITED | COUNTERFEIT | SCAM | OTHER
+  detail      String?
+  reporterEmail String?
+  status      String   @default("OPEN") // OPEN | REVIEWED | DISMISSED | ACTIONED
+  createdAt   DateTime @default(now())
+
+  @@index([status])
+  @@index([productId])
+}
+
+// Log error terpusat untuk observabilitas produksi.
+model ErrorLog {
+  id        String   @id @default(cuid())
+  level     String   @default("error") // error | warn
+  message   String
+  context   String? // JSON: path, storeId, dll.
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Langganan Web Push (PWA) untuk notifikasi.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model WebhookLog {

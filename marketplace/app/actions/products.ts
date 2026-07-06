@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSeller } from "@/lib/auth";
 import { slugify, randomSuffix } from "@/lib/slug";
+import { findProhibited } from "@/lib/trust";
 
 const variantSchema = z.array(
   z.object({ name: z.string().min(1), price: z.coerce.number().int().min(500), stock: z.coerce.number().int().min(0).nullable().optional() })
@@ -79,16 +80,21 @@ export async function createProductAction(
     return { error: "Produk digital wajib mengunggah file" };
   }
 
+  // Filter kata terlarang: produk yang cocok ditahan (PENDING) untuk ditinjau admin.
+  const prohibited = await findProhibited(`${input.name} ${input.description ?? ""}`);
+  const moderation = prohibited ? "PENDING" : "APPROVED";
+
   let slug = slugify(input.name);
   if (await db.product.findUnique({ where: { slug } })) {
     slug = `${slug}-${randomSuffix()}`;
   }
 
-  await db.product.create({
+  const createdProduct = await db.product.create({
     data: {
       storeId: store.id,
       name: input.name,
       slug,
+      moderation,
       description: input.description || null,
       type: input.type,
       price: input.price,
@@ -109,8 +115,20 @@ export async function createProductAction(
     },
   });
 
+  // Produk ber-kata-terlarang → masuk antrian tinjauan admin.
+  if (prohibited) {
+    await db.productReport.create({
+      data: {
+        productId: createdProduct.id,
+        storeId: store.id,
+        reason: "PROHIBITED",
+        detail: `Auto-flag: kata "${prohibited}" terdeteksi`,
+      },
+    });
+  }
+
   revalidatePath("/dashboard/products");
-  redirect("/dashboard/products");
+  redirect(prohibited ? "/dashboard/products?review=1" : "/dashboard/products");
 }
 
 export async function updateProductAction(

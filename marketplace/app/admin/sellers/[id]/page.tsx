@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { storeBalance } from "@/lib/ledger";
 import { formatRupiah } from "@/lib/money";
-import { setStoreStatusAction, takedownProductAction } from "@/app/actions/admin";
+import { setStoreStatusAction, takedownProductAction, setStoreVerifiedAction } from "@/app/actions/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +70,13 @@ export default async function AdminSellerDetailPage({
               <button className="bg-red-100 text-red-600 text-sm font-bold px-4 py-2 rounded-lg">Tangguhkan</button>
             </form>
           )}
+          <form action={setStoreVerifiedAction}>
+            <input type="hidden" name="storeId" value={store.id} />
+            <input type="hidden" name="verified" value={store.verified ? "false" : "true"} />
+            <button className={`text-sm font-bold px-4 py-2 rounded-lg ${store.verified ? "bg-slate-100 text-slate-600" : "bg-sky-600 text-white"}`}>
+              {store.verified ? "Cabut Verifikasi" : "✓ Verifikasi Toko"}
+            </button>
+          </form>
         </div>
       </div>
 

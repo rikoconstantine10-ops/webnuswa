@@ -69,6 +69,12 @@ export async function markOrderPaid(orderId: string) {
     });
 
     for (const item of order.items) {
+      if (!item.isAddon) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { soldCount: { increment: item.qty } },
+        });
+      }
       if (item.product.type === "PHYSICAL") {
         if (item.variantName) {
           await tx.productVariant.updateMany({

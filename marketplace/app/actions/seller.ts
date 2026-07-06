@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireSeller } from "@/lib/auth";
 import { storeBalance } from "@/lib/ledger";
 import { audit } from "@/lib/audit";
+import { canWithdraw } from "@/lib/trust";
 
 // Parse koordinat lat/long dari form. Kosong/invalid → null. Rentang wajar dunia dijaga.
 function parseCoord(v: FormDataEntryValue | null): number | null {
@@ -89,6 +90,10 @@ export async function requestWithdrawalAction(
   if (!store.bankName || !store.bankAccountNumber || !store.bankAccountName) {
     return { error: "Lengkapi data rekening bank di Pengaturan Toko dulu" };
   }
+
+  // Progressive trust: batasi penarikan penjual baru sebelum ada pemenuhan nyata.
+  const trust = await canWithdraw(store);
+  if (!trust.ok) return { error: trust.reason };
 
   const balance = await storeBalance(store.id);
   if (amount > balance) return { error: "Saldo tidak mencukupi" };

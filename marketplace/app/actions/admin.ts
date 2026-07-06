@@ -205,3 +205,48 @@ export async function deleteAnnouncementAction(formData: FormData) {
   await db.announcement.delete({ where: { id } }).catch(() => {});
   revalidatePath("/admin/announcements");
 }
+
+// ===== Kepercayaan: verifikasi toko =====
+
+export async function setStoreVerifiedAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const storeId = String(formData.get("storeId"));
+  const verified = String(formData.get("verified")) === "true";
+  const store = await db.store.update({
+    where: { id: storeId },
+    data: { verified, verifiedAt: verified ? new Date() : null },
+  });
+  await audit(admin.email, verified ? "STORE_VERIFIED" : "STORE_UNVERIFIED", `Toko: ${store.name}`);
+  revalidatePath(`/admin/sellers/${storeId}`);
+  revalidatePath("/admin/sellers");
+}
+
+// ===== Laporan produk =====
+
+// Tinjau laporan: "dismiss" (abaikan) atau "takedown" (nonaktifkan produk + tandai ditindak).
+export async function resolveReportAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id"));
+  const decision = String(formData.get("decision")); // DISMISS | TAKEDOWN | APPROVE
+  const report = await db.productReport.findUnique({ where: { id }, include: { product: true } });
+  if (!report) return;
+
+  if (decision === "TAKEDOWN") {
+    await db.$transaction([
+      db.product.update({ where: { id: report.productId }, data: { active: false, moderation: "REJECTED" } }),
+      db.productReport.update({ where: { id }, data: { status: "ACTIONED" } }),
+    ]);
+    await audit(admin.email, "REPORT_TAKEDOWN", `${report.product.name} — ${report.reason}`);
+  } else if (decision === "APPROVE") {
+    // Produk aman → loloskan moderasi & tandai laporan ditinjau.
+    await db.$transaction([
+      db.product.update({ where: { id: report.productId }, data: { moderation: "APPROVED" } }),
+      db.productReport.update({ where: { id }, data: { status: "REVIEWED" } }),
+    ]);
+    await audit(admin.email, "REPORT_APPROVED", `${report.product.name}`);
+  } else {
+    await db.productReport.update({ where: { id }, data: { status: "DISMISSED" } });
+    await audit(admin.email, "REPORT_DISMISSED", `${report.product.name}`);
+  }
+  revalidatePath("/admin/reports");
+}

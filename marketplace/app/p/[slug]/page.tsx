@@ -12,6 +12,8 @@ import { addToCartAction } from "@/app/actions/cart";
 import AffTracker from "@/components/AffTracker";
 import WishlistButton from "@/components/WishlistButton";
 import QuestionForm from "@/components/QuestionForm";
+import ReportForm from "@/components/ReportForm";
+import VerifiedBadge from "@/components/VerifiedBadge";
 import { isSaleActive, effectivePrice } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
@@ -173,11 +175,13 @@ export default async function ProductPage({
             </span>
           </p>
         )}
-        <p className="text-sm text-slate-500 mb-1">
-          Dijual oleh{" "}
-          <Link href={`/s/${product.store.slug}`} className="text-teal-600 font-semibold hover:underline">
-            {product.store.name}
-          </Link>
+        <p className="text-sm text-slate-500 mb-1 flex items-center gap-1.5 flex-wrap">
+          <span>Dijual oleh{" "}
+            <Link href={`/s/${product.store.slug}`} className="text-teal-600 font-semibold hover:underline">
+              {product.store.name}
+            </Link>
+          </span>
+          {product.store.verified && <VerifiedBadge />}
         </p>
         {product.type === "PHYSICAL" && product.variants.length === 0 && (
           <p className="text-sm text-slate-500 mb-2">
@@ -303,6 +307,7 @@ export default async function ProductPage({
             ))}
           </div>
         )}
+        <ReportForm productId={product.id} />
       </div>
     </div>
   );

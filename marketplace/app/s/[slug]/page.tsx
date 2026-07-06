@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,10 @@ export default async function StorePage({
             )}
           </div>
           <div className="pt-10 flex-1 min-w-48">
-            <h1 className="text-2xl font-extrabold">{store.name}</h1>
+            <h1 className="text-2xl font-extrabold flex items-center gap-2 flex-wrap">
+              {store.name}
+              {store.verified && <VerifiedBadge />}
+            </h1>
             {store.description && <p className="text-sm text-slate-500">{store.description}</p>}
           </div>
           <div className="pt-10 flex gap-2">
