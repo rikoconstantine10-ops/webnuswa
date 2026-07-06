@@ -154,15 +154,47 @@ input:checked+.tgs:before{transform:translateX(17px)}
 .kb-prev{font-size:11px;color:#64748b;margin-top:3px;white-space:pre-wrap;max-height:36px;overflow:hidden}
 .kb-acts{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
 
-/* Settings page */
-.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.settings-section{background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
-.ss-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:6px}
+/* Settings page - mantabot style */
 .fg{margin-bottom:12px}
 .fg label{display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:5px}
 .fg input,.fg textarea,.fg select{width:100%;padding:9px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;color:#1e293b;outline:none;font-family:inherit;transition:border .2s}
 .fg input:focus,.fg textarea:focus{border-color:#4f46e5;background:#fff}
 .fg textarea{resize:vertical;min-height:80px}
+/* mantabot settings rows */
+.cd{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.cb{padding:20px 24px}
+.ssh{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}
+.sr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f8fafc;gap:12px}
+.sr:last-of-type{border-bottom:none}
+.sri{flex:1;min-width:0}
+.srl{font-size:13px;font-weight:600;color:#1e293b}
+.srd{font-size:11px;color:#94a3b8;margin-top:2px}
+.si3{padding:8px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;color:#1e293b;outline:none;font-family:inherit;transition:border .2s;min-width:180px}
+.si3:focus{border-color:#4f46e5;background:#fff}
+/* toggle - mantabot style */
+.tg{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
+.tg input{opacity:0;width:0;height:0;position:absolute}
+.tgt{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:22px;transition:.3s}
+.tgt:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.tg input:checked+.tgt{background:#4f46e5}
+.tg input:checked+.tgt~.tgb,.tg input:checked+.tgt:after{transform:translateX(18px)}
+.tg input:checked+.tgt:before{transform:translateX(18px)}
+.tgb{display:none}
+/* alert */
+.alt{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+.alt.ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;display:block}
+.alt.er{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;display:block}
+/* spinner */
+.spin{width:22px;height:22px;border:3px solid #e2e8f0;border-top-color:#4f46e5;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* buttons */
+.badd{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
+.badd:hover{background:#4338ca}
+.badd:disabled{opacity:.6;cursor:not-allowed}
+.bs{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#f1f5f9;color:#475569;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.bs:hover{background:#e2e8f0}
+.ac2{background:#eef2ff;color:#4f46e5;border-color:#c7d2fe}
+.gnbg{background:#f0fdf4}
 
 /* Media */
 .mg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -390,27 +422,10 @@ input:checked+.tgs:before{transform:translateX(17px)}
     <div class="page" id="page-settings">
       <div class="page-header">
         <h2>Pengaturan</h2>
-        <button class="btn btn-pri" onclick="saveSettings()">💾 Simpan</button>
       </div>
       <div class="page-content">
-        <div class="settings-grid">
-          <div class="settings-section">
-            <div class="ss-title">🤖 Profil Bot</div>
-            <div class="fg"><label>Bot Name</label><input type="text" id="s-bot_name" placeholder="NuswaBot"></div>
-            <div class="fg"><label>System Prompt</label><textarea id="s-system_prompt" rows="6" placeholder="Kamu adalah asisten AI..."></textarea></div>
-          </div>
-          <div class="settings-section">
-            <div class="ss-title">⚡ Sumopod AI (Primary)</div>
-            <div class="fg"><label>API Key 1</label><input type="password" id="s-sumopod_key1" placeholder="sk-..."></div>
-            <div class="fg"><label>API Key 2 (backup)</label><input type="password" id="s-sumopod_key2" placeholder="sk-..."></div>
-            <div class="fg"><label>Base URL</label><input type="text" id="s-sumopod_base_url" placeholder="https://ai.sumopod.com"></div>
-            <div class="fg"><label>Model</label><input type="text" id="s-sumopod_model" placeholder="gemini/gemini-2.5-flash"></div>
-          </div>
-          <div class="settings-section">
-            <div class="ss-title">🔄 Anthropic (Fallback)</div>
-            <div class="fg"><label>Anthropic API Key</label><input type="password" id="s-anthropic_key" placeholder="sk-ant-..."></div>
-          </div>
-        </div>
+        <div id="set-alert" class="alt"></div>
+        <div class="cd"><div class="cb" id="set-content"><div style="text-align:center;padding:30px"><div class="spin"></div></div></div></div>
       </div>
     </div>
 
@@ -475,7 +490,7 @@ document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')
 function boot(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
-  loadDashboard();loadConvs();loadWA();loadKB();loadSettings();loadMedia();
+  loadDashboard();loadConvs();loadWA();loadKB();loadMedia();
   clearInterval(pollTmr);
   pollTmr=setInterval(()=>{loadDashboard(true);loadConvs(true);loadWA(true);},6000);
 }
@@ -487,6 +502,7 @@ function goPage(name,el){
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
+  if(name==='settings')loadSettings();
 }
 
 /* ── Dashboard ── */
@@ -708,16 +724,112 @@ async function uploadMedia(){
 async function delMedia(id){if(!confirm('Hapus?'))return;await api('/media/'+id,{method:'DELETE'});showToast('Dihapus');loadMedia();}
 
 /* ── Settings ── */
+var AI_PROVS=[
+  {id:'anthropic',name:'Anthropic (Claude)',models:[{id:'claude-sonnet-4-5',name:'Claude Sonnet 4.5 - Recommended'},{id:'claude-opus-4-5',name:'Claude Opus 4.5'},{id:'claude-haiku-4-5',name:'Claude Haiku 4.5 - Fast'}]},
+  {id:'openai',name:'OpenAI (GPT)',models:[{id:'gpt-4o',name:'GPT-4o - Recommended'},{id:'gpt-4o-mini',name:'GPT-4o Mini - Hemat'},{id:'gpt-4-turbo',name:'GPT-4 Turbo'}]},
+  {id:'google',name:'Google (Gemini)',models:[{id:'gemini-1.5-pro',name:'Gemini 1.5 Pro'},{id:'gemini-1.5-flash',name:'Gemini 1.5 Flash'},{id:'gemini-2.0-flash',name:'Gemini 2.0 Flash'}]},
+  {id:'groq',name:'Groq (Ultra Fast)',models:[{id:'llama-3.3-70b-versatile',name:'Llama 3.3 70B'},{id:'mixtral-8x7b-32768',name:'Mixtral 8x7B'}]},
+  {id:'custom',name:'Custom / Self-Hosted',models:[]}
+];
+
+function G(id){return document.getElementById(id);}
+
 async function loadSettings(){
-  const d=await api('/settings');if(!d)return;
-  const fields=['bot_name','system_prompt','sumopod_key1','sumopod_key2','sumopod_base_url','sumopod_model','anthropic_key'];
-  fields.forEach(f=>{const el=document.getElementById('s-'+f);if(el)el.value=d[f]||'';});
-}
-async function saveSettings(){
-  const fields=['bot_name','system_prompt','sumopod_key1','sumopod_key2','sumopod_base_url','sumopod_model','anthropic_key'];
-  const body={};fields.forEach(f=>{const el=document.getElementById('s-'+f);if(el)body[f]=el.value;});
-  await api('/settings',{method:'POST',body:JSON.stringify(body)});
-  showToast('Pengaturan tersimpan ✓');loadDashboard();
+  var el=G('set-content');
+  try{
+    var cfg=await api('/settings');if(!cfg)return;if(cfg.settings)cfg=cfg.settings;
+    var prov=cfg.ai_provider||'custom';
+    var isCustom=prov==='custom';
+    var curProv=AI_PROVS.find(function(p){return p.id===prov;})||AI_PROVS[AI_PROVS.length-1];
+    var modelId=cfg.ai_model_id||cfg.model||'';
+    var html='';
+    html+='<div style="margin-bottom:24px"><div class="ssh">Bot</div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Nama Bot</div><div class="srd">Nama yang digunakan AI</div></div><input type="text" class="si3" id="s-name" value="'+(cfg.bot_name||cfg.name||'').replace(/"/g,'&quot;')+'" placeholder="NuswaBot"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">AI Auto Reply</div><div class="srd">Bot otomatis membalas</div></div><label class="tg"><input type="checkbox" id="s-ai" '+(cfg.ai_enabled!=='false'&&cfg.ai_enabled!==false?'checked':'')+' ><div class="tgt"></div><div class="tgb"></div></label></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Auto Follow Up</div></div><label class="tg"><input type="checkbox" id="s-fu" '+(cfg.followup_enabled==='true'||cfg.followup_enabled===true?'checked':'')+' ><div class="tgt"></div><div class="tgb"></div></label></div>';
+    html+='</div>';
+    html+='<div style="margin-bottom:24px"><div class="ssh">AI Provider</div>';
+    html+='<div style="background:#f0fdf4;border:1px solid rgba(14,168,122,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#475569;margin-bottom:14px">Rekomendasi: Claude Sonnet 4.5 (terbaik) atau GPT-4o Mini (hemat). Untuk Sumopod gunakan Custom.</div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Provider</div></div><select class="si3" id="s-provider">';
+    AI_PROVS.forEach(function(p){html+='<option value="'+p.id+'"'+(prov===p.id?' selected':'')+'>'+p.name+'</option>';});
+    html+='</select></div>';
+    html+='<div class="sr" id="s-model-row" '+(isCustom?'style="display:none"':'')+' ><div class="sri"><div class="srl">Model</div></div><select class="si3" id="s-model">';
+    curProv.models.forEach(function(m){html+='<option value="'+m.id+'"'+(modelId===m.id?' selected':'')+'>'+m.name+'</option>';});
+    html+='</select></div>';
+    html+='<div id="s-custom-row" '+(isCustom?'':'style="display:none"')+'>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Base URL</div><div class="srd">OpenAI-compatible endpoint</div></div><div style="display:flex;gap:6px"><input type="text" class="si3" id="s-baseurl" value="'+(cfg.ai_base_url||'').replace(/"/g,'&quot;')+'" placeholder="https://ai.sumopod.com/v1" style="flex:1;min-width:0"><button class="bs ac2" id="fetchModelsBtn" style="flex:none;padding:7px 12px;white-space:nowrap">Fetch Models</button></div></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Model ID</div></div><input type="text" class="si3" id="s-model-custom" value="'+(cfg.ai_model_id||'').replace(/"/g,'&quot;')+'" placeholder="gemini/gemini-2.5-flash" style="min-width:200px"></div>';
+    html+='<div id="s-fetched-models" style="margin-top:4px;display:none"><select class="si3" id="s-model-csel" style="width:100%"></select></div>';
+    html+='</div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">API Key</div></div><input type="password" class="si3" id="s-apikey" value="'+(cfg.ai_api_key||cfg.sumopod_key1||'')+'" placeholder="sk-..." style="min-width:220px"></div>';
+    html+='</div>';
+    html+='<div style="margin-bottom:24px"><div class="ssh">AI Key Backup &amp; Fallback</div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Backup Key (Provider Utama)</div><div class="srd">Dipakai otomatis jika key utama error</div></div><input type="password" class="si3" id="s-key2" value="'+(cfg.ai_key2||cfg.sumopod_key2||'')+'" placeholder="sk-... (backup)" style="min-width:220px"></div>';
+    html+='<div style="margin-top:12px;font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Fallback Provider 1</div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Provider</div></div><select class="si3" id="s-fb1-pv" style="min-width:160px"><option value="" '+((!cfg.ai_fb1_provider)?'selected':'')+'>-- Nonaktif --</option><option value="openai" '+(cfg.ai_fb1_provider==="openai"?'selected':'')+'>OpenAI</option><option value="openai-compatible" '+(cfg.ai_fb1_provider==="openai-compatible"?'selected':'')+'>OpenAI-Compatible</option><option value="anthropic" '+(cfg.ai_fb1_provider==="anthropic"?'selected':'')+'>Anthropic</option></select></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Model</div></div><input type="text" class="si3" id="s-fb1-model" value="'+(cfg.ai_fb1_model||'')+'" placeholder="gpt-4o-mini" style="min-width:220px"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Base URL</div><div class="srd">Kosongkan jika pakai URL default</div></div><input type="text" class="si3" id="s-fb1-base" value="'+(cfg.ai_fb1_base_url||'')+'" placeholder="https://api.openai.com" style="min-width:220px"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">API Key 1</div></div><input type="password" class="si3" id="s-fb1-key1" value="'+(cfg.ai_fb1_key1||'')+'" placeholder="sk-..." style="min-width:220px"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">API Key 2</div></div><input type="password" class="si3" id="s-fb1-key2" value="'+(cfg.ai_fb1_key2||'')+'" placeholder="sk-... (backup)" style="min-width:220px"></div>';
+    html+='<div style="margin-top:12px;font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Fallback Provider 2</div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Provider</div></div><select class="si3" id="s-fb2-pv" style="min-width:160px"><option value="" '+((!cfg.ai_fb2_provider)?'selected':'')+'>-- Nonaktif --</option><option value="openai" '+(cfg.ai_fb2_provider==="openai"?'selected':'')+'>OpenAI</option><option value="openai-compatible" '+(cfg.ai_fb2_provider==="openai-compatible"?'selected':'')+'>OpenAI-Compatible</option><option value="anthropic" '+(cfg.ai_fb2_provider==="anthropic"?'selected':'')+'>Anthropic</option></select></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Model</div></div><input type="text" class="si3" id="s-fb2-model" value="'+(cfg.ai_fb2_model||'')+'" placeholder="gpt-4o" style="min-width:220px"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Base URL</div><div class="srd">Kosongkan jika pakai URL default</div></div><input type="text" class="si3" id="s-fb2-base" value="'+(cfg.ai_fb2_base_url||'')+'" placeholder="https://ai.sumopod.com" style="min-width:220px"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">API Key 1</div></div><input type="password" class="si3" id="s-fb2-key1" value="'+(cfg.ai_fb2_key1||'')+'" placeholder="sk-..." style="min-width:220px"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">API Key 2</div></div><input type="password" class="si3" id="s-fb2-key2" value="'+(cfg.ai_fb2_key2||'')+'" placeholder="sk-... (backup)" style="min-width:220px"></div>';
+    html+='</div>';
+    html+='<div style="margin-bottom:24px"><div class="ssh">System Prompt</div>';
+    html+='<textarea id="s-sys" rows="5" class="si3" style="width:100%;resize:vertical;min-width:0">'+(cfg.system_prompt||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea>';
+    html+='</div>';
+    html+='<div style="margin-bottom:24px"><div class="ssh">Transkripsi Audio (Whisper)</div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Aktifkan Whisper</div><div class="srd">Transkripsi pesan suara otomatis</div></div><label class="tg"><input type="checkbox" id="s-whisper-en" '+(cfg.whisper_enabled==='true'?'checked':'')+' ><div class="tgt"></div><div class="tgb"></div></label></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Whisper Model</div></div><select class="si3" id="s-whisper-model" style="min-width:220px"><option value="whisper-large-v3-turbo" '+((!cfg.whisper_model||cfg.whisper_model==='whisper-large-v3-turbo')?' selected':'')+'>whisper-large-v3-turbo (Groq)</option><option value="whisper-large-v3" '+(cfg.whisper_model==='whisper-large-v3'?' selected':'')+'>whisper-large-v3 (Groq Akurat)</option><option value="whisper-1" '+(cfg.whisper_model==='whisper-1'?' selected':'')+'>whisper-1 (OpenAI)</option></select></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Whisper Base URL</div><div class="srd">Kosongkan = ikut AI provider</div></div><input type="text" class="si3" id="s-whisper-url" value="'+(cfg.whisper_url||'')+'" placeholder="https://api.groq.com/openai/v1" style="min-width:220px"></div>';
+    html+='<div class="sr"><div class="sri"><div class="srl">Whisper API Key</div><div class="srd">Kosongkan = ikut AI API Key</div></div><input type="password" class="si3" id="s-whisper-key" value="'+(cfg.whisper_api_key||'')+'" placeholder="(sama dengan AI Key)" style="min-width:220px"></div>';
+    html+='</div>';
+    html+='<div style="display:flex;gap:8px"><button class="badd" id="saveSetBtn">Simpan Pengaturan</button><button class="bs" id="resetSetBtn" style="flex:none;padding:8px 16px">Reset</button></div>';
+    el.innerHTML=html;
+    G('s-provider').addEventListener('change',function(){
+      var v=this.value,isCust=v==='custom';
+      G('s-model-row').style.display=isCust?'none':'';
+      G('s-custom-row').style.display=isCust?'':'none';
+      var pr=AI_PROVS.find(function(p){return p.id===v;});
+      if(pr&&pr.models.length){var sel=G('s-model');if(sel)sel.innerHTML=pr.models.map(function(m){return'<option value="'+m.id+'">'+m.name+'</option>';}).join('');}
+    });
+    G('fetchModelsBtn').addEventListener('click',async function(){
+      var url=G('s-baseurl').value.trim(),key=G('s-apikey').value.trim();
+      if(!url){alert('Isi Base URL dulu');return;}
+      try{
+        var r=await api('/ai/fetch-models',{method:'POST',body:JSON.stringify({base_url:url,api_key:key})});
+        var models=r&&r.models?r.models:[];if(!models.length){alert('Tidak ada model ditemukan');return;}
+        var sel=G('s-model-csel');
+        sel.innerHTML='<option value="">-- Pilih Model --</option>'+models.map(function(m){return'<option value="'+m.id+'">'+m.name+'</option>';}).join('');
+        sel.addEventListener('change',function(){G('s-model-custom').value=sel.value;});
+        G('s-fetched-models').style.display='block';
+        alert('Berhasil! '+models.length+' model ditemukan.');
+      }catch(e){alert('Gagal: '+e.message);}
+    });
+    G('saveSetBtn').addEventListener('click',async function(){
+      var btn=this,al=G('set-alert'),pv=G('s-provider').value,isCust=pv==='custom';
+      var mid=isCust?(G('s-model-custom')?G('s-model-custom').value:''):(G('s-model')?G('s-model').value:'');
+      btn.disabled=true;btn.textContent='Menyimpan...';
+      al.style.display='none';al.className='alt';
+      try{
+        var result=await api('/settings',{method:'POST',body:JSON.stringify({bot_name:G('s-name').value||'',ai_enabled:G('s-ai').checked?'true':'false',followup_enabled:G('s-fu').checked?'true':'false',system_prompt:G('s-sys').value||'',ai_provider:pv,ai_model_id:mid,model:mid,ai_api_key:G('s-apikey').value||'',ai_base_url:isCust?(G('s-baseurl')?G('s-baseurl').value:''):'',ai_key2:G('s-key2')?G('s-key2').value:'',ai_fb1_provider:G('s-fb1-pv')?G('s-fb1-pv').value:'',ai_fb1_model:G('s-fb1-model')?G('s-fb1-model').value:'',ai_fb1_base_url:G('s-fb1-base')?G('s-fb1-base').value:'',ai_fb1_key1:G('s-fb1-key1')?G('s-fb1-key1').value:'',ai_fb1_key2:G('s-fb1-key2')?G('s-fb1-key2').value:'',ai_fb2_provider:G('s-fb2-pv')?G('s-fb2-pv').value:'',ai_fb2_model:G('s-fb2-model')?G('s-fb2-model').value:'',ai_fb2_base_url:G('s-fb2-base')?G('s-fb2-base').value:'',ai_fb2_key1:G('s-fb2-key1')?G('s-fb2-key1').value:'',ai_fb2_key2:G('s-fb2-key2')?G('s-fb2-key2').value:'',whisper_enabled:G('s-whisper-en')&&G('s-whisper-en').checked?'true':'false',whisper_model:G('s-whisper-model')?G('s-whisper-model').value:'',whisper_url:G('s-whisper-url')?G('s-whisper-url').value:'',whisper_api_key:G('s-whisper-key')?G('s-whisper-key').value:''})});
+        if(result&&result.ok===false){throw new Error(result.error||'Server menolak permintaan');}
+        al.textContent='✓ Pengaturan berhasil disimpan';al.className='alt ok';al.style.display='block';
+        setTimeout(function(){al.style.display='none';},3000);
+      }catch(e){
+        al.textContent='✗ Gagal menyimpan: '+e.message;al.className='alt er';al.style.display='block';
+      }finally{
+        btn.disabled=false;btn.textContent='Simpan Pengaturan';
+      }
+    });
+    G('resetSetBtn').addEventListener('click',function(){
+      var btn=this;btn.disabled=true;btn.textContent='Mereset...';
+      loadSettings().finally(function(){btn.disabled=false;btn.textContent='Reset';});
+    });
+  }catch(e){el.innerHTML='<div style="text-align:center;color:#94a3b8;padding:30px">Gagal memuat: '+e.message+'</div>';}
 }
 
 /* ── Modal ── */

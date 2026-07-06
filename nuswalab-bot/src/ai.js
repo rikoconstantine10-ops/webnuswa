@@ -32,10 +32,24 @@ async function callSingleProvider(messages, systemPrompt, apiKey, provider, mode
 }
 
 async function callAI(messages, systemPrompt, settings) {
+  const prov = settings.ai_provider || 'custom';
+  const modelId = settings.ai_model_id || settings.model || 'gemini/gemini-2.5-flash';
+  const baseUrl = (prov === 'custom' || prov === 'openai-compatible') ? (settings.ai_base_url || 'https://ai.sumopod.com') : '';
   const chains = [
-    { name: 'Sumopod-key1', provider: 'openai', key: settings.sumopod_key1 || settings.ai_fb2_key1 || '', model: settings.sumopod_model || settings.ai_fb2_model || 'gemini/gemini-2.5-flash', base: settings.sumopod_base_url || settings.ai_fb2_base_url || 'https://ai.sumopod.com' },
-    { name: 'Sumopod-key2', provider: 'openai', key: settings.sumopod_key2 || settings.ai_fb2_key2 || '', model: settings.sumopod_model || settings.ai_fb2_model || 'gemini/gemini-2.5-flash', base: settings.sumopod_base_url || settings.ai_fb2_base_url || 'https://ai.sumopod.com' },
-    { name: 'Anthropic', provider: 'anthropic', key: settings.anthropic_key || settings.ai_api_key || '', model: 'claude-haiku-4-5-20251001', base: null },
+    // Primary key
+    { name: 'Primary-key1', provider: prov, key: settings.ai_api_key || settings.sumopod_key1 || '', model: modelId, base: baseUrl },
+    // Backup key (same provider)
+    { name: 'Primary-key2', provider: prov, key: settings.ai_key2 || settings.sumopod_key2 || '', model: modelId, base: baseUrl },
+    // Fallback Provider 1 key1
+    { name: 'FB1-key1', provider: settings.ai_fb1_provider || 'openai', key: settings.ai_fb1_key1 || '', model: settings.ai_fb1_model || '', base: settings.ai_fb1_base_url || '' },
+    // Fallback Provider 1 key2
+    { name: 'FB1-key2', provider: settings.ai_fb1_provider || 'openai', key: settings.ai_fb1_key2 || '', model: settings.ai_fb1_model || '', base: settings.ai_fb1_base_url || '' },
+    // Fallback Provider 2 key1
+    { name: 'FB2-key1', provider: settings.ai_fb2_provider || 'openai', key: settings.ai_fb2_key1 || '', model: settings.ai_fb2_model || '', base: settings.ai_fb2_base_url || '' },
+    // Fallback Provider 2 key2
+    { name: 'FB2-key2', provider: settings.ai_fb2_provider || 'openai', key: settings.ai_fb2_key2 || '', model: settings.ai_fb2_model || '', base: settings.ai_fb2_base_url || '' },
+    // Legacy
+    { name: 'Legacy-Anthropic', provider: 'anthropic', key: settings.anthropic_key || '', model: 'claude-haiku-4-5-20251001', base: null },
   ];
   for (const c of chains) {
     if (!c.key || !c.key.trim()) continue;
@@ -132,9 +146,13 @@ async function getAIReplyWithMedia(phone, message, mediaData, acctPrompt) {
   const knowledgeCtx = await buildKnowledgeContext();
   const systemPrompt = systemPromptBase + knowledgeCtx + '\n\nJawab singkat dan natural seperti chat WA.';
 
+  const prov2 = settings.ai_provider || 'custom';
+  const modelId2 = settings.ai_model_id || settings.model || 'gemini/gemini-2.5-flash';
+  const baseUrl2 = (prov2 === 'custom' || prov2 === 'openai-compatible') ? (settings.ai_base_url || 'https://ai.sumopod.com') : '';
   const chains = [
-    { name: 'Sumopod-key1', provider: 'openai', key: settings.sumopod_key1||settings.ai_fb2_key1||'', model: settings.sumopod_model||'gemini/gemini-2.5-flash', base: settings.sumopod_base_url||'https://ai.sumopod.com' },
-    { name: 'Sumopod-key2', provider: 'openai', key: settings.sumopod_key2||settings.ai_fb2_key2||'', model: settings.sumopod_model||'gemini/gemini-2.5-flash', base: settings.sumopod_base_url||'https://ai.sumopod.com' },
+    { name: 'Primary-key1', provider: prov2, key: settings.ai_api_key||settings.sumopod_key1||'', model: modelId2, base: baseUrl2 },
+    { name: 'Primary-key2', provider: prov2, key: settings.ai_key2||settings.sumopod_key2||'', model: modelId2, base: baseUrl2 },
+    { name: 'FB2-key1', provider: settings.ai_fb2_provider||'openai', key: settings.ai_fb2_key1||'', model: settings.ai_fb2_model||modelId2, base: settings.ai_fb2_base_url||baseUrl2 },
   ];
 
   let userContent = [];
