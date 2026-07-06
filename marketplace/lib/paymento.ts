@@ -129,6 +129,40 @@ export async function verifyPayment(token: string): Promise<VerifyResult> {
   }
 }
 
+// Daftarkan URL IPN (callback) ke Paymento via API — karena Paymento tidak punya
+// pengaturan webhook di dashboard. Panggil sekali saat setup.
+export async function setPaymentoIpnUrl(ipnUrl: string, method: "POST" | "GET" = "POST"): Promise<{ ok: boolean; response?: string; error?: string }> {
+  const apiKey = process.env.PAYMENTO_API_KEY;
+  if (!apiKey) return { ok: false, error: "PAYMENTO_API_KEY belum diset" };
+  try {
+    const res = await fetch(`${API_BASE}/payment/settings`, {
+      method: "POST",
+      headers: { "Api-Key": apiKey, "Content-Type": "application/json" },
+      // Skema pasti tak terdokumentasi — kirim beberapa kemungkinan nama field sekaligus.
+      body: JSON.stringify({
+        ipnUrl, IpnUrl: ipnUrl, callbackUrl: ipnUrl,
+        ipnMethod: method, IpnHttpMethod: method, httpMethod: method,
+      }),
+    });
+    const text = await res.text();
+    return { ok: res.ok, response: text.slice(0, 500), error: res.ok ? undefined : `HTTP ${res.status}` };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "network error" };
+  }
+}
+
+export async function getPaymentoSettings(): Promise<{ ok: boolean; response?: string; error?: string }> {
+  const apiKey = process.env.PAYMENTO_API_KEY;
+  if (!apiKey) return { ok: false, error: "PAYMENTO_API_KEY belum diset" };
+  try {
+    const res = await fetch(`${API_BASE}/payment/settings`, { method: "GET", headers: { "Api-Key": apiKey } });
+    const text = await res.text();
+    return { ok: res.ok, response: text.slice(0, 500), error: res.ok ? undefined : `HTTP ${res.status}` };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "network error" };
+  }
+}
+
 // Verifikasi tanda tangan IPN: HMAC-SHA256(rawBody, secret) → uppercase hex, bandingkan dgn header.
 export function verifyCallbackSignature(rawBody: string, signature: string | null): boolean {
   const secret = process.env.PAYMENTO_SECRET_KEY;
