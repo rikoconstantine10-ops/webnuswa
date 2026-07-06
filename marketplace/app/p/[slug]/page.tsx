@@ -14,7 +14,9 @@ import WishlistButton from "@/components/WishlistButton";
 import QuestionForm from "@/components/QuestionForm";
 import ReportForm from "@/components/ReportForm";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import ProductCard from "@/components/ProductCard";
 import { isSaleActive, effectivePrice } from "@/lib/pricing";
+import { similarProducts, frequentlyBoughtTogether } from "@/lib/recommend";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +78,10 @@ export default async function ProductPage({
     : false;
   const saleActive = isSaleActive(product);
   const effPrice = effectivePrice(product);
+  const [related, boughtTogether] = await Promise.all([
+    similarProducts({ id: product.id, categoryId: product.categoryId, storeId: product.storeId }),
+    frequentlyBoughtTogether(product.id),
+  ]);
   const outOfStock =
     product.type === "PHYSICAL" &&
     (product.variants.length > 0
@@ -309,6 +315,28 @@ export default async function ProductPage({
         )}
         <ReportForm productId={product.id} />
       </div>
+
+      {boughtTogether.length > 0 && (
+        <div className="md:col-span-2">
+          <h2 className="text-lg font-extrabold mb-3">Sering Dibeli Bersama</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {boughtTogether.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {related.length > 0 && (
+        <div className="md:col-span-2">
+          <h2 className="text-lg font-extrabold mb-3">Produk Serupa</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -407,6 +407,7 @@ model CartItem {
   variantId String?
   qty       Int      @default(1)
   createdAt DateTime @default(now())
+  remindedAt DateTime? // recovery email keranjang terkirim (anti-spam)
 
   @@unique([userId, productId, variantId])
   @@index([userId])

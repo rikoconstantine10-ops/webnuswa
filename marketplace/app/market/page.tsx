@@ -10,6 +10,7 @@ export const metadata = {
 
 const SORTS: Record<string, { label: string; orderBy: object }> = {
   baru: { label: "Terbaru", orderBy: { createdAt: "desc" } },
+  terlaris: { label: "Terlaris", orderBy: { soldCount: "desc" } },
   murah: { label: "Termurah", orderBy: { price: "asc" } },
   mahal: { label: "Termahal", orderBy: { price: "desc" } },
   rating: { label: "Rating Tertinggi", orderBy: { ratingAvg: "desc" } },

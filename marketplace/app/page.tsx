@@ -62,12 +62,24 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const latest = await db.product.findMany({
-    where: { active: true, moderation: "APPROVED", store: { status: "ACTIVE" } },
-    include: { store: { select: { name: true, slug: true } } },
-    orderBy: { createdAt: "desc" },
-    take: 24,
-  });
+  const baseWhere = { active: true, moderation: "APPROVED", store: { status: "ACTIVE" } } as const;
+  const cardInclude = { store: { select: { name: true, slug: true } } };
+  const nowDate = new Date();
+  const [latest, flashSale, bestSellers] = await Promise.all([
+    db.product.findMany({ where: baseWhere, include: cardInclude, orderBy: { createdAt: "desc" }, take: 24 }),
+    db.product.findMany({
+      where: { ...baseWhere, salePrice: { gt: 0 }, saleEndsAt: { gt: nowDate } },
+      include: cardInclude,
+      orderBy: { saleEndsAt: "asc" },
+      take: 6,
+    }),
+    db.product.findMany({
+      where: { ...baseWhere, soldCount: { gt: 0 } },
+      include: cardInclude,
+      orderBy: { soldCount: "desc" },
+      take: 6,
+    }),
+  ]);
   // Produk yang sedang di-boost tampil paling depan.
   const now = Date.now();
   const isBoosted = (p: { boostedUntil: Date | null }) => (p.boostedUntil ? p.boostedUntil.getTime() > now : false);
@@ -172,6 +184,36 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Flash Sale */}
+      {flashSale.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 pt-16">
+          <div className="flex items-end justify-between mb-6">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-rose-600">⚡ Flash Sale</h2>
+            <Link href="/market" className="text-rose-600 font-bold text-sm hover:underline">Lihat Semua →</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {flashSale.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Terlaris */}
+      {bestSellers.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 pt-16">
+          <div className="flex items-end justify-between mb-6">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800">🔥 Terlaris</h2>
+            <Link href="/market?sort=rating" className="text-teal-600 font-bold text-sm hover:underline">Lihat Semua →</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {bestSellers.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Product showcase */}
       {products.length > 0 && (
