@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/vouchers", label: "Voucher Platform" },
   { href: "/admin/announcements", label: "Pengumuman" },
   { href: "/admin/audit", label: "Log Aktivitas" },
+  { href: "/admin/errors", label: "Log Error" },
   { href: "/admin/settings", label: "Pengaturan" },
 ];
 

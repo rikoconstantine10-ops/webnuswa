@@ -7,6 +7,7 @@ import { requireSeller } from "@/lib/auth";
 import { storeBalance } from "@/lib/ledger";
 import { audit } from "@/lib/audit";
 import { canWithdraw } from "@/lib/trust";
+import { processWithdrawalPayout } from "@/lib/payout";
 
 // Parse koordinat lat/long dari form. Kosong/invalid → null. Rentang wajar dunia dijaga.
 function parseCoord(v: FormDataEntryValue | null): number | null {
@@ -98,8 +99,8 @@ export async function requestWithdrawalAction(
   const balance = await storeBalance(store.id);
   if (amount > balance) return { error: "Saldo tidak mencukupi" };
 
-  // Debit saldo saat request (dana di-hold); dikembalikan jika ditolak admin.
-  await db.$transaction([
+  // Debit saldo saat request (dana di-hold); dikembalikan jika ditolak/gagal.
+  const [withdrawal] = await db.$transaction([
     db.withdrawal.create({
       data: {
         storeId: store.id,
@@ -119,6 +120,9 @@ export async function requestWithdrawalAction(
     }),
   ]);
   await audit(store.name, "WITHDRAWAL_REQUESTED", `Rp${amount} → ${store.bankName} ${store.bankAccountNumber}`);
+
+  // Pencairan otomatis (bila provider disbursement aktif). Best-effort: gagal → tetap manual.
+  await processWithdrawalPayout(withdrawal.id).catch(() => {});
 
   redirect("/dashboard/withdrawals");
 }

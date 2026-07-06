@@ -17,8 +17,9 @@ export default async function AdminWithdrawalsPage() {
     <div>
       <h1 className="text-2xl font-extrabold mb-2">Penarikan Dana Seller</h1>
       <p className="text-sm text-slate-500 mb-6">
-        Dana sudah di-hold dari saldo seller saat request. Transfer manual ke rekening tujuan,
-        lalu tandai <b>Ditransfer</b>. Menolak akan mengembalikan dana ke saldo seller.
+        Dana di-hold dari saldo seller saat request. Bila auto-payout (disbursement) aktif, pencairan
+        diproses otomatis; status <b>PROCESSING</b> menunggu callback provider. Untuk mode manual:
+        transfer ke rekening tujuan lalu tandai <b>Ditransfer</b>. Menolak/gagal mengembalikan dana ke saldo seller.
       </p>
 
       <div className="space-y-3">
@@ -38,6 +39,12 @@ export default async function AdminWithdrawalsPage() {
               <p className="text-xs text-slate-400">
                 {new Date(w.createdAt).toLocaleString("id-ID")}
               </p>
+              {(w.autoProcessed || w.provider) && (
+                <p className="text-xs text-sky-600 mt-0.5">
+                  ⚙️ Auto-payout{w.provider ? ` via ${w.provider}` : ""}{w.providerRef ? ` · ref ${w.providerRef}` : ""}
+                </p>
+              )}
+              {w.failureReason && <p className="text-xs text-red-500 mt-0.5">Gagal: {w.failureReason}</p>}
             </div>
             <div className="flex items-center gap-2">
               <span
@@ -48,7 +55,9 @@ export default async function AdminWithdrawalsPage() {
                       ? "bg-emerald-100 text-emerald-700"
                       : w.status === "APPROVED"
                         ? "bg-blue-100 text-blue-700"
-                        : "bg-red-100 text-red-700"
+                        : w.status === "PROCESSING"
+                          ? "bg-sky-100 text-sky-700"
+                          : "bg-red-100 text-red-700"
                 }`}
               >
                 {w.status}

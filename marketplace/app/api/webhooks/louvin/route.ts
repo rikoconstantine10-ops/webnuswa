@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { markOrderPaid } from "@/lib/orders";
+import { logError } from "@/lib/errors";
 
 const PAID_STATUSES = ["paid", "success", "settlement", "completed", "berhasil"];
 
@@ -63,7 +64,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (PAID_STATUSES.includes(status)) {
-    await markOrderPaid(order.id);
+    try {
+      await markOrderPaid(order.id);
+    } catch (e) {
+      await logError("webhook.louvin.markOrderPaid", e, { orderId: order.id, code: order.code });
+      throw e;
+    }
     await db.webhookLog.update({
       where: { id: log.id },
       data: { processed: true, note: `order ${order.code} ditandai lunas` },
