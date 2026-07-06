@@ -26,6 +26,8 @@ const migrations = [
   'ALTER TABLE media_assets ADD COLUMN type TEXT',
   'ALTER TABLE media_assets ADD COLUMN file_size INTEGER',
   'ALTER TABLE media_assets ADD COLUMN mimetype TEXT',
+  'ALTER TABLE contacts ADD COLUMN customer_profile TEXT',
+  'ALTER TABLE contacts ADD COLUMN last_followup_at DATETIME',
 ];
 for (const m of migrations) {
   try { db.prepare(m).run(); } catch(e) {}
@@ -174,6 +176,40 @@ const getStats = () => {
 const getMemory = (key) => { try { const r = db.prepare('SELECT value FROM settings WHERE key=?').get('mem_'+key); return r ? r.value : null; } catch(e) { return null; } };
 const setMemory = (key, value) => { try { db.prepare('INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)').run('mem_'+key, value); } catch(e) {} };
 
+// CUSTOMER PROFILE (structured memory)
+const getCustomerProfile = (phone) => {
+  try {
+    const r = db.prepare('SELECT customer_profile FROM contacts WHERE phone=?').get(phone);
+    return r?.customer_profile ? JSON.parse(r.customer_profile) : null;
+  } catch(e) { return null; }
+};
+const setCustomerProfile = (phone, profileObj) => {
+  try { db.prepare('UPDATE contacts SET customer_profile=?, updated_at=CURRENT_TIMESTAMP WHERE phone=?').run(JSON.stringify(profileObj), phone); } catch(e) {}
+};
+
+// FOLLOW-UP
+const getContactsForFollowup = () => {
+  try {
+    return db.prepare(`
+      SELECT c.phone, c.name, c.wa_session, c.customer_profile,
+        (SELECT body FROM messages WHERE phone=c.phone ORDER BY created_at DESC LIMIT 1) as last_message,
+        (SELECT direction FROM messages WHERE phone=c.phone ORDER BY created_at DESC LIMIT 1) as last_direction,
+        (SELECT created_at FROM messages WHERE phone=c.phone ORDER BY created_at DESC LIMIT 1) as last_message_at,
+        (SELECT COUNT(*) FROM messages WHERE phone=c.phone AND direction='in') as inbound_count
+      FROM contacts c
+      WHERE c.bot_paused = 0
+        AND (c.last_followup_at IS NULL OR datetime(c.last_followup_at) < datetime('now', '-72 hours'))
+      HAVING last_direction = 'out'
+        AND datetime(last_message_at) < datetime('now', '-24 hours')
+        AND datetime(last_message_at) > datetime('now', '-72 hours')
+        AND inbound_count >= 3
+    `).all();
+  } catch(e) { return []; }
+};
+const setLastFollowup = (phone) => {
+  try { db.prepare('UPDATE contacts SET last_followup_at=CURRENT_TIMESTAMP WHERE phone=?').run(phone); } catch(e) {}
+};
+
 module.exports = {
   db,
   touchContactLastSeen, updateContactField,
@@ -185,4 +221,6 @@ module.exports = {
   getSetting, setSetting, getAllSettings,
   getMediaAssets, addMediaAsset, deleteMediaAsset,
   getStats, getMemory, setMemory,
+  getCustomerProfile, setCustomerProfile,
+  getContactsForFollowup, setLastFollowup,
 };

@@ -95,6 +95,46 @@ function buildMediaContext() {
   return ctx;
 }
 
+async function extractAndSaveProfile(phone, history, existingProfile, settings) {
+  try {
+    if (history.length < 4) return;
+    const recent = history.slice(-10);
+    const convo = recent.map(m => `${m.direction === 'in' ? 'customer' : 'bot'}: ${m.body}`).join('\n');
+    const extractPrompt = `Berdasarkan percakapan ini, ekstrak info customer dalam format JSON.
+Isi hanya field yang ada info jelas. Gunakan null untuk yang tidak diketahui.
+Stage: EXPLORING (baru tanya-tanya) | INTERESTED (diskusi layanan/harga) | READY (siap lanjut/minta konsultasi) | BOOKED (sudah booking meeting).
+Kembalikan JSON saja tanpa penjelasan lain.
+
+Format: {"bisnis":"...","kebutuhan":"...","layanan_dibahas":[],"budget":"...","stage":"...","keberatan":"..."}
+
+Percakapan:
+${convo}`;
+
+    const result = await callAI([{ role: 'user', content: extractPrompt }], 'Kamu adalah sistem ekstraksi data. Kembalikan JSON saja.', settings);
+    if (!result) return;
+
+    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return;
+    const extracted = JSON.parse(jsonMatch[0]);
+
+    // Merge: don't overwrite existing non-null fields with null
+    const merged = { ...(existingProfile || {}), updated: new Date().toISOString().slice(0, 10) };
+    for (const [k, v] of Object.entries(extracted)) {
+      if (v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)) {
+        if (k === 'layanan_dibahas' && Array.isArray(v)) {
+          merged[k] = [...new Set([...(merged[k] || []), ...v])];
+        } else {
+          merged[k] = v;
+        }
+      }
+    }
+    db.setCustomerProfile(phone, merged);
+    console.log('[PROFILE] Updated for', phone, '→ stage:', merged.stage);
+  } catch(e) {
+    // Silent — never block main flow
+  }
+}
+
 async function getAIReply(phone, message, acctPrompt) {
   const settings = db.getAllSettings ? db.getAllSettings() : {};
   const botName = settings.bot_name || 'NuswaBot';
@@ -102,11 +142,25 @@ async function getAIReply(phone, message, acctPrompt) {
   const systemPromptBase = acctPrompt ? globalPrompt + '\n\n=== PERSONA AKUN ===\n' + acctPrompt : globalPrompt;
 
   const history = await db.getHistory(phone, 30);
-  const memory = db.getMemory(phone);
+  const profile = db.getCustomerProfile(phone);
   const knowledgeCtx = await buildKnowledgeContext();
   const mediaCtx = buildMediaContext();
-  const memCtx = memory ? `\n\n${memory}\n\nGunakan konteks di atas, jangan tanya ulang info yang sudah ada.` : '';
-  const systemPrompt = systemPromptBase + knowledgeCtx + mediaCtx + memCtx + '\n\nPenting: Jawab singkat dan natural seperti chat WA. Jangan terlalu panjang. Gunakan emoji secukupnya.\n\nBaca history chat. Jika customer sudah menyebutkan data, JANGAN tanya ulang.';
+
+  let profileCtx = '';
+  if (profile) {
+    const lines = [];
+    if (profile.bisnis) lines.push(`- Bisnis: ${profile.bisnis}`);
+    if (profile.kebutuhan) lines.push(`- Kebutuhan: ${profile.kebutuhan}`);
+    if (profile.layanan_dibahas?.length) lines.push(`- Layanan dibahas: ${profile.layanan_dibahas.join(', ')}`);
+    if (profile.budget) lines.push(`- Budget: ${profile.budget}`);
+    if (profile.stage) lines.push(`- Stage: ${profile.stage}`);
+    if (profile.keberatan) lines.push(`- Keberatan: ${profile.keberatan}`);
+    if (lines.length) {
+      profileCtx = `\n\n=== PROFIL CUSTOMER ===\n${lines.join('\n')}\nGunakan info ini. Jangan tanya ulang hal yang sudah diketahui.\n=== END PROFIL ===`;
+    }
+  }
+
+  const systemPrompt = systemPromptBase + knowledgeCtx + mediaCtx + profileCtx + '\n\nPenting: Jawab singkat dan natural seperti chat WA. Jangan terlalu panjang. Gunakan emoji secukupnya.\n\nBaca history chat. Jika customer sudah menyebutkan data, JANGAN tanya ulang.';
 
   const messages = [];
   for (const h of history) {
@@ -125,12 +179,8 @@ async function getAIReply(phone, message, acctPrompt) {
 
   try {
     const reply = await callAI(deduped, systemPrompt, settings);
-    // Update memory
-    if (history.length >= 3) {
-      const recent = history.slice(-6);
-      const summary = `Customer: ${message}\nAI: ${reply}\n\nRiwayat:\n${recent.map(m => `${m.direction}: ${m.body}`).join('\n')}`;
-      db.setMemory(phone, summary);
-    }
+    // Fire-and-forget profile extraction (don't block reply)
+    extractAndSaveProfile(phone, history, profile, settings).catch(() => {});
     return reply;
   } catch(e) {
     console.error('[AI] Error:', e.message);

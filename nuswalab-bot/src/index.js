@@ -345,6 +345,42 @@ async function sendReply(sessionName, phone, text) {
   }
 }
 
+// ── Follow-up scheduler (every 30 min) ───────────────────────────────────────
+setInterval(async () => {
+  try {
+    const contacts = db.getContactsForFollowup();
+    if (!contacts.length) return;
+    const status = baileys.getStatus();
+
+    for (const contact of contacts) {
+      const session = contact.wa_session;
+      if (!session || status[session]?.status !== 'connected') continue;
+
+      let profile = null;
+      try { if (contact.customer_profile) profile = JSON.parse(contact.customer_profile); } catch(e) {}
+
+      const name = (contact.name || '').split(' ')[0] || 'Kak';
+      const stage = profile?.stage || 'EXPLORING';
+
+      let followupMsg;
+      if (stage === 'READY') {
+        followupMsg = `Hei ${name}! 😊 Gimana, sudah ada keputusan? Kalau mau mulai, kita bisa jadwalkan konsultasi gratis dulu — tanpa komitmen sama sekali ya!`;
+      } else if (stage === 'INTERESTED') {
+        const layanan = profile?.layanan_dibahas?.join(', ') || 'layanan kami';
+        followupMsg = `Hai ${name}! 😊 Masih ada yang mau ditanyakan soal ${layanan}? Saya di sini kalau butuh info lebih lanjut.`;
+      } else {
+        followupMsg = `Halo ${name}! 👋 Tadi kita sempat ngobrol soal digital marketing. Ada yang bisa saya bantu lebih lanjut? Atau kalau mau audit marketing gratis, bisa cek nuswalab.com/tools/audit 😊`;
+      }
+
+      await sendReply(session, contact.phone, followupMsg);
+      db.setLastFollowup(contact.phone);
+      console.log('[FOLLOWUP] Sent to', contact.phone, '| stage:', stage);
+    }
+  } catch(e) {
+    console.error('[FOLLOWUP] Error:', e.message);
+  }
+}, 30 * 60 * 1000);
+
 // ── Incoming WA message handler ───────────────────────────────────────────────
 baileys.on('message', async ({ sessionName, phone, pushName, text, type, raw }) => {
   try {
