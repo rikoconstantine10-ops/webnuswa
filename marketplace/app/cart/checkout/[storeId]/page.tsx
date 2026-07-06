@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import CartCheckoutForm from "@/components/CartCheckoutForm";
+import { isPaymentoConfigured } from "@/lib/paymento";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,7 @@ export default async function CartCheckoutPage({ params }: { params: Promise<{ s
           productIdForVoucher={items[0].productId}
           defaultName={user.name ?? undefined}
           defaultEmail={user.email}
+          cryptoEnabled={isPaymentoConfigured()}
         />
       </div>
     </div>

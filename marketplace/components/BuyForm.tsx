@@ -24,6 +24,7 @@ type Props = {
   defaultName?: string;
   defaultEmail?: string;
   userPoints?: number;
+  cryptoEnabled?: boolean;
 };
 
 export default function BuyForm({
@@ -39,6 +40,7 @@ export default function BuyForm({
   defaultName,
   defaultEmail,
   userPoints = 0,
+  cryptoEnabled = false,
 }: Props) {
   const [state, formAction, pending] = useActionState(checkoutAction, {});
   const [qty, setQty] = useState(1);
@@ -428,6 +430,12 @@ export default function BuyForm({
             <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
               <input type="radio" name="paymentType" value="cod" onChange={() => setPayMethod("cod")} required />
               💵 COD — Bayar di Tempat (tunai ke kurir saat barang sampai)
+            </label>
+          )}
+          {cryptoEnabled && (
+            <label className="flex items-center gap-2 border border-indigo-300 bg-indigo-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 col-span-2">
+              <input type="radio" name="paymentType" value="crypto" onChange={() => setPayMethod("crypto")} required />
+              ₿ Crypto — USDT / BTC / ETH dll (via Paymento)
             </label>
           )}
         </div>

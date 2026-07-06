@@ -17,6 +17,7 @@ import VerifiedBadge from "@/components/VerifiedBadge";
 import ProductCard from "@/components/ProductCard";
 import { isSaleActive, effectivePrice } from "@/lib/pricing";
 import { similarProducts, frequentlyBoughtTogether } from "@/lib/recommend";
+import { isPaymentoConfigured } from "@/lib/paymento";
 
 export const dynamic = "force-dynamic";
 
@@ -245,6 +246,7 @@ export default async function ProductPage({
               defaultName={user?.name ?? undefined}
               defaultEmail={user?.email}
               userPoints={user?.points ?? 0}
+              cryptoEnabled={isPaymentoConfigured()}
             />
           )}
           {!outOfStock && (

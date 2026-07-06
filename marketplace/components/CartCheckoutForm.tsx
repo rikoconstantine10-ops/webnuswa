@@ -17,6 +17,7 @@ type Props = {
   productIdForVoucher: string;
   defaultName?: string;
   defaultEmail?: string;
+  cryptoEnabled?: boolean;
 };
 
 export default function CartCheckoutForm({
@@ -28,6 +29,7 @@ export default function CartCheckoutForm({
   productIdForVoucher,
   defaultName,
   defaultEmail,
+  cryptoEnabled = false,
 }: Props) {
   const [state, formAction, pending] = useActionState(checkoutCartAction, {});
 
@@ -198,6 +200,12 @@ export default function CartCheckoutForm({
             <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
               <input type="radio" name="paymentType" value="cod" required />
               💵 COD — Bayar di Tempat
+            </label>
+          )}
+          {cryptoEnabled && (
+            <label className="flex items-center gap-2 border border-indigo-300 bg-indigo-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 col-span-2">
+              <input type="radio" name="paymentType" value="crypto" required />
+              ₿ Crypto — USDT / BTC / ETH dll (via Paymento)
             </label>
           )}
         </div>

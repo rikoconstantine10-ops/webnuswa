@@ -19,6 +19,7 @@ import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
 import { createShipmentForOrder } from "@/lib/shipping";
 import { effectivePrice } from "@/lib/pricing";
+import { createPaymentRequest, isPaymentoConfigured } from "@/lib/paymento";
 
 const checkoutSchema = z.object({
   productId: z.string().min(1),
@@ -30,7 +31,7 @@ const checkoutSchema = z.object({
     .string()
     .transform((v) => v.replace(/\D/g, ""))
     .refine((v) => v.length >= 9 && v.length <= 15, "Nomor WhatsApp tidak valid"),
-  paymentType: z.enum([...PAYMENT_TYPES.map((p) => p.id), "cod"] as unknown as [string, ...string[]]),
+  paymentType: z.enum([...PAYMENT_TYPES.map((p) => p.id), "cod", "crypto"] as unknown as [string, ...string[]]),
   shippingAddress: z.string().optional(),
   destAreaId: z.string().optional(),
   destPostalCode: z.string().optional(),
@@ -256,6 +257,66 @@ export async function checkoutAction(
     if (voucherId) await db.voucher.update({ where: { id: voucherId }, data: { used: { increment: 1 } } });
     createShipmentForOrder(order.id).catch(() => {});
     redirect(`/order/${code}`);
+  }
+
+  // Crypto (Paymento): buat order PENDING_PAYMENT, minta pembayaran, lalu redirect ke gateway crypto.
+  // Konfirmasi lunas datang lewat IPN /api/webhooks/paymento → markOrderPaid (escrow & kirim jalan otomatis).
+  if (input.paymentType === "crypto") {
+    if (!isPaymentoConfigured()) return { error: "Pembayaran crypto belum tersedia saat ini." };
+    const cryptoOrder = await db.order.create({
+      data: {
+        code,
+        storeId: product.storeId,
+        buyerId: user?.id ?? null,
+        buyerName: input.buyerName,
+        buyerEmail: input.buyerEmail,
+        buyerPhone: normalizePhone(input.buyerPhone),
+        subtotal,
+        shippingCost,
+        discountAmount,
+        pointsUsed,
+        voucherId,
+        total,
+        paymentType: "crypto",
+        affiliateUserId,
+        shippingAddress: input.shippingAddress?.trim() || null,
+        destAreaId: input.destAreaId || null,
+        destPostalCode: input.destPostalCode || null,
+        destLat: input.destLat ?? null,
+        destLng: input.destLng ?? null,
+        courier: courierLabel,
+        courierCompany: input.courierCompany || null,
+        courierType: input.courierType || null,
+        items: {
+          create: [
+            { productId: product.id, name: product.name, variantName, price: unitPrice, qty: input.qty },
+            ...chosenAddons.map((a) => ({ productId: a.addonProductId, name: a.addonProduct.name, isAddon: true, price: a.addonPrice, qty: 1 })),
+          ],
+        },
+      },
+    });
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const pay = await createPaymentRequest({
+      orderId: code,
+      amountIdr: total,
+      returnUrl: `${appUrl}/order/${code}`,
+      email: input.buyerEmail,
+    });
+    if (!pay.ok) {
+      await db.order.update({ where: { id: cryptoOrder.id }, data: { status: "CANCELLED" } });
+      return { error: `Gagal membuat pembayaran crypto: ${pay.error}` };
+    }
+    await db.order.update({
+      where: { id: cryptoOrder.id },
+      data: { paymentInfo: JSON.stringify({ provider: "paymento", token: pay.token, fiatAmount: pay.fiatAmount, fiatCurrency: pay.fiatCurrency }) },
+    });
+    if (pointsUsed > 0 && user) {
+      await db.$transaction([
+        db.user.update({ where: { id: user.id }, data: { points: { decrement: pointsUsed } } }),
+        db.pointEntry.create({ data: { userId: user.id, orderId: cryptoOrder.id, amount: -pointsUsed, note: `Tukar poin order ${code}` } }),
+      ]);
+    }
+    redirect(pay.gatewayUrl!);
   }
 
   const trx = await createLouvinTransaction({
