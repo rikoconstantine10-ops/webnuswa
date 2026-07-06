@@ -5,267 +5,206 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nuswalab Bot</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; height: 100vh; display: flex; overflow: hidden; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f6fa;color:#1e293b;height:100vh;overflow:hidden;display:flex}
 
-/* Login */
-#login-screen {
-  position: fixed; inset: 0; background: #f0f2f5;
-  display: flex; align-items: center; justify-content: center; z-index: 100;
-}
-.login-card {
-  background: #fff; border-radius: 16px; padding: 40px 36px; width: 360px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.10);
-}
-.login-logo { font-size: 32px; margin-bottom: 8px; }
-.login-card h2 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
-.login-card p { font-size: 13px; color: #6b7280; margin-bottom: 28px; }
-.form-field { margin-bottom: 16px; }
-.form-field label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
-.form-field input {
-  width: 100%; padding: 10px 14px; border: 1.5px solid #e5e7eb; border-radius: 8px;
-  font-size: 14px; color: #1a1a2e; background: #f9fafb; outline: none; transition: border .2s;
-}
-.form-field input:focus { border-color: #4f46e5; background: #fff; }
-.btn-primary {
-  width: 100%; padding: 11px; background: #4f46e5; color: #fff; border: none;
-  border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s;
-}
-.btn-primary:hover { background: #4338ca; }
+/* ── Login ── */
+#login-screen{position:fixed;inset:0;background:#f4f6fa;display:flex;align-items:center;justify-content:center;z-index:999}
+.login-card{background:#fff;border-radius:20px;padding:44px 40px;width:380px;box-shadow:0 8px 40px rgba(0,0,0,.10)}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-brand .brand-icon{width:42px;height:42px;background:#4f46e5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.login-brand h1{font-size:22px;font-weight:800;color:#1e293b}.login-brand h1 span{color:#4f46e5}
+.login-card p{font-size:13px;color:#64748b;margin-bottom:28px}
+.lf{margin-bottom:16px}
+.lf label{display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px}
+.lf input{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;transition:border .2s;background:#f8fafc}
+.lf input:focus{border-color:#4f46e5;background:#fff}
+.btn-login{width:100%;padding:12px;background:#4f46e5;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.btn-login:hover{background:#4338ca}
 
-/* Layout */
-#app { display: flex; width: 100%; height: 100vh; }
+/* ── App shell ── */
+#app{display:none;width:100%;height:100vh}
 
-/* Sidebar */
-#sidebar {
-  width: 300px; min-width: 300px; background: #fff;
-  border-right: 1px solid #e5e7eb; display: flex; flex-direction: column;
-}
-.sidebar-header {
-  padding: 18px 16px 14px; border-bottom: 1px solid #e5e7eb;
-  display: flex; align-items: center; gap: 10px;
-}
-.sidebar-header .logo-icon { font-size: 22px; }
-.sidebar-header h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
-.sidebar-header h1 span { color: #4f46e5; }
-.sidebar-header p { font-size: 11px; color: #9ca3af; }
+/* ── Sidebar ── */
+#sidebar{width:220px;min-width:220px;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:20px 18px 16px;border-bottom:1px solid #e2e8f0}
+.brand .bi{width:34px;height:34px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff}
+.brand h2{font-size:16px;font-weight:800;color:#1e293b}.brand h2 span{color:#4f46e5}
+.brand p{font-size:10px;color:#94a3b8}
+#nav{flex:1;overflow-y:auto;padding:12px 10px}
+.nav-section{font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.8px;text-transform:uppercase;padding:12px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:#64748b;transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:#f1f5f9;color:#1e293b}
+.nav-item.active{background:#eef2ff;color:#4f46e5;font-weight:600}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.nav-item .n-badge{margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.sidebar-foot{padding:12px;border-top:1px solid #e2e8f0}
+.user-row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}
+.user-row:hover{background:#f1f5f9}
+.user-av{width:30px;height:30px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.user-name{font-size:12px;font-weight:600;color:#1e293b}
+.user-role{font-size:10px;color:#94a3b8}
 
-.sidebar-tabs { display: flex; padding: 10px 10px 0; gap: 2px; }
-.stab {
-  flex: 1; padding: 7px 4px; font-size: 11px; font-weight: 600;
-  border: none; background: transparent; color: #6b7280; cursor: pointer;
-  border-radius: 6px; transition: all .15s; letter-spacing: .2px;
-}
-.stab:hover { color: #1a1a2e; background: #f3f4f6; }
-.stab.active { color: #4f46e5; background: #eef2ff; }
+/* ── Main ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.page-header{padding:20px 28px 0;display:flex;align-items:center;justify-content:space-between}
+.page-header h2{font-size:20px;font-weight:800;color:#1e293b}
+.bot-status{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#10b981}
+.bot-status .dot{width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.page-content{flex:1;overflow-y:auto;padding:20px 28px}
 
-#sidebar-content { flex: 1; overflow-y: auto; padding: 10px; }
+/* ── Pages ── */
+.page{display:none}.page.active{display:block}
 
-#search-box {
-  width: 100%; padding: 8px 12px; background: #f3f4f6; border: 1.5px solid transparent;
-  border-radius: 8px; font-size: 13px; color: #1a1a2e; outline: none; margin-bottom: 8px;
-}
-#search-box:focus { border-color: #4f46e5; background: #fff; }
+/* ── Stat cards ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:14px;padding:20px;border-top:4px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.stat-card.c1{border-color:#4f46e5}.stat-card.c2{border-color:#10b981}.stat-card.c3{border-color:#f59e0b}.stat-card.c4{border-color:#8b5cf6}
+.sc-icon{font-size:22px;margin-bottom:10px}
+.sc-n{font-size:28px;font-weight:800;color:#1e293b;line-height:1}
+.sc-l{font-size:12px;color:#64748b;margin-top:4px}
+.sc-sub{font-size:11px;margin-top:6px;color:#94a3b8}
 
-/* Conv list */
-.conv-item {
-  display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px;
-  cursor: pointer; transition: background .15s; margin-bottom: 2px;
-}
-.conv-item:hover { background: #f3f4f6; }
-.conv-item.active { background: #eef2ff; }
-.conv-avatar {
-  width: 40px; height: 40px; border-radius: 50%; background: #4f46e5;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0;
-}
-.conv-info { flex: 1; min-width: 0; }
-.conv-name { font-size: 13px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.conv-preview { font-size: 11px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.conv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-.conv-time { font-size: 10px; color: #9ca3af; white-space: nowrap; }
-.conv-badge { background: #4f46e5; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
-.conv-paused { font-size: 10px; color: #ef4444; font-weight: 600; }
+/* ── Section boxes ── */
+.box{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.04);margin-bottom:20px}
+.box-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f1f5f9}
+.box-header h3{font-size:14px;font-weight:700;color:#1e293b;display:flex;align-items:center;gap:6px}
+.box-body{padding:16px 20px}
 
-/* WA list */
-.wa-item {
-  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
-  margin-bottom: 6px;
-}
-.wa-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; }
-.wa-dot.connected { background: #10b981; }
-.wa-dot.connecting { background: #f59e0b; }
-.wa-name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
-.wa-phone { font-size: 11px; color: #6b7280; }
-.wa-actions { margin-left: auto; display: flex; gap: 4px; }
+/* ── Table / list ── */
+.conv-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .1s}
+.conv-row:last-child{border-bottom:none}
+.conv-row:hover{background:#f8fafc;margin:0 -4px;padding:10px 4px;border-radius:8px}
+.av{width:38px;height:38px;border-radius:10px;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.conv-info .cn{font-size:13px;font-weight:600;color:#1e293b}
+.conv-info .cp{font-size:11px;color:#94a3b8}
+.conv-info .cm{font-size:12px;color:#64748b;margin-top:2px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-meta{margin-left:auto;text-align:right}
+.ct{font-size:11px;color:#94a3b8}.cpause{font-size:10px;color:#ef4444;font-weight:600}
+.lbl{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.lbl-lead{background:#eef2ff;color:#4f46e5}
+.lbl-paused{background:#fef2f2;color:#ef4444}
 
-/* KB list */
-.kb-item {
-  padding: 10px 12px; background: #f9fafb; border: 1px solid #e5e7eb;
-  border-radius: 8px; margin-bottom: 6px;
-}
-.kb-item-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.kb-item-title { font-size: 12px; font-weight: 600; color: #374151; }
-.kb-item-preview { font-size: 11px; color: #6b7280; margin-top: 4px; white-space: pre-wrap; max-height: 40px; overflow: hidden; }
-.kb-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
-.kb-badge.on { background: #d1fae5; color: #059669; }
-.kb-badge.off { background: #f3f4f6; color: #9ca3af; }
+/* ── Quick actions ── */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qa-btn{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer;transition:all .15s;font-size:13px;font-weight:600;color:#475569}
+.qa-btn:hover{border-color:#4f46e5;color:#4f46e5;background:#eef2ff}
+.qa-btn .qi{font-size:18px}
 
-/* Buttons */
-.btn { padding: 6px 12px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
-.btn-sm { padding: 4px 8px; font-size: 11px; }
-.btn-blue { background: #4f46e5; color: #fff; }
-.btn-blue:hover { background: #4338ca; }
-.btn-outline { background: #fff; color: #374151; border: 1.5px solid #e5e7eb; }
-.btn-outline:hover { border-color: #4f46e5; color: #4f46e5; }
-.btn-red { background: #fef2f2; color: #ef4444; }
-.btn-red:hover { background: #fee2e2; }
-.btn-icon { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-size: 14px; transition: background .15s; }
-.btn-icon:hover { background: #f3f4f6; }
+/* ── Chat page ── */
+#chat-layout{display:flex;height:calc(100vh - 68px);gap:0}
+.chat-list{width:280px;min-width:280px;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column}
+.cl-head{padding:14px 14px 10px;border-bottom:1px solid #f1f5f9}
+.cl-head h3{font-size:14px;font-weight:700;margin-bottom:8px;color:#1e293b}
+.cl-search{width:100%;padding:8px 12px;background:#f1f5f9;border:1.5px solid transparent;border-radius:8px;font-size:12px;outline:none;transition:border .2s}
+.cl-search:focus{border-color:#4f46e5;background:#fff}
+.cl-list{flex:1;overflow-y:auto}
+.ci{display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer;transition:background .15s;border-left:3px solid transparent}
+.ci:hover{background:#f8fafc}
+.ci.active{background:#eef2ff;border-left-color:#4f46e5}
+.ci .cav{width:36px;height:36px;border-radius:9px;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.ci-info .cin{font-size:12px;font-weight:600;color:#1e293b}
+.ci-info .cip{font-size:10px;color:#94a3b8}
+.ci-info .cim{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.ci-meta{margin-left:auto;text-align:right}.cit{font-size:10px;color:#94a3b8}
 
-/* Sidebar add button */
-.sidebar-add { padding: 10px; border-top: 1px solid #e5e7eb; }
+/* Chat area */
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8}
+#chat-empty .ei{font-size:48px;margin-bottom:12px}
+.chat-view{display:none;flex-direction:column;flex:1;overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:10px;padding:12px 18px;background:#fff;border-bottom:1px solid #e2e8f0}
+.ch-av{width:36px;height:36px;border-radius:9px;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.ch-name{font-size:14px;font-weight:700;color:#1e293b}
+.ch-phone{font-size:11px;color:#94a3b8}
+.ch-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.ai-lbl{font-size:12px;color:#64748b;font-weight:500}
+/* toggle */
+.tg{position:relative;display:inline-block;width:38px;height:21px}
+.tg input{opacity:0;width:0;height:0}
+.tgs{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:21px;transition:.3s}
+.tgs:before{content:'';position:absolute;height:15px;width:15px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.tgs{background:#4f46e5}
+input:checked+.tgs:before{transform:translateX(17px)}
+.msgs{flex:1;overflow-y:auto;padding:18px;background:#f4f6fa;display:flex;flex-direction:column;gap:10px}
+.bw{display:flex}.bw.out{justify-content:flex-end}
+.bb{max-width:65%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.55;word-break:break-word}
+.bb.in{background:#fff;color:#1e293b;border-bottom-left-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.bb.out{background:#4f46e5;color:#fff;border-bottom-right-radius:3px}
+.bt{font-size:10px;margin-top:4px;opacity:.55;text-align:right}
+.chat-input{display:flex;align-items:flex-end;gap:8px;padding:12px 16px;background:#fff;border-top:1px solid #e2e8f0}
+#msg-input{flex:1;padding:10px 14px;background:#f1f5f9;border:1.5px solid transparent;border-radius:10px;font-size:13px;resize:none;outline:none;max-height:120px;font-family:inherit;line-height:1.5;transition:border .2s}
+#msg-input:focus{border-color:#4f46e5;background:#fff}
+#send-btn{width:38px;height:38px;background:#4f46e5;color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s;flex-shrink:0}
+#send-btn:hover{background:#4338ca}
 
-/* Stats bar */
-.stats-bar { display: flex; gap: 6px; margin-bottom: 10px; }
-.stat-card {
-  flex: 1; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
-  padding: 8px 6px; text-align: center;
-}
-.stat-n { font-size: 18px; font-weight: 700; color: #4f46e5; }
-.stat-l { font-size: 10px; color: #6b7280; }
+/* WA page */
+.wa-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #e2e8f0;border-radius:12px;margin-bottom:8px;background:#fff}
+.wa-dot{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex-shrink:0}
+.wa-dot.on{background:#10b981}.wa-dot.connecting{background:#f59e0b}
+.wa-info .wn{font-size:13px;font-weight:700;color:#1e293b}
+.wa-info .wp{font-size:11px;color:#94a3b8}
+.wa-acts{margin-left:auto;display:flex;gap:6px}
 
-/* Main area */
-#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+/* KB page */
+.kb-card{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border:1.5px solid #e2e8f0;border-radius:12px;margin-bottom:8px;background:#fff}
+.kb-info{flex:1;min-width:0}
+.kb-title{font-size:13px;font-weight:700;color:#1e293b}
+.kb-prev{font-size:11px;color:#64748b;margin-top:3px;white-space:pre-wrap;max-height:36px;overflow:hidden}
+.kb-acts{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
 
-/* Chat header */
-#chat-header {
-  display: flex; align-items: center; gap: 12px; padding: 14px 20px;
-  background: #fff; border-bottom: 1px solid #e5e7eb;
-}
-#chat-avatar { width: 38px; height: 38px; border-radius: 50%; background: #4f46e5; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; }
-#chat-name { font-size: 15px; font-weight: 700; color: #1a1a2e; }
-#chat-phone { font-size: 12px; color: #9ca3af; }
-.header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.toggle-label { font-size: 12px; color: #6b7280; font-weight: 500; }
-.toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-  position: absolute; cursor: pointer; inset: 0; background: #d1d5db; border-radius: 20px; transition: .3s;
-}
-.toggle-slider:before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s; }
-input:checked + .toggle-slider { background: #4f46e5; }
-input:checked + .toggle-slider:before { transform: translateX(16px); }
-
-/* Empty state */
-#empty-state {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #9ca3af;
-}
-#empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
-#empty-state p { font-size: 14px; }
-
-/* Messages */
-#messages-area { flex: 1; overflow-y: auto; padding: 20px; background: #f0f2f5; }
-.bubble-wrap { display: flex; margin-bottom: 12px; }
-.bubble-wrap.out { justify-content: flex-end; }
-.bubble {
-  max-width: 65%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5;
-  word-break: break-word; position: relative;
-}
-.bubble.in { background: #fff; color: #1a1a2e; border-bottom-left-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-.bubble.out { background: #4f46e5; color: #fff; border-bottom-right-radius: 3px; }
-.bubble-time { font-size: 10px; margin-top: 4px; opacity: .6; text-align: right; }
-
-/* Input */
-#input-area {
-  display: flex; align-items: flex-end; gap: 10px; padding: 14px 20px;
-  background: #fff; border-top: 1px solid #e5e7eb;
-}
-#msg-input {
-  flex: 1; padding: 10px 14px; background: #f3f4f6; border: 1.5px solid transparent;
-  border-radius: 10px; font-size: 13px; resize: none; outline: none; max-height: 120px;
-  font-family: inherit; line-height: 1.5; transition: border .2s;
-}
-#msg-input:focus { border-color: #4f46e5; background: #fff; }
-#send-btn {
-  width: 38px; height: 38px; background: #4f46e5; color: #fff; border: none;
-  border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-  transition: background .2s; flex-shrink: 0;
-}
-#send-btn:hover { background: #4338ca; }
-
-/* Right panel */
-#right-panel {
-  width: 340px; min-width: 340px; background: #fff; border-left: 1px solid #e5e7eb;
-  display: none; flex-direction: column; overflow-y: auto;
-}
-#right-panel.open { display: flex; }
-.panel-header { padding: 16px 16px 14px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; }
-.panel-header h3 { font-size: 14px; font-weight: 700; color: #1a1a2e; }
-.panel-body { padding: 16px; flex: 1; }
-
-/* Forms */
-.form-group { margin-bottom: 14px; }
-.form-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
-.form-group input, .form-group textarea, .form-group select {
-  width: 100%; padding: 9px 12px; background: #f9fafb; border: 1.5px solid #e5e7eb;
-  border-radius: 8px; font-size: 13px; color: #1a1a2e; outline: none; font-family: inherit; transition: border .2s;
-}
-.form-group input:focus, .form-group textarea:focus { border-color: #4f46e5; background: #fff; }
-.form-group textarea { resize: vertical; min-height: 80px; }
-.form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+/* Settings page */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.settings-section{background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.ss-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:6px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:5px}
+.fg input,.fg textarea,.fg select{width:100%;padding:9px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;color:#1e293b;outline:none;font-family:inherit;transition:border .2s}
+.fg input:focus,.fg textarea:focus{border-color:#4f46e5;background:#fff}
+.fg textarea{resize:vertical;min-height:80px}
 
 /* Media */
-.media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.media-card {
-  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; position: relative;
-}
-.media-thumb { width: 100%; height: 80px; object-fit: cover; display: block; background: #e5e7eb; }
-.media-info { padding: 6px 8px; }
-.media-name { font-size: 11px; font-weight: 600; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.media-delete { position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,.9); border: none; border-radius: 4px; cursor: pointer; padding: 2px 5px; font-size: 12px; }
+.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mc{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;position:relative}
+.mt{width:100%;height:80px;object-fit:cover;background:#e2e8f0;display:block}
+.mi{padding:7px 8px}
+.mn{font-size:11px;font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md-del{position:absolute;top:4px;right:4px;background:rgba(255,255,255,.92);border:none;border-radius:5px;cursor:pointer;padding:2px 6px;font-size:12px}
 
-/* QR modal */
-#qr-modal {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200;
-  align-items: center; justify-content: center;
-}
-#qr-modal.open { display: flex; }
-.qr-card {
-  background: #fff; border-radius: 16px; padding: 28px; text-align: center; width: 320px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.15);
-}
-.qr-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #1a1a2e; }
-.qr-card p { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
-#qr-img { width: 220px; height: 220px; border-radius: 8px; border: 1px solid #e5e7eb; }
-#pairing-code-box { font-size: 24px; font-weight: 800; letter-spacing: 4px; color: #4f46e5; margin: 12px 0; }
+/* Buttons */
+.btn{padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-xs{padding:3px 8px;font-size:11px}
+.btn-pri{background:#4f46e5;color:#fff}.btn-pri:hover{background:#4338ca}
+.btn-out{background:#fff;color:#475569;border:1.5px solid #e2e8f0}.btn-out:hover{border-color:#4f46e5;color:#4f46e5}
+.btn-red{background:#fef2f2;color:#ef4444;border:1.5px solid #fee2e2}.btn-red:hover{background:#fee2e2}
+.btn-grn{background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0}.btn-grn:hover{background:#dcfce7}
+.bico{background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;font-size:15px;transition:background .15s}.bico:hover{background:#f1f5f9}
+
+/* QR Modal */
+#qr-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
+#qr-modal.open{display:flex}
+.qr-card{background:#fff;border-radius:18px;padding:30px;text-align:center;width:320px;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.qr-card h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.qr-card p{font-size:12px;color:#64748b;margin-bottom:16px}
+#qr-img{width:200px;height:200px;border-radius:8px;border:1px solid #e2e8f0}
+#pair-code{font-size:28px;font-weight:900;letter-spacing:5px;color:#4f46e5;margin:12px 0}
+#qr-status{font-size:12px;color:#64748b;margin:8px 0}
 
 /* Modal */
-#modal-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200;
-  align-items: center; justify-content: center;
-}
-#modal-overlay.open { display: flex; }
-.modal-card { background: #fff; border-radius: 14px; padding: 24px; min-width: 340px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,.15); }
-.modal-card h3 { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
+#modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
+#modal-ov.open{display:flex}
+.modal-c{background:#fff;border-radius:16px;padding:26px;min-width:360px;max-width:520px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.modal-c h3{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:18px}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
 
 /* Toast */
-#toast {
-  position: fixed; bottom: 24px; right: 24px; background: #1a1a2e; color: #fff;
-  padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
-  opacity: 0; transform: translateY(8px); transition: all .25s; z-index: 300; pointer-events: none;
-}
-#toast.show { opacity: 1; transform: translateY(0); }
+#toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all .25s;z-index:600;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-
-.section-title { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .6px; margin: 12px 4px 6px; }
-.divider { height: 1px; background: #e5e7eb; margin: 12px 0; }
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:4px}
 </style>
 </head>
 <body>
@@ -273,605 +212,532 @@ input:checked + .toggle-slider:before { transform: translateX(16px); }
 <!-- Login -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">🤖</div>
-    <h2>Nuswalab Bot</h2>
-    <p>Login untuk mengakses dashboard</p>
-    <div class="form-field">
-      <label>Username</label>
-      <input type="text" id="login-user" value="admin" autocomplete="username">
+    <div class="login-brand">
+      <div class="brand-icon">🤖</div>
+      <div><h1>Nuswa<span>Bot</span></h1></div>
     </div>
-    <div class="form-field">
-      <label>Password</label>
-      <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
-    </div>
-    <button class="btn-primary" onclick="doLogin()">Masuk</button>
+    <p>Masuk untuk mengelola WhatsApp AI Bot</p>
+    <div class="lf"><label>Username</label><input type="text" id="lu" value="admin" autocomplete="username"></div>
+    <div class="lf"><label>Password</label><input type="password" id="lp" placeholder="Password" autocomplete="current-password"></div>
+    <button class="btn-login" onclick="doLogin()">Masuk →</button>
   </div>
 </div>
 
 <!-- App -->
-<div id="app" style="display:none">
+<div id="app">
 
   <!-- Sidebar -->
   <div id="sidebar">
-    <div class="sidebar-header">
-      <div class="logo-icon">🤖</div>
-      <div>
-        <h1>Nuswa<span>Bot</span></h1>
-        <p>WhatsApp AI Dashboard</p>
-      </div>
+    <div class="brand">
+      <div class="bi">🤖</div>
+      <div><h2>Nuswa<span>Bot</span></h2><p>WhatsApp AI</p></div>
     </div>
-
-    <div class="sidebar-tabs">
-      <button class="stab active" onclick="switchTab('chat',this)">💬 Chat</button>
-      <button class="stab" onclick="switchTab('wa',this)">📱 WA</button>
-      <button class="stab" onclick="switchTab('kb',this)">📚 KB</button>
-      <button class="stab" onclick="switchTab('settings',this)">⚙️</button>
-    </div>
-
-    <div id="sidebar-content">
-
-      <!-- Chat tab -->
-      <div id="tab-chat">
-        <input type="text" id="search-box" placeholder="Cari kontak..." oninput="filterConvs(this.value)">
-        <div id="stats-bar" class="stats-bar">
-          <div class="stat-card"><div class="stat-n" id="s-contacts">0</div><div class="stat-l">Kontak</div></div>
-          <div class="stat-card"><div class="stat-n" id="s-messages">0</div><div class="stat-l">Pesan</div></div>
-          <div class="stat-card"><div class="stat-n" id="s-wa">0</div><div class="stat-l">WA</div></div>
-        </div>
-        <div id="conv-list"></div>
+    <nav id="nav">
+      <div class="nav-section">UTAMA</div>
+      <div class="nav-item active" onclick="goPage('dashboard',this)"><span class="ni">📊</span> Dashboard</div>
+      <div class="nav-item" onclick="goPage('chat',this)"><span class="ni">💬</span> Chat</div>
+      <div class="nav-section">AKUN</div>
+      <div class="nav-item" onclick="goPage('whatsapp',this)"><span class="ni">📱</span> WhatsApp</div>
+      <div class="nav-section">KONTEN</div>
+      <div class="nav-item" onclick="goPage('knowledge',this)"><span class="ni">📚</span> Knowledge Base</div>
+      <div class="nav-item" onclick="goPage('media',this)"><span class="ni">🖼</span> Media</div>
+      <div class="nav-section">SISTEM</div>
+      <div class="nav-item" onclick="goPage('settings',this)"><span class="ni">⚙️</span> Pengaturan</div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row" onclick="logout()">
+        <div class="user-av">A</div>
+        <div><div class="user-name">Administrator</div><div class="user-role">Logout →</div></div>
       </div>
-
-      <!-- WA tab -->
-      <div id="tab-wa" style="display:none">
-        <div class="section-title">Akun WhatsApp</div>
-        <div id="wa-list"></div>
-        <button class="btn btn-blue btn-sm" onclick="openAddWA()" style="width:100%;margin-top:8px">+ Tambah Akun WA</button>
-      </div>
-
-      <!-- KB tab -->
-      <div id="tab-kb" style="display:none">
-        <div class="section-title">Knowledge Base</div>
-        <div id="kb-list"></div>
-        <button class="btn btn-blue btn-sm" onclick="openAddKB()" style="width:100%;margin-top:8px">+ Tambah Knowledge</button>
-      </div>
-
-      <!-- Settings tab -->
-      <div id="tab-settings" style="display:none">
-        <div class="section-title">Pengaturan Bot</div>
-        <div id="settings-form"></div>
-      </div>
-
     </div>
   </div>
 
   <!-- Main -->
   <div id="main">
 
-    <!-- Empty -->
-    <div id="empty-state">
-      <div class="empty-icon">💬</div>
-      <p>Pilih percakapan untuk mulai</p>
-    </div>
-
-    <!-- Chat view (hidden until selected) -->
-    <div id="chat-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-      <div id="chat-header">
-        <div id="chat-avatar">?</div>
+    <!-- Dashboard page -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
         <div>
-          <div id="chat-name">-</div>
-          <div id="chat-phone">-</div>
+          <h2>Dashboard</h2>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px">Selamat datang di Nuswalab Bot</div>
         </div>
-        <div class="header-actions">
-          <span class="toggle-label">AI</span>
-          <label class="toggle">
-            <input type="checkbox" id="ai-toggle" onchange="toggleAI(this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-          <button class="btn btn-outline btn-sm" onclick="openRightPanel('media')">🖼 Media</button>
-        </div>
+        <div class="bot-status"><div class="dot"></div> Bot Online</div>
       </div>
-      <div id="messages-area"></div>
-      <div id="input-area">
-        <textarea id="msg-input" placeholder="Ketik pesan..." rows="1" oninput="autoResize(this)" onkeydown="onReplyKey(event)"></textarea>
-        <button id="send-btn" onclick="sendReply()">➤</button>
+      <div class="page-content">
+        <div class="stat-grid">
+          <div class="stat-card c1"><div class="sc-icon">💬</div><div class="sc-n" id="sd-conv">0</div><div class="sc-l">Total Percakapan</div><div class="sc-sub">Semua kontak</div></div>
+          <div class="stat-card c2"><div class="sc-icon">✅</div><div class="sc-n" id="sd-msg">0</div><div class="sc-l">Total Pesan</div><div class="sc-sub">Masuk &amp; keluar</div></div>
+          <div class="stat-card c3"><div class="sc-icon">📱</div><div class="sc-n" id="sd-wa">0</div><div class="sc-l">Akun WhatsApp</div><div class="sc-sub">Terhubung</div></div>
+          <div class="stat-card c4"><div class="sc-icon">📚</div><div class="sc-n" id="sd-kb">0</div><div class="sc-l">Knowledge Base</div><div class="sc-sub">Item tersimpan</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:20px">
+          <div class="box">
+            <div class="box-header">
+              <h3>💬 Percakapan Terbaru</h3>
+              <button class="btn btn-sm btn-out" onclick="goPage('chat',document.querySelector('[onclick*=chat]'))">Lihat Semua</button>
+            </div>
+            <div class="box-body" id="dash-convs"></div>
+          </div>
+          <div>
+            <div class="box" style="margin-bottom:16px">
+              <div class="box-header"><h3>⚡ Quick Action</h3></div>
+              <div class="box-body">
+                <div class="qa-grid">
+                  <div class="qa-btn" onclick="goPage('whatsapp',document.querySelectorAll('.nav-item')[3])"><span class="qi">📱</span> Kelola WA</div>
+                  <div class="qa-btn" onclick="goPage('knowledge',document.querySelectorAll('.nav-item')[4])"><span class="qi">📚</span> Tambah KB</div>
+                  <div class="qa-btn" onclick="goPage('media',document.querySelectorAll('.nav-item')[5])"><span class="qi">🖼</span> Upload Media</div>
+                  <div class="qa-btn" onclick="goPage('settings',document.querySelectorAll('.nav-item')[6])"><span class="qi">⚙️</span> Pengaturan</div>
+                </div>
+              </div>
+            </div>
+            <div class="box">
+              <div class="box-header"><h3>🚦 Status</h3></div>
+              <div class="box-body" id="dash-status">
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Bot</span><span style="color:#10b981;font-weight:600">Online</span></div>
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">AI</span><span id="st-ai" style="font-weight:600">Checking...</span></div>
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:#64748b">WhatsApp</span><span id="st-wa" style="font-weight:600">-</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-  </div>
-
-  <!-- Right panel -->
-  <div id="right-panel">
-    <div class="panel-header">
-      <h3 id="panel-title">Panel</h3>
-      <button class="btn-icon" onclick="closeRightPanel()">✕</button>
+    <!-- Chat page -->
+    <div class="page" id="page-chat">
+      <div class="page-header" style="padding-bottom:0">
+        <h2>Chat</h2>
+      </div>
+      <div id="chat-layout">
+        <div class="chat-list">
+          <div class="cl-head">
+            <h3>Percakapan</h3>
+            <input type="text" class="cl-search" placeholder="Cari kontak..." oninput="filterConvs(this.value)">
+          </div>
+          <div class="cl-list" id="conv-list"></div>
+        </div>
+        <div class="chat-area">
+          <div id="chat-empty"><div class="ei">💬</div><p>Pilih percakapan untuk mulai</p></div>
+          <div class="chat-view" id="chat-view">
+            <div class="chat-head">
+              <div class="ch-av" id="ch-av">?</div>
+              <div><div class="ch-name" id="ch-name">-</div><div class="ch-phone" id="ch-phone">-</div></div>
+              <div class="ch-actions">
+                <span class="ai-lbl">AI</span>
+                <label class="tg"><input type="checkbox" id="ai-toggle" onchange="toggleAI(this.checked)"><span class="tgs"></span></label>
+              </div>
+            </div>
+            <div class="msgs" id="msgs"></div>
+            <div class="chat-input">
+              <textarea id="msg-input" rows="1" placeholder="Ketik pesan..." oninput="autoResize(this)" onkeydown="onKey(event)"></textarea>
+              <button id="send-btn" onclick="sendMsg()">➤</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="panel-body" id="panel-body"></div>
-  </div>
 
-</div>
+    <!-- WhatsApp page -->
+    <div class="page" id="page-whatsapp">
+      <div class="page-header">
+        <h2>WhatsApp</h2>
+        <button class="btn btn-pri" onclick="openAddWA()">+ Tambah Akun</button>
+      </div>
+      <div class="page-content">
+        <div class="box">
+          <div class="box-header"><h3>📱 Akun WhatsApp Terhubung</h3></div>
+          <div class="box-body" id="wa-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Knowledge page -->
+    <div class="page" id="page-knowledge">
+      <div class="page-header">
+        <h2>Knowledge Base</h2>
+        <button class="btn btn-pri" onclick="openAddKB()">+ Tambah Knowledge</button>
+      </div>
+      <div class="page-content">
+        <div class="box">
+          <div class="box-header"><h3>📚 Daftar Knowledge</h3><span id="kb-count" style="font-size:12px;color:#94a3b8"></span></div>
+          <div class="box-body" id="kb-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Media page -->
+    <div class="page" id="page-media">
+      <div class="page-header">
+        <h2>Media Library</h2>
+      </div>
+      <div class="page-content">
+        <div class="box" style="margin-bottom:20px">
+          <div class="box-header"><h3>📤 Upload File</h3></div>
+          <div class="box-body" style="display:flex;gap:12px;align-items:flex-end">
+            <div style="flex:1"><input type="file" id="media-file" accept="image/*,video/*,.pdf,.doc,.docx" style="font-size:13px;width:100%"></div>
+            <button class="btn btn-pri" onclick="uploadMedia()">Upload</button>
+          </div>
+        </div>
+        <div class="box">
+          <div class="box-header"><h3>🗂 File Tersimpan</h3><span id="media-count" style="font-size:12px;color:#94a3b8"></span></div>
+          <div class="box-body"><div class="mg" id="media-grid"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings page -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h2>Pengaturan</h2>
+        <button class="btn btn-pri" onclick="saveSettings()">💾 Simpan</button>
+      </div>
+      <div class="page-content">
+        <div class="settings-grid">
+          <div class="settings-section">
+            <div class="ss-title">🤖 Profil Bot</div>
+            <div class="fg"><label>Bot Name</label><input type="text" id="s-bot_name" placeholder="NuswaBot"></div>
+            <div class="fg"><label>System Prompt</label><textarea id="s-system_prompt" rows="6" placeholder="Kamu adalah asisten AI..."></textarea></div>
+          </div>
+          <div class="settings-section">
+            <div class="ss-title">⚡ Sumopod AI (Primary)</div>
+            <div class="fg"><label>API Key 1</label><input type="password" id="s-sumopod_key1" placeholder="sk-..."></div>
+            <div class="fg"><label>API Key 2 (backup)</label><input type="password" id="s-sumopod_key2" placeholder="sk-..."></div>
+            <div class="fg"><label>Base URL</label><input type="text" id="s-sumopod_base_url" placeholder="https://ai.sumopod.com"></div>
+            <div class="fg"><label>Model</label><input type="text" id="s-sumopod_model" placeholder="gemini/gemini-2.5-flash"></div>
+          </div>
+          <div class="settings-section">
+            <div class="ss-title">🔄 Anthropic (Fallback)</div>
+            <div class="fg"><label>Anthropic API Key</label><input type="password" id="s-anthropic_key" placeholder="sk-ant-..."></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <!-- QR Modal -->
 <div id="qr-modal">
   <div class="qr-card">
-    <h3 id="qr-session-name">Scan QR</h3>
+    <h3 id="qr-title">Scan QR Code</h3>
     <p>Buka WhatsApp → Perangkat Tertaut → Tautkan Perangkat</p>
-    <img id="qr-img" src="" alt="QR Code" style="display:none">
-    <div id="pairing-code-box" style="display:none"></div>
-    <div id="qr-status" style="font-size:12px;color:#6b7280;margin:8px 0">Menunggu QR...</div>
-    <button class="btn btn-outline btn-sm" onclick="closeQR()" style="margin-top:12px">Tutup</button>
+    <img id="qr-img" src="" style="display:none" width="200" height="200">
+    <div id="pair-code" style="display:none"></div>
+    <div id="qr-status">Menunggu QR...</div>
+    <button class="btn btn-out btn-sm" onclick="closeQR()" style="margin-top:14px">Tutup</button>
   </div>
 </div>
 
-<!-- Generic Modal -->
-<div id="modal-overlay">
-  <div class="modal-card">
+<!-- Modal -->
+<div id="modal-ov">
+  <div class="modal-c">
     <h3 id="modal-title"></h3>
     <div id="modal-body"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline btn-sm" onclick="closeModal()">Batal</button>
-      <button class="btn btn-blue btn-sm" id="modal-confirm">Simpan</button>
+    <div class="modal-foot">
+      <button class="btn btn-out btn-sm" onclick="closeModal()">Batal</button>
+      <button class="btn btn-pri btn-sm" id="modal-ok">Simpan</button>
     </div>
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
-const BASE = '/bot-api';
-let TOKEN = localStorage.getItem('nuswalab_token') || '';
-let currentPhone = '', currentSession = '', allConvs = [];
-let pollTimer = null, qrPollTimer = null;
+const BASE='/bot-api';
+let TOKEN=localStorage.getItem('nb_tok')||'';
+let curPhone='',curSession='',allConvs=[];
+let pollTmr=null,qrTmr=null,qrSess='';
 
-async function api(path, opts = {}) {
-  const headers = { 'Authorization': 'Bearer ' + TOKEN, ...((opts.body && !(opts.body instanceof FormData)) ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers || {}) };
-  const res = await fetch(BASE + '/api' + path, { ...opts, headers });
-  if (res.status === 401) { logout(); return null; }
-  return res.json().catch(() => null);
+/* ── API ── */
+async function api(path,opts={}){
+  const h={'Authorization':'Bearer '+TOKEN};
+  if(opts.body&&!(opts.body instanceof FormData))h['Content-Type']='application/json';
+  if(opts.headers)Object.assign(h,opts.headers);
+  const r=await fetch(BASE+'/api'+path,{...opts,headers:h});
+  if(r.status===401){logout();return null;}
+  return r.json().catch(()=>null);
 }
 
-async function doLogin() {
-  const u = document.getElementById('login-user').value;
-  const p = document.getElementById('login-pass').value;
-  try {
-    const res = await fetch(BASE + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
-    const data = await res.json();
-    if (data.token) {
-      TOKEN = data.token;
-      localStorage.setItem('nuswalab_token', TOKEN);
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
-      init();
-    } else {
-      showToast('Login gagal: ' + (data.error || 'Cek username/password'));
-    }
-  } catch(e) { showToast('Gagal terhubung ke server'); }
+/* ── Login ── */
+async function doLogin(){
+  const u=document.getElementById('lu').value,p=document.getElementById('lp').value;
+  try{
+    const r=await fetch(BASE+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(d.token){TOKEN=d.token;localStorage.setItem('nb_tok',TOKEN);boot();}
+    else showToast('Login gagal: '+(d.error||'Cek username/password'));
+  }catch(e){showToast('Gagal terhubung ke server');}
+}
+function logout(){TOKEN='';localStorage.removeItem('nb_tok');location.reload();}
+document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+function boot(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  loadDashboard();loadConvs();loadWA();loadKB();loadSettings();loadMedia();
+  clearInterval(pollTmr);
+  pollTmr=setInterval(()=>{loadDashboard(true);loadConvs(true);loadWA(true);},6000);
+}
+if(TOKEN)boot();
+
+/* ── Navigation ── */
+function goPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
 }
 
-function logout() {
-  TOKEN = ''; localStorage.removeItem('nuswalab_token');
-  location.reload();
+/* ── Dashboard ── */
+async function loadDashboard(silent=false){
+  const s=await api('/stats');
+  if(!s)return;
+  document.getElementById('sd-conv').textContent=s.contacts||0;
+  document.getElementById('sd-msg').textContent=s.messages||0;
+  document.getElementById('sd-wa').textContent=s.wa_accounts||0;
+  document.getElementById('sd-kb').textContent=s.knowledge||0;
+  // recent convs
+  const cvs=await api('/conversations');
+  if(cvs){
+    const el=document.getElementById('dash-convs');
+    const top=(cvs||[]).slice(0,6);
+    if(!top.length){el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:13px;padding:12px">Belum ada percakapan</div>';return;}
+    el.innerHTML=top.map(c=>{
+      const init=(c.name||c.phone||'?').substring(0,2).toUpperCase();
+      return '<div class="conv-row" onclick="goPage(\'chat\',document.querySelectorAll(\'.nav-item\')[1]);setTimeout(()=>openChat(\''+esc(c.phone)+'\',\''+esc(c.name||c.phone)+'\',\''+esc(c.wa_session||'')+'\'),100)">'
+        +'<div class="av">'+init+'</div>'
+        +'<div class="conv-info"><div class="cn">'+esc(c.name||c.phone)+'</div><div class="cp">'+esc(c.phone)+'</div><div class="cm">'+esc(c.last_message||'')+'</div></div>'
+        +'<div class="conv-meta"><div class="ct">'+formatTime(c.last_message_at)+'</div>'+(c.bot_paused?'<div class="cpause">⏸ Paused</div>':'')+'</div>'
+        +'</div>';
+    }).join('');
+  }
+  // status
+  const wa=await api('/wa');
+  const conn=(wa||[]).filter(w=>w.runtime_status==='connected').length;
+  const set=await api('/settings');
+  const hasKey=set&&(set.sumopod_key1||set.anthropic_key);
+  document.getElementById('st-ai').textContent=hasKey?'OK':'Belum dikonfigurasi';
+  document.getElementById('st-ai').style.color=hasKey?'#10b981':'#f59e0b';
+  document.getElementById('st-wa').textContent=conn?conn+' terhubung':'Belum ada';
+  document.getElementById('st-wa').style.color=conn?'#10b981':'#f59e0b';
 }
 
-document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-function init() {
-  if (!TOKEN) return;
-  loadStats();
-  loadConvs();
-  loadWaAccounts();
-  loadKBSide();
-  loadSettingsPanel();
-  clearInterval(pollTimer);
-  pollTimer = setInterval(() => { loadConvs(true); loadStats(); loadWaAccounts(); }, 5000);
+/* ── Chat ── */
+async function loadConvs(silent=false){
+  const d=await api('/conversations');if(!d)return;
+  allConvs=d;renderConvs(allConvs);
 }
-
-if (TOKEN) {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  init();
-}
-
-// ── Stats ────────────────────────────────────────────────────────────────────
-async function loadStats() {
-  const d = await api('/stats');
-  if (!d) return;
-  document.getElementById('s-contacts').textContent = d.contacts || 0;
-  document.getElementById('s-messages').textContent = d.messages || 0;
-  document.getElementById('s-wa').textContent = d.wa_accounts || 0;
-}
-
-// ── Conversations ────────────────────────────────────────────────────────────
-async function loadConvs(silent = false) {
-  const d = await api('/conversations');
-  if (!d) return;
-  allConvs = d;
-  if (!silent) renderConvs(allConvs);
-  else renderConvs(allConvs, true);
-}
-
-function renderConvs(list, keepActive = false) {
-  const el = document.getElementById('conv-list');
-  if (!list.length) { el.innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">Belum ada percakapan</div>'; return; }
-  el.innerHTML = list.map(c => {
-    const initials = (c.name || c.phone || '?').substring(0,2).toUpperCase();
-    const isActive = c.phone === currentPhone;
-    const paused = c.bot_paused ? '<span class="conv-paused">⏸ Paused</span>' : '';
-    return '<div class="conv-item' + (isActive ? ' active' : '') + '" onclick="openChat(\'' + esc(c.phone) + '\',\'' + esc(c.name || c.phone) + '\',\'' + esc(c.wa_session || '') + '\')">' +
-      '<div class="conv-avatar">' + initials + '</div>' +
-      '<div class="conv-info">' +
-        '<div class="conv-name">' + esc(c.name || c.phone) + '</div>' +
-        '<div class="conv-preview">' + esc(c.last_message || '') + '</div>' +
-      '</div>' +
-      '<div class="conv-meta">' +
-        '<div class="conv-time">' + (c.last_message_at ? formatTime(c.last_message_at) : '') + '</div>' +
-        paused +
-      '</div>' +
-    '</div>';
+function renderConvs(list){
+  const el=document.getElementById('conv-list');
+  if(!list.length){el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:12px;padding:20px">Belum ada percakapan</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const init=(c.name||c.phone||'?').substring(0,2).toUpperCase();
+    const act=c.phone===curPhone?' active':'';
+    return '<div class="ci'+act+'" onclick="openChat(\''+esc(c.phone)+'\',\''+esc(c.name||c.phone)+'\',\''+esc(c.wa_session||'')+'\')">'
+      +'<div class="cav">'+init+'</div>'
+      +'<div class="ci-info"><div class="cin">'+esc(c.name||c.phone)+'</div><div class="cip">'+esc(c.phone)+'</div><div class="cim">'+esc(c.last_message||'')+'</div></div>'
+      +'<div class="ci-meta"><div class="cit">'+formatTime(c.last_message_at)+'</div></div>'
+      +'</div>';
   }).join('');
 }
+function filterConvs(q){renderConvs(allConvs.filter(c=>(c.name||'').toLowerCase().includes(q.toLowerCase())||c.phone.includes(q)));}
 
-function filterConvs(q) {
-  const filtered = allConvs.filter(c => (c.name||'').toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
-  renderConvs(filtered);
-}
-
-async function openChat(phone, name, session) {
-  currentPhone = phone; currentSession = session;
-  document.getElementById('empty-state').style.display = 'none';
-  const cv = document.getElementById('chat-view'); cv.style.display = 'flex';
-  document.getElementById('chat-avatar').textContent = (name||phone).substring(0,2).toUpperCase();
-  document.getElementById('chat-name').textContent = name || phone;
-  document.getElementById('chat-phone').textContent = phone;
+async function openChat(phone,name,session){
+  curPhone=phone;curSession=session;
+  document.getElementById('chat-empty').style.display='none';
+  const cv=document.getElementById('chat-view');cv.style.display='flex';
+  document.getElementById('ch-av').textContent=(name||phone).substring(0,2).toUpperCase();
+  document.getElementById('ch-name').textContent=name||phone;
+  document.getElementById('ch-phone').textContent=phone;
+  const c=allConvs.find(x=>x.phone===phone);
+  document.getElementById('ai-toggle').checked=!(c&&c.bot_paused);
   renderConvs(allConvs);
-  // set AI toggle
-  const conv = allConvs.find(c => c.phone === phone);
-  document.getElementById('ai-toggle').checked = !(conv && conv.bot_paused);
-  await loadMessages();
+  await loadMsgs();
 }
-
-async function loadMessages() {
-  if (!currentPhone) return;
-  const d = await api('/messages/' + encodeURIComponent(currentPhone));
-  if (!d) return;
-  const el = document.getElementById('messages-area');
-  el.innerHTML = d.map(m => {
-    const isOut = m.direction === 'out';
-    return '<div class="bubble-wrap ' + (isOut ? 'out' : 'in') + '">' +
-      '<div class="bubble ' + (isOut ? 'out' : 'in') + '">' +
-        esc(m.body) +
-        '<div class="bubble-time">' + formatTime(m.created_at) + '</div>' +
-      '</div>' +
-    '</div>';
+async function loadMsgs(){
+  if(!curPhone)return;
+  const d=await api('/messages/'+encodeURIComponent(curPhone));if(!d)return;
+  const el=document.getElementById('msgs');
+  el.innerHTML=d.map(m=>{
+    const out=m.direction==='out';
+    return '<div class="bw'+(out?' out':'')+'"><div class="bb'+(out?' out':' in')+'">'+esc(m.body)+'<div class="bt">'+formatTime(m.created_at)+'</div></div></div>';
   }).join('');
-  el.scrollTop = el.scrollHeight;
+  el.scrollTop=el.scrollHeight;
+}
+async function sendMsg(){
+  const t=document.getElementById('msg-input').value.trim();if(!t||!curPhone)return;
+  document.getElementById('msg-input').value='';autoResize(document.getElementById('msg-input'));
+  const sess=curSession||(allConvs.find(c=>c.phone===curPhone)||{}).wa_session||'';
+  await api('/send',{method:'POST',body:JSON.stringify({session_name:sess,phone:curPhone,message:t})});
+  await loadMsgs();
+}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
+async function toggleAI(on){
+  if(!curPhone)return;
+  await api('/contacts/'+encodeURIComponent(curPhone)+'/pause',{method:'POST',body:JSON.stringify({paused:!on})});
+  showToast(on?'AI aktif':'AI dijeda');await loadConvs(true);
 }
 
-async function sendReply() {
-  const msg = document.getElementById('msg-input').value.trim();
-  if (!msg || !currentPhone) return;
-  document.getElementById('msg-input').value = '';
-  autoResize(document.getElementById('msg-input'));
-  const session = currentSession || (allConvs.find(c => c.phone === currentPhone) || {}).wa_session || '';
-  await api('/send', { method: 'POST', body: JSON.stringify({ session_name: session, phone: currentPhone, message: msg }) });
-  await loadMessages();
-}
-
-function onReplyKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } }
-
-function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
-
-async function toggleAI(enabled) {
-  if (!currentPhone) return;
-  await api('/contacts/' + encodeURIComponent(currentPhone) + '/pause', { method: 'POST', body: JSON.stringify({ paused: !enabled }) });
-  showToast(enabled ? 'AI aktif' : 'AI dijeda');
-  await loadConvs(true);
-}
-
-// ── WA Accounts ───────────────────────────────────────────────────────────────
-async function loadWaAccounts() {
-  const d = await api('/wa');
-  if (!d) return;
-  const el = document.getElementById('wa-list');
-  if (!d.length) { el.innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:12px;padding:16px">Belum ada akun WA</div>'; return; }
-  el.innerHTML = d.map(w => {
-    const dot = w.runtime_status === 'connected' ? 'connected' : (w.runtime_status === 'connecting' ? 'connecting' : '');
-    return '<div class="wa-item">' +
-      '<div class="wa-dot ' + dot + '"></div>' +
-      '<div>' +
-        '<div class="wa-name">' + esc(w.label || w.session_name) + '</div>' +
-        '<div class="wa-phone">' + (w.phone ? w.phone : w.runtime_status) + '</div>' +
-      '</div>' +
-      '<div class="wa-actions">' +
-        (w.hasQr || w.runtime_status === 'connecting' ? '<button class="btn btn-sm btn-outline" onclick="showQR(\'' + esc(w.session_name) + '\')">QR</button>' : '') +
-        '<button class="btn btn-sm btn-outline" onclick="restartWA(\'' + esc(w.session_name) + '\')">↺</button>' +
-        '<button class="btn btn-sm btn-red" onclick="deleteWA(\'' + esc(w.session_name) + '\')">✕</button>' +
-      '</div>' +
-    '</div>';
+/* ── WhatsApp ── */
+async function loadWA(silent=false){
+  const d=await api('/wa');if(!d)return;
+  const el=document.getElementById('wa-list');
+  if(!d.length){el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:13px;padding:16px">Belum ada akun WhatsApp. Klik "+ Tambah Akun" untuk memulai.</div>';return;}
+  el.innerHTML=d.map(w=>{
+    const dot=w.runtime_status==='connected'?'on':(w.runtime_status==='connecting'?'connecting':'');
+    const status=w.runtime_status==='connected'?w.phone||'Terhubung':w.runtime_status;
+    return '<div class="wa-card"><div class="wa-dot '+dot+'"></div><div class="wa-info"><div class="wn">'+esc(w.label||w.session_name)+'</div><div class="wp">'+esc(status)+'</div></div>'
+      +'<div class="wa-acts">'
+      +(w.hasQr||w.runtime_status==='connecting'?'<button class="btn btn-sm btn-out" onclick="showQR(\''+esc(w.session_name)+'\')">QR</button>':'')
+      +'<button class="btn btn-sm btn-out" onclick="restartWA(\''+esc(w.session_name)+'\')">↺ Restart</button>'
+      +'<button class="btn btn-sm btn-red" onclick="deleteWA(\''+esc(w.session_name)+'\')">Hapus</button>'
+      +'</div></div>';
   }).join('');
 }
-
-function openAddWA() {
-  document.getElementById('modal-title').textContent = 'Tambah Akun WA';
-  document.getElementById('modal-body').innerHTML =
-    '<div class="form-group"><label>Session Name</label><input type="text" id="wa-session" placeholder="misal: nuswalab1"></div>' +
-    '<div class="form-group"><label>Label</label><input type="text" id="wa-label" placeholder="Nama tampilan"></div>' +
-    '<div class="form-group"><label>Nomor HP (untuk pairing code, opsional)</label><input type="text" id="wa-phone" placeholder="628xxxxxxxxxx"></div>';
-  document.getElementById('modal-confirm').onclick = addWA;
-  document.getElementById('modal-overlay').classList.add('open');
+function openAddWA(){
+  document.getElementById('modal-title').textContent='Tambah Akun WhatsApp';
+  document.getElementById('modal-body').innerHTML=
+    '<div class="fg"><label>Session Name</label><input type="text" id="wa-s" placeholder="nuswalab1"></div>'
+    +'<div class="fg"><label>Label</label><input type="text" id="wa-l" placeholder="Nama tampilan"></div>'
+    +'<div class="fg"><label>Nomor HP (pairing code, opsional)</label><input type="text" id="wa-p" placeholder="628xxxxxxxxxx"></div>';
+  document.getElementById('modal-ok').onclick=addWA;
+  document.getElementById('modal-ov').classList.add('open');
 }
-
-async function addWA() {
-  const session_name = document.getElementById('wa-session').value.trim();
-  const label = document.getElementById('wa-label').value.trim();
-  const pairing_phone = document.getElementById('wa-phone').value.trim();
-  if (!session_name) return showToast('Session name wajib diisi');
+async function addWA(){
+  const s=document.getElementById('wa-s').value.trim();if(!s)return showToast('Session name wajib');
   closeModal();
-  await api('/wa', { method: 'POST', body: JSON.stringify({ session_name, label, pairing_phone: pairing_phone || null }) });
-  showToast('Akun ditambahkan');
-  await loadWaAccounts();
-  if (pairing_phone) { setTimeout(() => showQR(session_name), 3000); }
-  else { setTimeout(() => showQR(session_name), 2000); }
+  await api('/wa',{method:'POST',body:JSON.stringify({session_name:s,label:document.getElementById('wa-l').value.trim(),pairing_phone:document.getElementById('wa-p').value.trim()||null})});
+  showToast('Akun ditambahkan');await loadWA();
+  setTimeout(()=>showQR(s),2500);
 }
+async function deleteWA(s){if(!confirm('Hapus akun '+s+'?'))return;await api('/wa/'+encodeURIComponent(s),{method:'DELETE'});showToast('Akun dihapus');await loadWA();}
+async function restartWA(s){await api('/wa/'+encodeURIComponent(s)+'/restart',{method:'POST'});showToast('Restart...');setTimeout(loadWA,3000);}
 
-async function deleteWA(session) {
-  if (!confirm('Hapus akun ' + session + '?')) return;
-  await api('/wa/' + encodeURIComponent(session), { method: 'DELETE' });
-  showToast('Akun dihapus');
-  await loadWaAccounts();
-}
-
-async function restartWA(session) {
-  await api('/wa/' + encodeURIComponent(session) + '/restart', { method: 'POST' });
-  showToast('Restart...');
-  setTimeout(loadWaAccounts, 3000);
-}
-
-// ── QR ────────────────────────────────────────────────────────────────────────
-let qrSession = '';
-function showQR(session) {
-  qrSession = session;
-  document.getElementById('qr-session-name').textContent = 'Scan QR: ' + session;
-  document.getElementById('qr-img').style.display = 'none';
-  document.getElementById('pairing-code-box').style.display = 'none';
-  document.getElementById('qr-status').textContent = 'Menunggu QR...';
+/* ── QR ── */
+function showQR(s){
+  qrSess=s;
+  document.getElementById('qr-title').textContent='Scan QR: '+s;
+  document.getElementById('qr-img').style.display='none';
+  document.getElementById('pair-code').style.display='none';
+  document.getElementById('qr-status').textContent='Menunggu QR...';
   document.getElementById('qr-modal').classList.add('open');
-  clearInterval(qrPollTimer);
-  qrPollTimer = setInterval(pollQR, 2000);
-  pollQR();
+  clearInterval(qrTmr);qrTmr=setInterval(pollQR,2000);pollQR();
 }
-
-async function pollQR() {
-  const d = await api('/wa/' + encodeURIComponent(qrSession) + '/qr');
-  if (!d) return;
-  if (d.qr) {
-    document.getElementById('qr-img').src = d.qr;
-    document.getElementById('qr-img').style.display = 'block';
-    document.getElementById('pairing-code-box').style.display = 'none';
-    document.getElementById('qr-status').textContent = 'Scan QR dengan WhatsApp';
-  } else if (d.pairingCode) {
-    document.getElementById('pairing-code-box').textContent = d.pairingCode;
-    document.getElementById('pairing-code-box').style.display = 'block';
-    document.getElementById('qr-img').style.display = 'none';
-    document.getElementById('qr-status').textContent = 'Masukkan kode ini di WhatsApp';
-  }
-  const wa = (await api('/wa') || []).find(w => w.session_name === qrSession);
-  if (wa && wa.runtime_status === 'connected') {
-    clearInterval(qrPollTimer);
-    document.getElementById('qr-status').textContent = '✅ Terhubung!';
-    setTimeout(closeQR, 1500);
-    loadWaAccounts();
-  }
+async function pollQR(){
+  const d=await api('/wa/'+encodeURIComponent(qrSess)+'/qr');if(!d)return;
+  if(d.qr){document.getElementById('qr-img').src=d.qr;document.getElementById('qr-img').style.display='block';document.getElementById('pair-code').style.display='none';document.getElementById('qr-status').textContent='Scan dengan WhatsApp';}
+  else if(d.pairingCode){document.getElementById('pair-code').textContent=d.pairingCode;document.getElementById('pair-code').style.display='block';document.getElementById('qr-img').style.display='none';document.getElementById('qr-status').textContent='Masukkan kode di WhatsApp';}
+  const wa=(await api('/wa')||[]).find(w=>w.session_name===qrSess);
+  if(wa&&wa.runtime_status==='connected'){clearInterval(qrTmr);document.getElementById('qr-status').textContent='✅ Terhubung!';setTimeout(closeQR,1500);loadWA();}
 }
+function closeQR(){clearInterval(qrTmr);document.getElementById('qr-modal').classList.remove('open');}
 
-function closeQR() {
-  clearInterval(qrPollTimer);
-  document.getElementById('qr-modal').classList.remove('open');
-}
-
-// ── Tab switcher ──────────────────────────────────────────────────────────────
-function switchTab(name, btn) {
-  ['chat','wa','kb','settings'].forEach(t => {
-    document.getElementById('tab-' + t).style.display = t === name ? '' : 'none';
-  });
-  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (name === 'kb') loadKBSide();
-  if (name === 'wa') loadWaAccounts();
-  if (name === 'settings') loadSettingsPanel();
-}
-
-// ── Knowledge Base ────────────────────────────────────────────────────────────
-async function loadKBSide() {
-  const d = await api('/knowledge');
-  if (!d) return;
-  const el = document.getElementById('kb-list');
-  if (!d.length) { el.innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:12px;padding:16px">Belum ada knowledge</div>'; return; }
-  el.innerHTML = d.map(k => {
-    const badge = k.active ? '<span class="kb-badge on">ON</span>' : '<span class="kb-badge off">OFF</span>';
-    return '<div class="kb-item">' +
-      '<div class="kb-item-header">' +
-        '<div class="kb-item-title">' + esc(k.title) + '</div>' +
-        '<div style="display:flex;gap:4px;align-items:center">' +
-          badge +
-          '<button class="btn-icon" onclick="toggleKB(' + k.id + ',' + k.active + ')">⏯</button>' +
-          '<button class="btn-icon" onclick="openEditKB(' + k.id + ')">✏️</button>' +
-          '<button class="btn-icon" onclick="deleteKB(' + k.id + ')">🗑</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="kb-item-preview">' + esc((k.content || '').substring(0, 100)) + '</div>' +
-    '</div>';
+/* ── Knowledge Base ── */
+async function loadKB(){
+  const d=await api('/knowledge');if(!d)return;
+  document.getElementById('kb-count').textContent=d.length+' item';
+  const el=document.getElementById('kb-list');
+  if(!d.length){el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:13px;padding:16px">Belum ada knowledge base.</div>';return;}
+  el.innerHTML=d.map(k=>{
+    const badge=k.active?'<span class="lbl lbl-lead">ON</span>':'<span class="lbl" style="background:#f1f5f9;color:#94a3b8">OFF</span>';
+    return '<div class="kb-card">'
+      +'<div class="kb-info"><div class="kb-title">'+esc(k.title)+'</div><div class="kb-prev">'+esc((k.content||'').substring(0,120))+'</div></div>'
+      +'<div class="kb-acts">'+badge
+      +'<div style="display:flex;gap:4px;margin-top:4px">'
+      +'<button class="btn btn-xs btn-out" onclick="toggleKB('+k.id+','+k.active+')">⏯</button>'
+      +'<button class="btn btn-xs btn-out" onclick="openEditKB('+k.id+')">✏️</button>'
+      +'<button class="btn btn-xs btn-red" onclick="deleteKB('+k.id+')">🗑</button>'
+      +'</div></div>'
+      +'</div>';
   }).join('');
 }
-
-function openAddKB() {
-  document.getElementById('modal-title').textContent = 'Tambah Knowledge';
-  document.getElementById('modal-body').innerHTML =
-    '<div class="form-group"><label>Judul</label><input type="text" id="kb-title" placeholder="Judul topik"></div>' +
-    '<div class="form-group"><label>Konten</label><textarea id="kb-content" rows="8" placeholder="Isi knowledge base..."></textarea></div>';
-  document.getElementById('modal-confirm').onclick = saveKB;
-  document.getElementById('modal-overlay').classList.add('open');
+function openAddKB(){
+  document.getElementById('modal-title').textContent='Tambah Knowledge';
+  document.getElementById('modal-body').innerHTML='<div class="fg"><label>Judul</label><input type="text" id="kb-t" placeholder="Judul topik"></div><div class="fg"><label>Konten</label><textarea id="kb-c" rows="8" placeholder="Isi knowledge..."></textarea></div>';
+  document.getElementById('modal-ok').onclick=saveKB;
+  document.getElementById('modal-ov').classList.add('open');
 }
-
-async function saveKB() {
-  const title = document.getElementById('kb-title').value.trim();
-  const content = document.getElementById('kb-content').value.trim();
-  if (!title || !content) return showToast('Judul dan konten wajib diisi');
-  closeModal();
-  await api('/knowledge', { method: 'POST', body: JSON.stringify({ title, content }) });
-  showToast('Knowledge ditambahkan');
-  loadKBSide();
+async function saveKB(){
+  const t=document.getElementById('kb-t').value.trim(),c=document.getElementById('kb-c').value.trim();
+  if(!t||!c)return showToast('Judul dan konten wajib');
+  closeModal();await api('/knowledge',{method:'POST',body:JSON.stringify({title:t,content:c})});
+  showToast('Knowledge ditambahkan');loadKB();
 }
-
-async function toggleKB(id, current) {
-  await api('/knowledge/' + id, { method: 'PUT', body: JSON.stringify({ active: current ? 0 : 1 }) });
-  loadKBSide();
-}
-
-async function deleteKB(id) {
-  if (!confirm('Hapus knowledge ini?')) return;
-  await api('/knowledge/' + id, { method: 'DELETE' });
-  showToast('Dihapus');
-  loadKBSide();
-}
-
-function openEditKB(id) {
-  api('/knowledge').then(d => {
-    const k = (d || []).find(x => x.id === id);
-    if (!k) return;
-    document.getElementById('modal-title').textContent = 'Edit Knowledge';
-    document.getElementById('modal-body').innerHTML =
-      '<div class="form-group"><label>Judul</label><input type="text" id="kb-edit-title" value="' + esc(k.title) + '"></div>' +
-      '<div class="form-group"><label>Konten</label><textarea id="kb-edit-content" rows="8">' + esc(k.content) + '</textarea></div>';
-    document.getElementById('modal-confirm').onclick = () => saveKBEdit(id);
-    document.getElementById('modal-overlay').classList.add('open');
+async function toggleKB(id,cur){await api('/knowledge/'+id,{method:'PUT',body:JSON.stringify({active:cur?0:1})});loadKB();}
+async function deleteKB(id){if(!confirm('Hapus?'))return;await api('/knowledge/'+id,{method:'DELETE'});showToast('Dihapus');loadKB();}
+function openEditKB(id){
+  api('/knowledge').then(d=>{
+    const k=(d||[]).find(x=>x.id===id);if(!k)return;
+    document.getElementById('modal-title').textContent='Edit Knowledge';
+    document.getElementById('modal-body').innerHTML='<div class="fg"><label>Judul</label><input type="text" id="kbe-t" value="'+esc(k.title)+'"></div><div class="fg"><label>Konten</label><textarea id="kbe-c" rows="8">'+esc(k.content)+'</textarea></div>';
+    document.getElementById('modal-ok').onclick=()=>saveEditKB(id);
+    document.getElementById('modal-ov').classList.add('open');
   });
 }
-
-async function saveKBEdit(id) {
-  const title = document.getElementById('kb-edit-title').value.trim();
-  const content = document.getElementById('kb-edit-content').value.trim();
-  closeModal();
-  await api('/knowledge/' + id, { method: 'PUT', body: JSON.stringify({ title, content }) });
-  showToast('Tersimpan');
-  loadKBSide();
+async function saveEditKB(id){
+  const t=document.getElementById('kbe-t').value.trim(),c=document.getElementById('kbe-c').value.trim();
+  closeModal();await api('/knowledge/'+id,{method:'PUT',body:JSON.stringify({title:t,content:c})});
+  showToast('Tersimpan');loadKB();
 }
 
-// ── Settings ─────────────────────────────────────────────────────────────────
-async function loadSettingsPanel() {
-  const d = await api('/settings');
-  if (!d) return;
-  const el = document.getElementById('settings-form');
-  el.innerHTML =
-    '<div class="form-group"><label>Bot Name</label><input type="text" id="s-bot_name" value="' + esc(d.bot_name || 'NuswaBot') + '"></div>' +
-    '<div class="form-group"><label>System Prompt</label><textarea id="s-system_prompt" rows="4">' + esc(d.system_prompt || '') + '</textarea></div>' +
-    '<div class="divider"></div>' +
-    '<div class="section-title">Sumopod AI</div>' +
-    '<div class="form-group"><label>Sumopod Key 1</label><input type="password" id="s-sumopod_key1" placeholder="sk-..." value="' + esc(d.sumopod_key1 || '') + '"></div>' +
-    '<div class="form-group"><label>Sumopod Key 2 (backup)</label><input type="password" id="s-sumopod_key2" placeholder="sk-..." value="' + esc(d.sumopod_key2 || '') + '"></div>' +
-    '<div class="form-group"><label>Sumopod Base URL</label><input type="text" id="s-sumopod_base_url" value="' + esc(d.sumopod_base_url || 'https://ai.sumopod.com') + '"></div>' +
-    '<div class="form-group"><label>Model</label><input type="text" id="s-sumopod_model" value="' + esc(d.sumopod_model || 'gemini/gemini-2.5-flash') + '"></div>' +
-    '<div class="divider"></div>' +
-    '<div class="section-title">Anthropic (fallback)</div>' +
-    '<div class="form-group"><label>Anthropic Key</label><input type="password" id="s-anthropic_key" placeholder="sk-ant-..." value="' + esc(d.anthropic_key || '') + '"></div>' +
-    '<button class="btn btn-blue btn-sm" onclick="saveSettings()" style="width:100%">Simpan Pengaturan</button>' +
-    '<div class="divider"></div>' +
-    '<button class="btn btn-outline btn-sm" onclick="openRightPanel(\'media\')" style="width:100%">🖼 Kelola Media</button>';
+/* ── Media ── */
+async function loadMedia(){
+  const d=await api('/media');if(!d)return;
+  document.getElementById('media-count').textContent=(d.length)+' file';
+  const el=document.getElementById('media-grid');
+  if(!d.length){el.innerHTML='<div style="color:#94a3b8;font-size:13px;grid-column:1/-1;text-align:center;padding:16px">Belum ada media.</div>';return;}
+  el.innerHTML=d.map(m=>{
+    const isImg=(m.mimetype||'').startsWith('image/');
+    return '<div class="mc">'
+      +(isImg?'<img class="mt" src="/uploads/'+esc(m.filename)+'" onerror="this.style.background=\'#e2e8f0\'">':'<div class="mt" style="display:flex;align-items:center;justify-content:center;font-size:28px">📄</div>')
+      +'<button class="md-del" onclick="delMedia('+m.id+')">✕</button>'
+      +'<div class="mi"><div class="mn">'+esc(m.original_name||m.filename)+'</div>'
+      +'<div style="font-size:10px;color:#94a3b8">[SEND_MEDIA:'+m.id+']</div></div>'
+      +'</div>';
+  }).join('');
+}
+async function uploadMedia(){
+  const f=document.getElementById('media-file');if(!f.files.length)return showToast('Pilih file dulu');
+  const fd=new FormData();fd.append('file',f.files[0]);
+  const r=await fetch(BASE+'/api/media',{method:'POST',headers:{Authorization:'Bearer '+TOKEN},body:fd});
+  const d=await r.json().catch(()=>({}));
+  if(d.ok){showToast('Terupload ✓');loadMedia();}else showToast('Upload gagal');
+}
+async function delMedia(id){if(!confirm('Hapus?'))return;await api('/media/'+id,{method:'DELETE'});showToast('Dihapus');loadMedia();}
+
+/* ── Settings ── */
+async function loadSettings(){
+  const d=await api('/settings');if(!d)return;
+  const fields=['bot_name','system_prompt','sumopod_key1','sumopod_key2','sumopod_base_url','sumopod_model','anthropic_key'];
+  fields.forEach(f=>{const el=document.getElementById('s-'+f);if(el)el.value=d[f]||'';});
+}
+async function saveSettings(){
+  const fields=['bot_name','system_prompt','sumopod_key1','sumopod_key2','sumopod_base_url','sumopod_model','anthropic_key'];
+  const body={};fields.forEach(f=>{const el=document.getElementById('s-'+f);if(el)body[f]=el.value;});
+  await api('/settings',{method:'POST',body:JSON.stringify(body)});
+  showToast('Pengaturan tersimpan ✓');loadDashboard();
 }
 
-async function saveSettings() {
-  const fields = ['bot_name','system_prompt','sumopod_key1','sumopod_key2','sumopod_base_url','sumopod_model','anthropic_key'];
-  const body = {};
-  for (const f of fields) {
-    const el = document.getElementById('s-' + f);
-    if (el) body[f] = el.value;
-  }
-  await api('/settings', { method: 'POST', body: JSON.stringify(body) });
-  showToast('Pengaturan tersimpan ✓');
-}
+/* ── Modal ── */
+function closeModal(){document.getElementById('modal-ov').classList.remove('open');}
+document.getElementById('modal-ov').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 
-// ── Right Panel ───────────────────────────────────────────────────────────────
-function openRightPanel(type) {
-  document.getElementById('right-panel').classList.add('open');
-  if (type === 'media') loadMediaPanel();
-}
+/* ── Toast ── */
+let _tt;
+function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),2800);}
 
-function closeRightPanel() {
-  document.getElementById('right-panel').classList.remove('open');
-}
-
-async function loadMediaPanel() {
-  document.getElementById('panel-title').textContent = 'Media Library';
-  const d = await api('/media');
-  const body = document.getElementById('panel-body');
-  body.innerHTML =
-    '<div style="margin-bottom:12px">' +
-      '<input type="file" id="media-file" accept="image/*,video/*,.pdf,.doc,.docx" style="font-size:12px;margin-bottom:8px;width:100%">' +
-      '<button class="btn btn-blue btn-sm" onclick="uploadMedia()" style="width:100%">Upload File</button>' +
-    '</div>' +
-    '<div class="section-title">File tersimpan (' + ((d||[]).length) + ')</div>' +
-    '<div class="media-grid">' +
-    (d||[]).map(m => {
-      const isImg = (m.mimetype || '').startsWith('image/');
-      const thumb = isImg ? '<img class="media-thumb" src="/uploads/' + esc(m.filename) + '" onerror="this.style.display=\'none\'">' : '<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:24px">📄</div>';
-      return '<div class="media-card">' +
-        thumb +
-        '<button class="media-delete" onclick="deleteMedia(' + m.id + ')">✕</button>' +
-        '<div class="media-info"><div class="media-name">' + esc(m.original_name || m.filename) + '</div>' +
-        '<div style="font-size:10px;color:#9ca3af">ID:' + m.id + ' | [SEND_MEDIA:' + m.id + ']</div></div>' +
-      '</div>';
-    }).join('') +
-    '</div>';
-}
-
-async function uploadMedia() {
-  const fileEl = document.getElementById('media-file');
-  if (!fileEl.files.length) return showToast('Pilih file terlebih dahulu');
-  const fd = new FormData();
-  fd.append('file', fileEl.files[0]);
-  const res = await fetch(BASE + '/api/media', { method: 'POST', headers: { 'Authorization': 'Bearer ' + TOKEN }, body: fd });
-  const data = await res.json().catch(() => ({}));
-  if (data.ok) { showToast('File terupload ✓'); loadMediaPanel(); }
-  else showToast('Upload gagal');
-}
-
-async function deleteMedia(id) {
-  if (!confirm('Hapus file ini?')) return;
-  await api('/media/' + id, { method: 'DELETE' });
-  showToast('File dihapus');
-  loadMediaPanel();
-}
-
-// ── Modal ─────────────────────────────────────────────────────────────────────
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
-document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-let toastTimer;
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function esc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function formatTime(ts) {
-  if (!ts) return '';
-  try {
-    const d = new Date(ts);
-    const now = new Date();
-    const diff = now - d;
-    if (diff < 60000) return 'baru saja';
-    if (diff < 3600000) return Math.floor(diff/60000) + ' mnt lalu';
-    if (diff < 86400000) return d.toLocaleTimeString('id', { hour: '2-digit', minute: '2-digit' });
-    return d.toLocaleDateString('id', { day: 'numeric', month: 'short' });
-  } catch(e) { return ''; }
+/* ── Helpers ── */
+function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function formatTime(ts){
+  if(!ts)return'';
+  try{const d=new Date(ts),now=new Date(),diff=now-d;
+    if(diff<60000)return'baru saja';
+    if(diff<3600000)return Math.floor(diff/60000)+' mnt';
+    if(diff<86400000)return d.toLocaleTimeString('id',{hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleDateString('id',{day:'numeric',month:'short'});
+  }catch(e){return'';}
 }
 </script>
 </body>
