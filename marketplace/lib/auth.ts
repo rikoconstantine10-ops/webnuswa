@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { sendMail } from "./mailer";
+import { sendMail, MAILBOX } from "./mailer";
+import { otpEmail } from "./emailTemplates";
 
 const SESSION_COOKIE = "mp_session";
 const SESSION_DAYS = 30;
@@ -21,11 +22,8 @@ export async function requestOtp(email: string) {
     },
   });
 
-  await sendMail(
-    email,
-    "Kode Login Anda",
-    `Kode OTP Anda: ${code}\nBerlaku ${OTP_MINUTES} menit. Jangan bagikan kode ini kepada siapa pun.`
-  );
+  const { subject, html, text } = otpEmail(code, OTP_MINUTES);
+  await sendMail(email, subject, text, { html, replyTo: MAILBOX.support });
 }
 
 export async function verifyOtp(email: string, code: string): Promise<boolean> {

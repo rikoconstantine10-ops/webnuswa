@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requestOtp, verifyOtp, logout, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { slugify, randomSuffix } from "@/lib/slug";
+import { notifyAdminNewSeller } from "@/lib/notify";
 
 export async function requestOtpAction(
   _prev: { step: string; email: string; error?: string },
@@ -51,13 +52,14 @@ export async function registerSellerAction(
     slug = `${slug}-${randomSuffix()}`;
   }
 
-  await db.store.create({
+  const store = await db.store.create({
     data: { ownerId: user.id, name, slug, description: description || null },
   });
   await db.user.update({
     where: { id: user.id },
     data: { role: user.role === "ADMIN" ? "ADMIN" : "SELLER" },
   });
+  notifyAdminNewSeller(store.id);
 
   redirect("/dashboard");
 }

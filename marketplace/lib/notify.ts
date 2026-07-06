@@ -1,7 +1,23 @@
 import { db } from "./db";
-import { sendMail } from "./mailer";
+import { sendMail, MAILBOX } from "./mailer";
 import { formatRupiah } from "./money";
 import { waSend, waSendToSelf } from "./wa";
+import {
+  orderPaidBuyerEmail,
+  orderPaidSellerEmail,
+  orderShippedEmail,
+  disputeOpenedEmail,
+  disputeResolvedEmail,
+  withdrawalPaidEmail,
+  newSellerAlertEmail,
+} from "./emailTemplates";
+
+// Alamat penerima alert internal (admin@nuswamart.com + ADMIN_EMAIL personal bila diset & beda).
+function adminRecipients(): string[] {
+  const set = new Set<string>([MAILBOX.admin]);
+  if (process.env.ADMIN_EMAIL) set.add(process.env.ADMIN_EMAIL);
+  return [...set];
+}
 
 // Notifikasi email saat order lunas: ke seller (ada pesanan baru) dan pembeli (bukti + link).
 // Fire-and-forget — kegagalan kirim email tidak boleh menggagalkan webhook pembayaran.
@@ -16,20 +32,36 @@ export function notifyOrderPaid(orderId: string) {
     });
     if (!order) return;
 
-    const appUrl = process.env.APP_URL || "";
-    const itemLines = order.items
-      .map((i) => `- ${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.qty} = ${formatRupiah(i.price * i.qty)}`)
-      .join("\n");
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const itemLines = order.items.map(
+      (i) => `${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.qty} = ${formatRupiah(i.price * i.qty)}`
+    );
+    const isDigital = !order.shippingAddress;
 
-    const sellerText = `🛍️ Pesanan baru LUNAS!\n\nKode: ${order.code}\nPembeli: ${order.buyerName}${order.buyerPhone ? ` (${order.buyerPhone})` : ""}\n${itemLines}\nTotal: ${formatRupiah(order.total)}\n${order.shippingAddress ? `\nAlamat kirim:\n${order.shippingAddress}\n\nSegera proses & input resi di dashboard.` : "\nProduk digital — terkirim otomatis ke pembeli."}\n\nKelola: ${appUrl}/dashboard/orders`;
-    const buyerText = `Terima kasih, ${order.buyerName}! 🙏\n\nPembayaran pesanan *${order.code}* di ${order.store.name} sudah kami terima.\n${itemLines}\nTotal: ${formatRupiah(order.total)}\n\nLihat status pesanan & download produk digital:\n${appUrl}/order/${order.code}`;
+    const sellerMail = orderPaidSellerEmail({
+      code: order.code,
+      buyerName: order.buyerName,
+      buyerPhone: order.buyerPhone,
+      itemLines,
+      totalText: formatRupiah(order.total),
+      shippingAddress: order.shippingAddress,
+      isDigital,
+      appUrl,
+    });
+    const buyerMail = orderPaidBuyerEmail({
+      code: order.code,
+      storeName: order.store.name,
+      itemLines,
+      totalText: formatRupiah(order.total),
+      appUrl,
+    });
 
     await Promise.allSettled([
-      sendMail(order.store.owner.email, `[${order.store.name}] Pesanan baru LUNAS — ${order.code}`, sellerText),
-      sendMail(order.buyerEmail, `Pembayaran diterima — ${order.code}`, buyerText),
+      sendMail(order.store.owner.email, sellerMail.subject, sellerMail.text, { html: sellerMail.html, replyTo: MAILBOX.seller }),
+      sendMail(order.buyerEmail, buyerMail.subject, buyerMail.text, { html: buyerMail.html, replyTo: MAILBOX.support }),
       // WA dari nomor toko (jika seller sudah menghubungkan WA-nya)
-      waSendToSelf(order.storeId, sellerText),
-      order.buyerPhone ? waSend(order.storeId, order.buyerPhone, buyerText) : Promise.resolve(false),
+      waSendToSelf(order.storeId, sellerMail.text),
+      order.buyerPhone ? waSend(order.storeId, order.buyerPhone, buyerMail.text) : Promise.resolve(false),
     ]);
   })().catch((e) => console.error("[NOTIFY] gagal:", e));
 }
@@ -39,9 +71,9 @@ export function notifyOrderShipped(orderId: string) {
   (async () => {
     const order = await db.order.findUnique({ where: { id: orderId }, include: { store: { select: { name: true } } } });
     if (!order) return;
-    const appUrl = process.env.APP_URL || "";
-    const text = `Pesanan ${order.code} di ${order.store.name} sudah dikirim! 📦\n\nKurir: ${order.courier ?? "-"}\nNo. resi: ${order.trackingNumber ?? "-"}\n\nLacak & konfirmasi penerimaan di:\n${appUrl}/order/${order.code}`;
-    await Promise.allSettled([sendMail(order.buyerEmail, `Pesanan dikirim — ${order.code}`, text)]);
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const mail = orderShippedEmail({ code: order.code, storeName: order.store.name, courier: order.courier, tracking: order.trackingNumber, appUrl });
+    await Promise.allSettled([sendMail(order.buyerEmail, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.support })]);
   })().catch((e) => console.error("[NOTIFY shipped] gagal:", e));
 }
 
@@ -53,13 +85,13 @@ export function notifyDisputeOpened(orderId: string) {
       include: { store: { include: { owner: { select: { email: true } } } }, dispute: true },
     });
     if (!order || !order.dispute) return;
-    const appUrl = process.env.APP_URL || "";
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const text = `⚠️ Komplain baru untuk pesanan ${order.code} (${order.store.name}).\n\nAlasan: ${order.dispute.reason}\n\nTinjau: ${appUrl}/admin/disputes`;
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const sellerMail = disputeOpenedEmail({ code: order.code, storeName: order.store.name, reason: order.dispute.reason, appUrl, forAdmin: false });
+    const adminMail = disputeOpenedEmail({ code: order.code, storeName: order.store.name, reason: order.dispute.reason, appUrl, forAdmin: true });
     await Promise.allSettled([
-      sendMail(order.store.owner.email, `Komplain pesanan ${order.code}`, text),
-      adminEmail ? sendMail(adminEmail, `[Admin] Komplain ${order.code}`, text) : Promise.resolve(),
-      waSendToSelf(order.storeId, text),
+      sendMail(order.store.owner.email, sellerMail.subject, sellerMail.text, { html: sellerMail.html, replyTo: MAILBOX.support }),
+      ...adminRecipients().map((to) => sendMail(to, adminMail.subject, adminMail.text, { html: adminMail.html, replyTo: MAILBOX.support })),
+      waSendToSelf(order.storeId, sellerMail.text),
     ]);
   })().catch((e) => console.error("[NOTIFY dispute] gagal:", e));
 }
@@ -69,13 +101,33 @@ export function notifyDisputeResolved(orderId: string, refunded: boolean) {
   (async () => {
     const order = await db.order.findUnique({ where: { id: orderId }, include: { store: { select: { name: true } } } });
     if (!order) return;
-    const appUrl = process.env.APP_URL || "";
-    const text = refunded
-      ? `Komplain pesanan ${order.code} telah diputus: DANA DIKEMBALIKAN.\n\nTim kami akan memproses pengembalian dana ${formatRupiah(order.total)} ke kamu. Detail: ${appUrl}/order/${order.code}`
-      : `Komplain pesanan ${order.code} telah diputus: pesanan diselesaikan & dana diteruskan ke penjual.\n\nDetail: ${appUrl}/order/${order.code}`;
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const mail = disputeResolvedEmail({ code: order.code, refunded, totalText: formatRupiah(order.total), appUrl });
     await Promise.allSettled([
-      sendMail(order.buyerEmail, `Hasil komplain — ${order.code}`, text),
-      order.buyerPhone ? waSend(order.storeId, order.buyerPhone, text) : Promise.resolve(false),
+      sendMail(order.buyerEmail, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.support }),
+      order.buyerPhone ? waSend(order.storeId, order.buyerPhone, mail.text) : Promise.resolve(false),
     ]);
   })().catch((e) => console.error("[NOTIFY dispute resolved] gagal:", e));
+}
+
+// Email penjual saat penarikan dana selesai ditransfer admin.
+export function notifyWithdrawalPaid(withdrawalId: string) {
+  (async () => {
+    const w = await db.withdrawal.findUnique({ where: { id: withdrawalId }, include: { store: { include: { owner: { select: { email: true } } } } } });
+    if (!w) return;
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const mail = withdrawalPaidEmail({ amountText: formatRupiah(w.amount), bankName: w.bankName, bankAccountNumber: w.bankAccountNumber, appUrl });
+    await sendMail(w.store.owner.email, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.billing });
+  })().catch((e) => console.error("[NOTIFY withdrawal paid] gagal:", e));
+}
+
+// Alert admin saat toko baru dibuka (pengganti alur approval KYC yang sudah dihapus).
+export function notifyAdminNewSeller(storeId: string) {
+  (async () => {
+    const store = await db.store.findUnique({ where: { id: storeId }, include: { owner: { select: { email: true } } } });
+    if (!store) return;
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const mail = newSellerAlertEmail({ storeName: store.name, storeSlug: store.slug, ownerEmail: store.owner.email, appUrl });
+    await Promise.allSettled(adminRecipients().map((to) => sendMail(to, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.seller })));
+  })().catch((e) => console.error("[NOTIFY new seller] gagal:", e));
 }

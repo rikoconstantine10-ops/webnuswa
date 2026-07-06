@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { createDisbursement, autoPayoutEnabled, mapDisbursementStatus, type DisburseResult } from "./disbursement";
 import { logError } from "./errors";
+import { notifyWithdrawalPaid } from "./notify";
 
 // Kembalikan dana withdrawal yang gagal ke saldo aktif seller (idempotent per withdrawal).
 async function refundWithdrawal(withdrawalId: string, storeId: string, amount: number, reason: string) {
@@ -58,6 +59,7 @@ export async function processWithdrawalPayout(withdrawalId: string): Promise<voi
       processedAt: result.status === "PAID" ? new Date() : null,
     },
   });
+  if (result.status === "PAID") notifyWithdrawalPaid(w.id);
 }
 
 // Terapkan status dari webhook provider (idempotent). storeId+amount untuk refund bila gagal.
@@ -72,6 +74,7 @@ export async function settleDisbursement(providerRef: string, rawStatus: string)
 
   if (status === "PAID") {
     await db.withdrawal.update({ where: { id: w.id }, data: { status: "PAID", processedAt: new Date() } });
+    notifyWithdrawalPaid(w.id);
     return { ok: true, note: "ditandai PAID" };
   }
   // FAILED → refund saldo & tandai gagal.

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { slugify, randomSuffix } from "@/lib/slug";
+import { notifyWithdrawalPaid } from "@/lib/notify";
 
 export async function setStoreStatusAction(formData: FormData) {
   const admin = await requireAdmin();
@@ -110,6 +111,7 @@ export async function processWithdrawalAction(formData: FormData) {
       "WITHDRAWAL_PAID",
       `${withdrawal.store.name}: Rp${withdrawal.amount} → ${withdrawal.bankName} ${withdrawal.bankAccountNumber}`
     );
+    notifyWithdrawalPaid(id);
   }
   revalidatePath("/admin/withdrawals");
 }

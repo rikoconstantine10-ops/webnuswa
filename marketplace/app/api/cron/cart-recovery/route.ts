@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sendMail } from "@/lib/mailer";
+import { sendMail, MAILBOX } from "@/lib/mailer";
 import { formatRupiah } from "@/lib/money";
+import { cartRecoveryEmail } from "@/lib/emailTemplates";
 
 // Recovery keranjang terbengkalai: kirim email sekali ke pembeli yang menaruh
 // produk di keranjang > 6 jam tapi < 3 hari dan belum di-remind.
@@ -39,14 +40,13 @@ export async function GET(req: NextRequest) {
   let emailed = 0;
   for (const [, g] of byUser) {
     if (g.items.length === 0) continue;
-    const lines = g.items
-      .map((it) => `• ${it.product.name} — ${formatRupiah(it.product.salePrice ?? it.product.price)}${it.qty > 1 ? ` ×${it.qty}` : ""}`)
-      .join("\n");
-    const ok = await sendMail(
-      g.email,
-      "Keranjangmu menunggu di NuswaMart 🛒",
-      `Halo ${g.name || "Sobat NuswaMart"},\n\nKamu masih punya produk di keranjang:\n\n${lines}\n\nSelesaikan belanjamu sebelum kehabisan:\n${appUrl}/cart\n\nSampai jumpa!\nNuswaMart`
-    ).then(() => true).catch(() => false);
+    const lines = g.items.map(
+      (it) => `${it.product.name} — ${formatRupiah(it.product.salePrice ?? it.product.price)}${it.qty > 1 ? ` ×${it.qty}` : ""}`
+    );
+    const mail = cartRecoveryEmail({ name: g.name || "Sobat NuswaMart", lines, appUrl });
+    const ok = await sendMail(g.email, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.hello })
+      .then(() => true)
+      .catch(() => false);
     if (ok) {
       await db.cartItem.updateMany({
         where: { id: { in: g.items.map((i) => i.id) } },

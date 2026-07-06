@@ -21,10 +21,25 @@ export default function HelpPage() {
           </details>
         ))}
       </div>
-      <p className="text-sm text-slate-500 mt-8">
-        Butuh bantuan lain? Hubungi kami di{" "}
-        <a href="mailto:cs@nuswamart.com" className="text-teal-600 font-semibold">cs@nuswamart.com</a>.
-      </p>
+      <div className="bg-white rounded-xl border border-slate-200 p-4 mt-8 text-sm text-slate-600 space-y-1">
+        <p className="font-semibold text-slate-800">Butuh bantuan lain? Hubungi kami:</p>
+        <p>
+          Pesanan &amp; komplain:{" "}
+          <a href="mailto:support@nuswamart.com" className="text-teal-600 font-semibold">support@nuswamart.com</a>
+        </p>
+        <p>
+          Dukungan penjual:{" "}
+          <a href="mailto:seller@nuswamart.com" className="text-teal-600 font-semibold">seller@nuswamart.com</a>
+        </p>
+        <p>
+          Tagihan &amp; penarikan dana:{" "}
+          <a href="mailto:billing@nuswamart.com" className="text-teal-600 font-semibold">billing@nuswamart.com</a>
+        </p>
+        <p>
+          Pertanyaan umum:{" "}
+          <a href="mailto:hello@nuswamart.com" className="text-teal-600 font-semibold">hello@nuswamart.com</a>
+        </p>
+      </div>
     </div>
   );
 }
