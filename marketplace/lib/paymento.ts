@@ -138,11 +138,8 @@ export async function setPaymentoIpnUrl(ipnUrl: string, method: "POST" | "GET" =
     const res = await fetch(`${API_BASE}/payment/settings`, {
       method: "POST",
       headers: { "Api-Key": apiKey, "Content-Type": "application/json" },
-      // Skema pasti tak terdokumentasi — kirim beberapa kemungkinan nama field sekaligus.
-      body: JSON.stringify({
-        ipnUrl, IpnUrl: ipnUrl, callbackUrl: ipnUrl,
-        ipnMethod: method, IpnHttpMethod: method, httpMethod: method,
-      }),
+      // Skema Paymento: ipN_URL (string) + ipN_Method (int, 1 = POST).
+      body: JSON.stringify({ ipN_URL: ipnUrl, ipN_Method: method === "POST" ? 1 : 0 }),
     });
     const text = await res.text();
     return { ok: res.ok, response: text.slice(0, 500), error: res.ok ? undefined : `HTTP ${res.status}` };
