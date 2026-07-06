@@ -12,6 +12,7 @@ const db = require('./db');
 const baileys = require('./baileys_manager');
 const { getAIReply, getAIReplyWithMedia } = require('./ai');
 const { smartSplit } = require('./smart_split');
+const { startBooking, handleBookingMessage, isInBookingFlow } = require('./booking_flow');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -332,11 +333,25 @@ app.delete('/api/users/:id', auth, (req, res) => res.json({ ok: true }));
 
 app.get('/api/ai/fetch-models', auth, (req, res) => res.json({ models: [] }));
 
+async function sendReply(sessionName, phone, text) {
+  const bubbles = smartSplit(text);
+  for (const bubble of bubbles) {
+    if (!bubble.trim()) continue;
+    const typingMs = Math.min(Math.max(bubble.length * 30, 500), 3000);
+    await baileys.sendTyping(sessionName, phone, typingMs);
+    await baileys.sendText(sessionName, phone, bubble);
+    db.saveMessage(phone, 'out', bubble, sessionName);
+    if (bubbles.length > 1) await new Promise(r => setTimeout(r, 300));
+  }
+}
+
 // ── Incoming WA message handler ───────────────────────────────────────────────
 baileys.on('message', async ({ sessionName, phone, pushName, text, type, raw }) => {
   try {
     const acctRow = db.db.prepare('SELECT * FROM wa_accounts WHERE session_name = ?').get(sessionName);
     const acctPrompt = acctRow?.system_prompt || '';
+    const settings = db.getAllSettings ? db.getAllSettings() : {};
+    const calApiKey = settings.cal_api_key || '';
 
     db.upsertContact(phone, pushName, sessionName);
     db.saveMessage(phone, 'in', text || `[${type}]`, sessionName);
@@ -344,6 +359,15 @@ baileys.on('message', async ({ sessionName, phone, pushName, text, type, raw }) 
 
     if (db.isBotPaused(phone)) { console.log('[BOT] Paused for', phone); return; }
     if (!text && type === 'text') return;
+
+    // ── Booking flow intercept ────────────────────────────────────────────────
+    if (calApiKey && isInBookingFlow(phone)) {
+      const bookingReply = await handleBookingMessage(phone, text, calApiKey);
+      if (bookingReply) {
+        await sendReply(sessionName, phone, bookingReply);
+        return;
+      }
+    }
 
     let aiReply;
     if (type !== 'text' && type !== '' && raw?.message) {
@@ -363,19 +387,20 @@ baileys.on('message', async ({ sessionName, phone, pushName, text, type, raw }) 
 
     if (!aiReply) return;
 
+    // ── Check for [START_BOOKING] token from AI ───────────────────────────────
+    if (calApiKey && aiReply.includes('[START_BOOKING]')) {
+      const cleanMsg = aiReply.replace(/\[START_BOOKING\]/g, '').trim();
+      if (cleanMsg) await sendReply(sessionName, phone, cleanMsg);
+      const bookingMsg = startBooking(phone, pushName || '');
+      await sendReply(sessionName, phone, bookingMsg);
+      return;
+    }
+
     // Handle [SEND_MEDIA:ID] tokens
     const mediaTokens = [...(aiReply.matchAll(/\[SEND_MEDIA:(\d+)\]/g))].map(m => parseInt(m[1]));
     const cleanReply = aiReply.replace(/\[SEND_MEDIA:\d+\]/g, '').trim();
 
-    const bubbles = smartSplit(cleanReply);
-    for (const bubble of bubbles) {
-      if (!bubble.trim()) continue;
-      const typingMs = Math.min(Math.max(bubble.length * 30, 500), 3000);
-      await baileys.sendTyping(sessionName, phone, typingMs);
-      await baileys.sendText(sessionName, phone, bubble);
-      db.saveMessage(phone, 'out', bubble, sessionName);
-      if (bubbles.length > 1) await new Promise(r => setTimeout(r, 300));
-    }
+    await sendReply(sessionName, phone, cleanReply);
 
     // Send media assets
     for (const mediaId of mediaTokens) {
