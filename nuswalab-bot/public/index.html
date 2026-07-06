@@ -317,7 +317,7 @@ textarea { resize: vertical; min-height: 80px; }
 </div>
 
 <script>
-const BASE = '';
+const BASE = '/bot-api';
 let TOKEN = localStorage.getItem('nuswabot_token') || '';
 let currentPhone = null;
 let currentSession = null;
@@ -338,7 +338,7 @@ async function api(path, opts = {}) {
 async function doLogin() {
   const u = document.getElementById('login-user').value;
   const p = document.getElementById('login-pass').value;
-  const res = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username:u, password:p }) });
+  const res = await fetch('/bot-api/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username:u, password:p }) });
   const data = await res.json();
   if (data.token) {
     TOKEN = data.token;
@@ -713,7 +713,7 @@ async function uploadMedia(input) {
   const ai_instruction = prompt('Instruksi AI (kapan AI kirim media ini, opsional):', '') || '';
   fd.append('tags', tags);
   fd.append('ai_instruction', ai_instruction);
-  const res = await fetch('/api/media', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
+  const res = await fetch('/bot-api/api/media', { method:'POST', headers:{ 'Authorization':'Bearer '+TOKEN }, body: fd });
   const data = await res.json();
   if (data.ok) { showToast('Media diupload ✓'); loadMediaPanel(); }
   input.value = '';
