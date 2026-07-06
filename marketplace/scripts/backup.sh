@@ -19,7 +19,9 @@ fi
 
 # Backup PostgreSQL via pg_dump (custom format, terkompresi) bila URL postgres.
 if [ -n "${DATABASE_URL:-}" ] && printf '%s' "$DATABASE_URL" | grep -q '^postgres'; then
-  pg_dump --dbname="$DATABASE_URL" --format=custom --file="$BACKUP_DIR/db-$STAMP.dump"
+  # pg_dump/libpq tak mengenal param Prisma seperti ?schema=public → buang query string.
+  PG_URL="${DATABASE_URL%%\?*}"
+  pg_dump --dbname="$PG_URL" --format=custom --file="$BACKUP_DIR/db-$STAMP.dump"
 elif command -v sqlite3 >/dev/null 2>&1 && [ -f "$DATA_DIR/prod.db" ]; then
   # Fallback legacy SQLite.
   sqlite3 "$DATA_DIR/prod.db" ".backup '$BACKUP_DIR/db-$STAMP.sqlite'"
