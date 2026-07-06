@@ -168,6 +168,131 @@ app.delete('/api/media/:id', auth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Alias & stub routes for mantabot-compatible frontend ─────────────────────
+
+// Auth / me
+app.get('/api/me', auth, (req, res) => res.json({ username: req.user.username, role: req.user.role }));
+
+// Dashboard stats aliases
+app.get('/api/status', auth, (req, res) => res.json(db.getStats()));
+app.get('/api/dashboard/stats', auth, (req, res) => res.json(db.getStats()));
+
+// WA accounts aliases (mantabot uses /api/wa/accounts instead of /api/wa)
+app.get('/api/wa/accounts', auth, (req, res) => {
+  const accounts = db.getWaAccounts();
+  const status = baileys.getStatus();
+  const result = accounts.map(a => ({ ...a, runtime_status: status[a.session_name]?.status || 'stopped', phone: status[a.session_name]?.phone || a.phone, hasQr: status[a.session_name]?.hasQr || false }));
+  res.json(result);
+});
+app.post('/api/wa/accounts', auth, async (req, res) => {
+  const { session_name, label, pairing_phone } = req.body;
+  if (!session_name) return res.status(400).json({ error: 'session_name required' });
+  const acct = db.createWaAccount(session_name, label);
+  await baileys.connect(session_name, pairing_phone || null).catch(e => console.error('[START]', e.message));
+  res.json(acct);
+});
+app.get('/api/wa/accounts/:session', auth, (req, res) => {
+  const accounts = db.getWaAccounts();
+  const status = baileys.getStatus();
+  const a = accounts.find(x => x.session_name === req.params.session);
+  if (!a) return res.status(404).json({ error: 'Not found' });
+  res.json({ ...a, runtime_status: status[a.session_name]?.status || 'stopped', phone: status[a.session_name]?.phone || a.phone, hasQr: status[a.session_name]?.hasQr || false });
+});
+app.put('/api/wa/accounts/:session', auth, (req, res) => {
+  const { label, system_prompt, ai_enabled } = req.body;
+  db.updateWaAccount(req.params.session, { label, system_prompt, ai_enabled });
+  res.json({ ok: true });
+});
+app.delete('/api/wa/accounts/:session', auth, async (req, res) => {
+  await baileys.disconnect(req.params.session).catch(() => {});
+  db.deleteWaAccount(req.params.session);
+  res.json({ ok: true });
+});
+app.post('/api/wa/accounts/:session/regenerate-webhook', auth, (req, res) => res.json({ ok: true, webhook_url: '' }));
+app.post('/api/wa/accounts/:session/test', auth, async (req, res) => {
+  const { phone, message } = req.body;
+  try { await baileys.sendText(req.params.session, phone, message || 'Test'); res.json({ ok: true }); }
+  catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// WA connect/disconnect
+app.post('/api/wa/:session/connect', auth, async (req, res) => {
+  await baileys.connect(req.params.session).catch(e => console.error('[CONNECT]', e.message));
+  res.json({ ok: true });
+});
+app.post('/api/wa/:session/disconnect', auth, async (req, res) => {
+  await baileys.disconnect(req.params.session).catch(() => {});
+  res.json({ ok: true });
+});
+app.get('/api/wa/:session/pairing-code', auth, (req, res) => {
+  res.json({ pairingCode: baileys.getPairingCode(req.params.session) || null });
+});
+app.get('/api/baileys/status', auth, (req, res) => res.json(baileys.getStatus()));
+
+// Contacts
+app.get('/api/contacts', auth, (req, res) => {
+  const limit = parseInt(req.query.limit) || 100;
+  res.json(db.getConversations(limit));
+});
+app.get('/api/contacts/with-last-message', auth, (req, res) => res.json(db.getConversations(100)));
+app.get('/api/contacts/:phone', auth, (req, res) => {
+  const convs = db.getConversations(9999);
+  const c = convs.find(x => x.phone === req.params.phone);
+  res.json(c || { phone: req.params.phone });
+});
+app.post('/api/contacts/:phone/resume', auth, (req, res) => {
+  db.setBotPaused(req.params.phone, false);
+  res.json({ ok: true });
+});
+app.get('/api/messages/:phone/count', auth, (req, res) => {
+  const msgs = db.getMessages(req.params.phone, 9999);
+  res.json({ count: msgs.length });
+});
+
+// Stub routes for unimplemented features
+app.get('/api/ig/accounts', auth, (req, res) => res.json([]));
+app.post('/api/ig/login', auth, (req, res) => res.json({ ok: false, error: 'Not implemented' }));
+app.delete('/api/ig/accounts/:id', auth, (req, res) => res.json({ ok: true }));
+app.post('/api/ig/challenge', auth, (req, res) => res.json({ ok: false, error: 'Not implemented' }));
+
+app.get('/api/meta/accounts', auth, (req, res) => res.json([]));
+app.post('/api/meta/accounts', auth, (req, res) => res.json({ ok: false, error: 'Not implemented' }));
+app.delete('/api/meta/accounts/:id', auth, (req, res) => res.json({ ok: true }));
+app.put('/api/meta/accounts/:id', auth, (req, res) => res.json({ ok: true }));
+
+app.get('/api/followup/templates', auth, (req, res) => res.json([]));
+app.post('/api/followup/templates', auth, (req, res) => res.json({ ok: true, id: 1 }));
+app.put('/api/followup/templates/:id', auth, (req, res) => res.json({ ok: true }));
+app.delete('/api/followup/templates/:id', auth, (req, res) => res.json({ ok: true }));
+app.get('/api/followup/queue', auth, (req, res) => res.json([]));
+app.post('/api/followup/queue', auth, (req, res) => res.json({ ok: true }));
+app.delete('/api/followup/queue/:id', auth, (req, res) => res.json({ ok: true }));
+app.get('/api/followup/contact-history', auth, (req, res) => res.json([]));
+app.get('/api/followup/contact-history/:phone', auth, (req, res) => res.json([]));
+
+app.get('/api/broadcast', auth, (req, res) => res.json([]));
+app.post('/api/broadcast', auth, (req, res) => res.json({ ok: true, id: 1 }));
+app.put('/api/broadcast/:id', auth, (req, res) => res.json({ ok: true }));
+app.delete('/api/broadcast/:id', auth, (req, res) => res.json({ ok: true }));
+app.get('/api/broadcast/preview', auth, (req, res) => res.json({ count: 0 }));
+app.get('/api/broadcast/:id/status', auth, (req, res) => res.json({ campaign: {}, stats: {}, recent: [] }));
+app.post('/api/broadcast/:id/start', auth, (req, res) => res.json({ ok: true }));
+app.post('/api/broadcast/:id/stop', auth, (req, res) => res.json({ ok: true }));
+app.post('/api/broadcast/:id/delete', auth, (req, res) => res.json({ ok: true }));
+app.post('/api/broadcast/upload-image', auth, upload.single('file'), (req, res) => res.json({ ok: true, path: '' }));
+
+app.get('/api/webhook-info', auth, (req, res) => {
+  const s = db.getAllSettings();
+  res.json({ webhook_url: s.webhook_url || '', webhook_secret: s.webhook_secret || '' });
+});
+
+app.get('/api/users', auth, (req, res) => res.json([{ id: 1, username: ADMIN_USER, role: 'admin' }]));
+app.post('/api/users', auth, (req, res) => res.json({ ok: true, id: 2 }));
+app.put('/api/users/:id', auth, (req, res) => res.json({ ok: true }));
+app.delete('/api/users/:id', auth, (req, res) => res.json({ ok: true }));
+
+app.get('/api/ai/fetch-models', auth, (req, res) => res.json({ models: [] }));
+
 // ── Incoming WA message handler ───────────────────────────────────────────────
 baileys.on('message', async ({ sessionName, phone, pushName, text, type, raw }) => {
   try {
