@@ -282,8 +282,47 @@ app.post('/api/broadcast/:id/delete', auth, (req, res) => res.json({ ok: true })
 app.post('/api/broadcast/upload-image', auth, upload.single('file'), (req, res) => res.json({ ok: true, path: '' }));
 
 app.get('/api/webhook-info', auth, (req, res) => {
-  const s = db.getAllSettings();
-  res.json({ webhook_url: s.webhook_url || '', webhook_secret: s.webhook_secret || '' });
+  const host = `${req.protocol}://${req.get('host')}`;
+  const baseWebhook = `${host}/bot-api/api/webhook`;
+  const accounts = db.getWaAccounts();
+  const status = baileys.getStatus();
+  res.json({
+    webhook_url: baseWebhook,
+    accounts: accounts.map(a => ({
+      session: a.session_name,
+      label: a.label || a.session_name,
+      webhook_url: `${baseWebhook}/${a.session_name}`,
+      status: status[a.session_name]?.status || 'stopped',
+      phone: status[a.session_name]?.phone || a.phone || ''
+    }))
+  });
+});
+
+// ── Incoming webhook endpoint (external WA providers) ─────────────────────────
+app.post('/api/webhook/:session', async (req, res) => {
+  const { session } = req.params;
+  const { phone, message, pushName, type } = req.body;
+  if (!phone || !message) return res.status(400).json({ error: 'phone and message required' });
+  try {
+    const acctRow = db.db.prepare('SELECT * FROM wa_accounts WHERE session_name = ?').get(session);
+    const acctPrompt = acctRow?.system_prompt || '';
+    db.upsertContact(phone, pushName || '', session);
+    db.saveMessage(phone, 'in', message, session);
+    db.touchContactLastSeen(phone);
+    if (!db.isBotPaused(phone)) {
+      const reply = await getAIReply(phone, message, acctPrompt);
+      if (reply) {
+        const { smartSplit } = require('./smart_split');
+        const bubbles = smartSplit(reply);
+        for (const bubble of bubbles) {
+          if (!bubble.trim()) continue;
+          await baileys.sendText(session, phone, bubble).catch(() => {});
+          db.saveMessage(phone, 'out', bubble, session);
+        }
+      }
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/users', auth, (req, res) => res.json([{ id: 1, username: ADMIN_USER, role: 'admin' }]));
