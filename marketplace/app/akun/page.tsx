@@ -49,13 +49,15 @@ export default async function AccountHomePage() {
         </div>
       )}
 
-      {user.store && (
+      {(user.store || user.role === "ADMIN") && (
         <div className="mt-6 bg-white border border-slate-200 rounded-2xl p-6">
           <h2 className="font-bold mb-1">
-            {user.passwordHash ? "Ubah Password Login Toko" : "Atur Password Login Toko"}
+            {user.passwordHash ? "Ubah Password Login" : "Atur Password Login"}
           </h2>
           <p className="text-sm text-slate-600 mb-3">
-            Selain kode OTP, kamu bisa masuk ke dashboard toko pakai email + password.
+            {user.role === "ADMIN"
+              ? "Selain kode OTP, kamu bisa masuk ke admin panel pakai email + password."
+              : "Selain kode OTP, kamu bisa masuk ke dashboard toko pakai email + password."}
           </p>
           <SetPasswordForm />
         </div>

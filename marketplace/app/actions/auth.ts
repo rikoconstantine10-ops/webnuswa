@@ -123,6 +123,63 @@ export async function sellerPasswordLoginAction(
   redirect(afterSellerLoginPath(Boolean(user.store)));
 }
 
+// ===== Auth khusus admin (hybrid OTP + password + Turnstile), digunakan di /admin-login =====
+
+export async function adminRequestOtpAction(
+  _prev: SellerAuthState,
+  formData: FormData
+): Promise<SellerAuthState> {
+  const ok = await verifyTurnstile(String(formData.get("turnstileToken") ?? "") || null);
+  if (!ok) return { step: "email", email: "", error: "Verifikasi keamanan gagal, coba lagi" };
+
+  const email = z.string().email().safeParse(String(formData.get("email")).trim().toLowerCase());
+  if (!email.success) return { step: "email", email: "", error: "Email tidak valid" };
+
+  await requestOtp(email.data);
+  return { step: "otp", email: email.data };
+}
+
+export async function adminVerifyOtpAction(
+  _prev: SellerAuthState,
+  formData: FormData
+): Promise<SellerAuthState> {
+  const email = String(formData.get("email")).trim().toLowerCase();
+  const code = String(formData.get("code")).trim();
+
+  const ok = await verifyOtp(email, code);
+  if (!ok) return { step: "otp", email, error: "Kode salah atau kedaluwarsa" };
+
+  // verifyOtp() sudah membuat session — batalkan lagi bila ternyata bukan admin,
+  // supaya halaman ini tak dipakai diam-diam untuk login akun non-admin.
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user || user.role !== "ADMIN") {
+    await logout();
+    return { step: "otp", email, error: "Akun ini bukan admin" };
+  }
+  redirect("/admin");
+}
+
+export async function adminPasswordLoginAction(
+  _prev: { error?: string },
+  formData: FormData
+): Promise<{ error?: string }> {
+  const ok = await verifyTurnstile(String(formData.get("turnstileToken") ?? "") || null);
+  if (!ok) return { error: "Verifikasi keamanan gagal, coba lagi" };
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!email || !password) return { error: "Email dan password wajib diisi" };
+
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user || user.role !== "ADMIN" || !user.passwordHash) return { error: "Email atau password salah" };
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return { error: "Email atau password salah" };
+
+  await createSessionForUser(user.id);
+  redirect("/admin");
+}
+
 // Atur/ubah password login dari halaman Akun (mengganti alur "lupa password" — cukup
 // masuk via OTP lalu set password baru di sini).
 export async function setPasswordAction(
