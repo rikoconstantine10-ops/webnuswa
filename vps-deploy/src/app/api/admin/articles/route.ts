@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const DB_PATH = "/home/ubuntu/articel generator/data.db";
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab-admin";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab2026";
 
 function auth(req: Request) {
   return req.headers.get("x-admin-token") === ADMIN_TOKEN;

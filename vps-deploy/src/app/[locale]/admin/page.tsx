@@ -370,7 +370,7 @@ export default function AdminDashboard() {
 
   const filteredKw = activeCatFilter === "All" ? keywords : keywords.filter(k => k.category === activeCatFilter);
 
-  // Login
+  // ── Login ────────────────────────────────────────────────────────────────────
   if (!authed) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -403,7 +403,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // Main Layout
+  // ── Main Layout ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -491,9 +491,10 @@ export default function AdminDashboard() {
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6">
 
-          {/* DASHBOARD */}
+          {/* ── DASHBOARD ───────────────────────────────────────────────── */}
           {page === "dashboard" && (
             <div className="space-y-5">
+              {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {[
                   { label: "TOTAL ARTICLES", value: artTotal, bg: "bg-white", val: "text-gray-900" },
@@ -510,6 +511,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
 
+              {/* Pipeline + Quick actions */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                   <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Pipeline Status</div>
@@ -565,6 +567,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {/* Category breakdown */}
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Keywords by Category</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -590,7 +593,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* KEYWORDS */}
+          {/* ── KEYWORDS ────────────────────────────────────────────────── */}
           {page === "keywords" && (
             <div className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -630,6 +633,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              {/* Category tabs */}
               <div className="flex gap-2 flex-wrap">
                 {["All", ...CATEGORIES].map(cat => {
                   const cnt = cat === "All" ? keywords.length : (catCounts[cat] || 0);
@@ -696,7 +700,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ARTICLES */}
+          {/* ── ARTICLES ────────────────────────────────────────────────── */}
           {page === "articles" && (
             <div className="space-y-4">
               {artLoading ? (
@@ -768,7 +772,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* LOGS */}
+          {/* ── LOGS ──────────────────────────────────────────────────────────── */}
           {page === "logs" && (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -783,7 +787,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* KNOWLEDGE BASE */}
+          {/* ── KNOWLEDGE BASE ─────────────────────────────────────────────────── */}
           {page === "knowledge" && (
             <div className="space-y-3">
               <p className="text-gray-500 text-sm">Reference guides for article generation, SEO scoring, and content strategy.</p>
@@ -807,7 +811,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* SETTINGS */}
+          {/* ── SETTINGS ────────────────────────────────────────────────────────────────── */}
           {page === "settings" && (
             <div className="space-y-4 max-w-lg">
               <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
@@ -867,6 +871,7 @@ export default function AdminDashboard() {
   );
 }
 
+// Simple inline markdown renderer
 function MarkdownContent({ content }: { content: string }) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];

@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 const KEYWORDS_FILE = path.join(process.cwd(), "scripts/keywords.json");
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab-admin";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab2026";
 
 function auth(req: Request) {
   const token = req.headers.get("x-admin-token");

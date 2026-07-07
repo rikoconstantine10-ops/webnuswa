@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab-admin";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab2026";
 const VPS_ROOT = "/home/ubuntu/nuswalab";
 const LOG_FILE = path.join(VPS_ROOT, "logs/article-gen.log");
 

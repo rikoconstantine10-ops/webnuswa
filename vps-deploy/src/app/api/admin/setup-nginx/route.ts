@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { execSync } from "child_process";
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab-admin";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "nuswalab2026";
 
 export async function POST(req: Request) {
   if (req.headers.get("x-admin-token") !== ADMIN_TOKEN) {
