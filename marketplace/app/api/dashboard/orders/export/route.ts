@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSeller } from "@/lib/auth";
+import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 function csvCell(v: string | number | null | undefined): string {
@@ -22,7 +22,11 @@ const STATUS_LABEL: Record<string, string> = {
 // Export pesanan toko sendiri jadi CSV, dipakai buat pembukuan/laporan seller.
 // GET /api/dashboard/orders/export
 export async function GET() {
-  const { store } = await requireSeller();
+  const user = await currentUser();
+  const store = user?.store;
+  if (!store) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
   const orders = await db.order.findMany({
     where: { storeId: store.id, status: { not: "PENDING_PAYMENT" } },
