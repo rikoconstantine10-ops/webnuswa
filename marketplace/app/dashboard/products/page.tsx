@@ -67,7 +67,7 @@ export default async function ProductsPage({
           Cari
         </button>
         {(q || status) && (
-          <a href="/dashboard/products" className="text-sm text-slate-500 hover:underline">Reset</a>
+          <Link href="/dashboard/products" className="text-sm text-slate-500 hover:underline">Reset</Link>
         )}
       </form>
 

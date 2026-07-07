@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
@@ -12,9 +13,22 @@ const STATUS: Record<string, string> = {
   REJECTED: "Ditolak",
 };
 
-export default async function AdminDisputesPage() {
+export default async function AdminDisputesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireAdmin();
+  const { q } = await searchParams;
   const disputes = await db.dispute.findMany({
+    where: q
+      ? {
+          OR: [
+            { order: { code: { contains: q, mode: "insensitive" } } },
+            { order: { store: { name: { contains: q, mode: "insensitive" } } } },
+          ],
+        }
+      : {},
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     include: {
       order: { include: { store: { select: { name: true } } } },
@@ -29,6 +43,20 @@ export default async function AdminDisputesPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-extrabold">Sengketa / Komplain</h1>
+
+      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Cari kode order atau nama toko..."
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+        />
+        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+          Cari
+        </button>
+        {q && <Link href="/admin/disputes" className="text-sm text-slate-500 hover:underline">Reset</Link>}
+      </form>
 
       <section className="space-y-4">
         <h2 className="font-bold text-sm text-orange-700">Perlu Ditinjau ({open.length})</h2>

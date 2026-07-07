@@ -7,6 +7,21 @@ import { audit } from "@/lib/audit";
 import { slugify, randomSuffix } from "@/lib/slug";
 import { notifyWithdrawalPaid } from "@/lib/notify";
 
+export async function markAdminNotificationReadAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  await db.adminNotification.updateMany({ where: { id, readAt: null }, data: { readAt: new Date() } });
+  revalidatePath("/admin/notifications");
+  revalidatePath("/admin", "layout");
+}
+
+export async function markAllAdminNotificationsReadAction() {
+  await requireAdmin();
+  await db.adminNotification.updateMany({ where: { readAt: null }, data: { readAt: new Date() } });
+  revalidatePath("/admin/notifications");
+  revalidatePath("/admin", "layout");
+}
+
 export async function setStoreStatusAction(formData: FormData) {
   const admin = await requireAdmin();
   const storeId = String(formData.get("storeId"));

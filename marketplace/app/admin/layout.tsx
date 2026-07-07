@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 const NAV = [
   { href: "/admin", label: "Ringkasan" },
+  { href: "/admin/notifications", label: "🔔 Notifikasi" },
   { href: "/admin/transactions", label: "Transaksi" },
   { href: "/admin/sellers", label: "Seller" },
   { href: "/admin/reports", label: "Laporan Produk" },
@@ -27,6 +29,8 @@ export default async function AdminLayout({
   if (!user) redirect("/login");
   if (user.role !== "ADMIN") redirect("/");
 
+  const unreadCount = await db.adminNotification.count({ where: { readAt: null } });
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-6">
       <aside className="md:w-56 shrink-0">
@@ -37,9 +41,14 @@ export default async function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="block text-sm px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"
+                className="flex items-center justify-between text-sm px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white"
               >
                 {item.label}
+                {item.href === "/admin/notifications" && unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>

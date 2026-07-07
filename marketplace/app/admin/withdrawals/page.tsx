@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
@@ -5,9 +6,17 @@ import { processWithdrawalAction } from "@/app/actions/admin";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminWithdrawalsPage() {
+const STATUS_OPTIONS = ["PENDING", "APPROVED", "PROCESSING", "PAID", "REJECTED"];
+
+export default async function AdminWithdrawalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   await requireAdmin();
+  const { status } = await searchParams;
   const withdrawals = await db.withdrawal.findMany({
+    where: status && STATUS_OPTIONS.includes(status) ? { status } : {},
     include: { store: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
     take: 100,
@@ -15,12 +24,38 @@ export default async function AdminWithdrawalsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-2">Penarikan Dana Seller</h1>
-      <p className="text-sm text-slate-500 mb-6">
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-2">
+        <h1 className="text-2xl font-extrabold">Penarikan Dana Seller</h1>
+        <a
+          href="/api/admin/withdrawals/export"
+          className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
+        >
+          ⬇ Export CSV
+        </a>
+      </div>
+      <p className="text-sm text-slate-500 mb-4">
         Dana di-hold dari saldo seller saat request. Bila auto-payout (disbursement) aktif, pencairan
         diproses otomatis; status <b>PROCESSING</b> menunggu callback provider. Untuk mode manual:
         transfer ke rekening tujuan lalu tandai <b>Ditransfer</b>. Menolak/gagal mengembalikan dana ke saldo seller.
       </p>
+
+      <div className="flex gap-2 flex-wrap mb-4">
+        <Link
+          href="/admin/withdrawals"
+          className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${!status ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300 text-slate-600"}`}
+        >
+          Semua
+        </Link>
+        {STATUS_OPTIONS.map((s) => (
+          <Link
+            key={s}
+            href={`/admin/withdrawals?status=${s}`}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${status === s ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300 text-slate-600"}`}
+          >
+            {s}
+          </Link>
+        ))}
+      </div>
 
       <div className="space-y-3">
         {withdrawals.length === 0 && (

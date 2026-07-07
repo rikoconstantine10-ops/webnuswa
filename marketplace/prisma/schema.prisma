@@ -412,6 +412,20 @@ model Notification {
   @@index([storeId, createdAt])
 }
 
+// Pusat notifikasi in-app admin (hanya satu admin, jadi tak perlu relasi ke user/store).
+model AdminNotification {
+  id        String    @id @default(cuid())
+  type      String // DISPUTE_OPENED | NEW_SELLER | WITHDRAWAL_REQUESTED | REPORT_SUBMITTED
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([readAt])
+  @@index([createdAt])
+}
+
 // Jejak audit aksi penting (admin & keuangan).
 model AuditLog {
   id        String   @id @default(cuid())

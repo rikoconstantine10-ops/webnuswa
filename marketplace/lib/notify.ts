@@ -2,7 +2,7 @@ import { db } from "./db";
 import { sendMail, MAILBOX } from "./mailer";
 import { formatRupiah } from "./money";
 import { waSend, waSendToSelf } from "./wa";
-import { createNotification } from "./notifications";
+import { createNotification, createAdminNotification } from "./notifications";
 import {
   orderPaidBuyerEmail,
   orderPaidSellerEmail,
@@ -129,6 +129,7 @@ export function notifyDisputeOpened(orderId: string) {
       ...adminRecipients().map((to) => sendMail(to, adminMail.subject, adminMail.text, { html: adminMail.html, replyTo: MAILBOX.support })),
       waSendToSelf(order.storeId, sellerMail.text),
       createNotification(order.storeId, "DISPUTE_OPENED", `Sengketa dibuka — ${order.code}`, order.dispute.reason.slice(0, 140), "/dashboard/orders"),
+      createAdminNotification("DISPUTE_OPENED", `Sengketa dibuka — ${order.code}`, `${order.store.name}: ${order.dispute.reason.slice(0, 120)}`, "/admin/disputes"),
     ]);
   })().catch((e) => console.error("[NOTIFY dispute] gagal:", e));
 }
@@ -168,6 +169,40 @@ export function notifyAdminNewSeller(storeId: string) {
     if (!store) return;
     const appUrl = process.env.APP_URL || "https://nuswamart.com";
     const mail = newSellerAlertEmail({ storeName: store.name, storeSlug: store.slug, ownerEmail: store.owner.email, appUrl });
-    await Promise.allSettled(adminRecipients().map((to) => sendMail(to, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.seller })));
+    await Promise.allSettled([
+      ...adminRecipients().map((to) => sendMail(to, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.seller })),
+      createAdminNotification("NEW_SELLER", `Toko baru: ${store.name}`, store.owner.email, `/admin/sellers/${store.id}`),
+    ]);
   })().catch((e) => console.error("[NOTIFY new seller] gagal:", e));
+}
+
+// Notifikasi in-app admin saat seller request penarikan dana (butuh tindak lanjut).
+export function notifyAdminWithdrawalRequested(withdrawalId: string) {
+  (async () => {
+    const w = await db.withdrawal.findUnique({ where: { id: withdrawalId }, include: { store: { select: { name: true } } } });
+    if (!w) return;
+    await createAdminNotification(
+      "WITHDRAWAL_REQUESTED",
+      `Penarikan dana — ${w.store.name}`,
+      formatRupiah(w.amount),
+      "/admin/withdrawals"
+    );
+  })().catch((e) => console.error("[NOTIFY admin withdrawal] gagal:", e));
+}
+
+// Notifikasi in-app admin saat ada laporan produk baru (manual atau auto-flag kata terlarang).
+export function notifyAdminReportSubmitted(reportId: string) {
+  (async () => {
+    const r = await db.productReport.findUnique({
+      where: { id: reportId },
+      include: { product: { select: { name: true } }, store: { select: { name: true } } },
+    });
+    if (!r) return;
+    await createAdminNotification(
+      "REPORT_SUBMITTED",
+      `Laporan produk: ${r.product.name}`,
+      `${r.store.name} · ${r.reason}`,
+      "/admin/reports"
+    );
+  })().catch((e) => console.error("[NOTIFY admin report] gagal:", e));
 }

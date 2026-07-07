@@ -15,3 +15,17 @@ export async function createNotification(
     console.error("[notification] gagal dicatat:", e);
   }
 }
+
+// Sama seperti createNotification tapi untuk admin (satu akun, tanpa storeId).
+export async function createAdminNotification(
+  type: string,
+  title: string,
+  body: string,
+  link?: string
+): Promise<void> {
+  try {
+    await db.adminNotification.create({ data: { type, title, body, link } });
+  } catch (e) {
+    console.error("[admin-notification] gagal dicatat:", e);
+  }
+}

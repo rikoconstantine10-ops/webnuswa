@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requireSeller } from "@/lib/auth";
 import { slugify, randomSuffix } from "@/lib/slug";
 import { findProhibited } from "@/lib/trust";
+import { notifyAdminReportSubmitted } from "@/lib/notify";
 
 const variantSchema = z.array(
   z.object({ name: z.string().min(1), price: z.coerce.number().int().min(500), stock: z.coerce.number().int().min(0).nullable().optional() })
@@ -117,7 +118,7 @@ export async function createProductAction(
 
   // Produk ber-kata-terlarang → masuk antrian tinjauan admin.
   if (prohibited) {
-    await db.productReport.create({
+    const report = await db.productReport.create({
       data: {
         productId: createdProduct.id,
         storeId: store.id,
@@ -125,6 +126,7 @@ export async function createProductAction(
         detail: `Auto-flag: kata "${prohibited}" terdeteksi`,
       },
     });
+    notifyAdminReportSubmitted(report.id);
   }
 
   revalidatePath("/dashboard/products");

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
@@ -76,7 +77,7 @@ export default async function OrdersPage({
           Cari
         </button>
         {(q || status) && (
-          <a href="/dashboard/orders" className="text-sm text-slate-500 hover:underline">Reset</a>
+          <Link href="/dashboard/orders" className="text-sm text-slate-500 hover:underline">Reset</Link>
         )}
       </form>
 

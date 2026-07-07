@@ -5,9 +5,29 @@ import { setStoreStatusAction } from "@/app/actions/admin";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminSellersPage() {
+const STATUS_OPTIONS = ["PENDING", "ACTIVE", "SUSPENDED"];
+
+export default async function AdminSellersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
   await requireAdmin();
+  const { q, status } = await searchParams;
+
   const stores = await db.store.findMany({
+    where: {
+      ...(status && STATUS_OPTIONS.includes(status) ? { status } : {}),
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { slug: { contains: q, mode: "insensitive" } },
+              { owner: { email: { contains: q, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    },
     include: {
       owner: { select: { email: true } },
       _count: { select: { products: true, orders: true } },
@@ -18,6 +38,29 @@ export default async function AdminSellersPage() {
   return (
     <div>
       <h1 className="text-2xl font-extrabold mb-6">Seller / Toko</h1>
+
+      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Cari nama toko, slug, atau email pemilik..."
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+        />
+        <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="">Semua status</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+          Cari
+        </button>
+        {(q || status) && (
+          <Link href="/admin/sellers" className="text-sm text-slate-500 hover:underline">Reset</Link>
+        )}
+      </form>
+
       <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

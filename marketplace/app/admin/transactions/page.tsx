@@ -36,7 +36,15 @@ export default async function AdminTransactionsPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-extrabold">Transaksi & Rekonsiliasi</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-extrabold">Transaksi & Rekonsiliasi</h1>
+        <a
+          href={`/api/admin/transactions/export${status ? `?status=${status}` : ""}`}
+          className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
+        >
+          ⬇ Export CSV
+        </a>
+      </div>
 
       {/* Rekonsiliasi */}
       <div className="grid sm:grid-cols-3 gap-4">

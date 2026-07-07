@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { notifyAdminReportSubmitted } from "@/lib/notify";
 
 const VALID_REASONS = ["SPAM", "PROHIBITED", "COUNTERFEIT", "SCAM", "OTHER"];
 
@@ -30,8 +31,9 @@ export async function reportProductAction(
     if (recent) return { ok: true }; // sudah dilaporkan, tetap balas sukses
   }
 
-  await db.productReport.create({
+  const report = await db.productReport.create({
     data: { productId, storeId: product.storeId, reason, detail: detail || null, reporterEmail },
   });
+  notifyAdminReportSubmitted(report.id);
   return { ok: true };
 }

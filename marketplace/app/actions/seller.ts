@@ -8,6 +8,7 @@ import { storeBalance } from "@/lib/ledger";
 import { audit } from "@/lib/audit";
 import { canWithdraw } from "@/lib/trust";
 import { processWithdrawalPayout } from "@/lib/payout";
+import { notifyAdminWithdrawalRequested } from "@/lib/notify";
 
 // Parse koordinat lat/long dari form. Kosong/invalid → null. Rentang wajar dunia dijaga.
 function parseCoord(v: FormDataEntryValue | null): number | null {
@@ -144,6 +145,7 @@ export async function requestWithdrawalAction(
     }),
   ]);
   await audit(store.name, "WITHDRAWAL_REQUESTED", `Rp${amount} → ${store.bankName} ${store.bankAccountNumber}`);
+  notifyAdminWithdrawalRequested(withdrawal.id);
 
   // Pencairan otomatis (bila provider disbursement aktif). Best-effort: gagal → tetap manual.
   await processWithdrawalPayout(withdrawal.id).catch(() => {});

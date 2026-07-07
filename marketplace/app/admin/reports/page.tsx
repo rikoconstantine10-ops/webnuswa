@@ -13,10 +13,21 @@ const REASON_LABEL: Record<string, string> = {
   OTHER: "Lainnya",
 };
 
-export default async function AdminReportsPage() {
+const STATUS_OPTIONS = ["OPEN", "REVIEWED", "DISMISSED", "ACTIONED"];
+
+export default async function AdminReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; q?: string }>;
+}) {
   await requireAdmin();
+  const { status, q } = await searchParams;
+  const activeStatus = status && STATUS_OPTIONS.includes(status) ? status : "OPEN";
   const reports = await db.productReport.findMany({
-    where: { status: "OPEN" },
+    where: {
+      status: activeStatus,
+      ...(q ? { product: { name: { contains: q, mode: "insensitive" } } } : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
     include: { product: { select: { name: true, slug: true, active: true, moderation: true } }, store: { select: { name: true } } },
@@ -25,11 +36,29 @@ export default async function AdminReportsPage() {
   return (
     <div>
       <h1 className="text-2xl font-extrabold mb-1">Laporan Produk</h1>
-      <p className="text-slate-500 text-sm mb-6">Tinjau laporan penyalahgunaan & produk auto-flag kata terlarang.</p>
+      <p className="text-slate-500 text-sm mb-4">Tinjau laporan penyalahgunaan & produk auto-flag kata terlarang.</p>
+
+      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Cari nama produk..."
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+        />
+        <select name="status" defaultValue={activeStatus} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+          Cari
+        </button>
+      </form>
 
       {reports.length === 0 ? (
         <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-          Tidak ada laporan terbuka. 🎉
+          Tidak ada laporan dengan status ini. 🎉
         </p>
       ) : (
         <div className="space-y-3">
