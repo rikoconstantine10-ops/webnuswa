@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import StoreBlocks from "@/components/StoreBlocks";
+import { parseStoreBlocks } from "@/lib/storeBlocks";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,7 @@ export default async function StorePage({
   });
   if (!store || store.status !== "ACTIVE") notFound();
 
+  const blocks = parseStoreBlocks(store.layoutBlocks);
   const appUrl = process.env.APP_URL || "";
   const shareText = encodeURIComponent(`Cek toko ${store.name}!\n${appUrl}/s/${store.slug}`);
 
@@ -73,17 +76,22 @@ export default async function StorePage({
         </div>
       </div>
 
+      <StoreBlocks blocks={blocks} products={store.products} storeName={store.name} storeSlug={store.slug} />
+
       {store.products.length === 0 ? (
         <p className="text-center text-slate-500 py-16">Toko ini belum punya produk.</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {store.products.map((p) => (
-            <ProductCard
-              key={p.id}
-              product={{ ...p, store: { name: store.name, slug: store.slug } }}
-            />
-          ))}
-        </div>
+        <>
+          {blocks.length > 0 && <h2 className="text-xl font-extrabold mb-4">Semua Produk</h2>}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {store.products.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={{ ...p, store: { name: store.name, slug: store.slug } }}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
