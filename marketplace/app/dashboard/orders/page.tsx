@@ -13,12 +13,34 @@ const STATUS_LABEL: Record<string, string> = {
   COMPLETED: "Selesai",
   CANCELLED: "Batal",
   EXPIRED: "Kedaluwarsa",
+  DISPUTED: "Sengketa",
+  REFUNDED: "Refund",
 };
 
-export default async function OrdersPage() {
+const STATUS_OPTIONS = ["PAID", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED", "EXPIRED", "DISPUTED", "REFUNDED"];
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
   const { store } = await requireSeller();
+  const { q, status } = await searchParams;
+
   const orders = await db.order.findMany({
-    where: { storeId: store.id, status: { not: "PENDING_PAYMENT" } },
+    where: {
+      storeId: store.id,
+      status: status && STATUS_OPTIONS.includes(status) ? status : { not: "PENDING_PAYMENT" },
+      ...(q
+        ? {
+            OR: [
+              { code: { contains: q, mode: "insensitive" } },
+              { buyerName: { contains: q, mode: "insensitive" } },
+              { buyerEmail: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
     include: { items: true },
     orderBy: { createdAt: "desc" },
     take: 100,
@@ -26,10 +48,41 @@ export default async function OrdersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-6">Pesanan</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+        <h1 className="text-2xl font-extrabold">Pesanan</h1>
+        <a
+          href="/api/dashboard/orders/export"
+          className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
+        >
+          ⬇ Export CSV
+        </a>
+      </div>
+
+      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Cari kode, nama, atau email pembeli..."
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+        />
+        <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="">Semua status</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
+          ))}
+        </select>
+        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+          Cari
+        </button>
+        {(q || status) && (
+          <a href="/dashboard/orders" className="text-sm text-slate-500 hover:underline">Reset</a>
+        )}
+      </form>
+
       {orders.length === 0 ? (
         <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-          Belum ada pesanan masuk.
+          {q || status ? "Tidak ada pesanan yang cocok." : "Belum ada pesanan masuk."}
         </p>
       ) : (
         <div className="space-y-4">

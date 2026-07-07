@@ -29,7 +29,7 @@ export default async function MarketPage({
       where: {
         active: true,
         moderation: "APPROVED",
-        store: { status: "ACTIVE" },
+        store: { status: "ACTIVE", paused: false },
         ...(q ? { name: { contains: q } } : {}),
         ...(kategori ? { category: { slug: kategori } } : {}),
       },

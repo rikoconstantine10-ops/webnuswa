@@ -6,6 +6,7 @@ import { trackEvent } from "./analytics";
 import { capiPurchase } from "./capi";
 import { createShipmentForOrder } from "./shipping";
 import { finalizeOrderEarnings } from "./earnings";
+import { checkLowStockProduct } from "./lowStock";
 
 const DOWNLOAD_DAYS = 7;
 
@@ -104,6 +105,9 @@ export async function markOrderPaid(orderId: string) {
   notifyOrderPaid(order.id);
   for (const item of order.items) {
     trackEvent({ type: "PURCHASE", storeId: order.storeId, productId: item.productId });
+    if (item.product.type === "PHYSICAL" && !item.variantName && item.product.stock !== null) {
+      checkLowStockProduct(item.productId);
+    }
   }
 
   // Facebook Conversions API (server-side Purchase) jika toko mengaktifkan Pixel.

@@ -18,6 +18,7 @@ import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
 import { createShipmentForOrder } from "@/lib/shipping";
 import { notifyNewCodOrder } from "@/lib/notify";
+import { checkLowStockProduct } from "@/lib/lowStock";
 import { resolveAffiliateUserId } from "@/lib/affiliate";
 import { effectivePrice } from "@/lib/pricing";
 import { createPaymentRequest, isPaymentoConfigured } from "@/lib/paymento";
@@ -138,6 +139,7 @@ export async function checkoutCartAction(
   if (cartItems.length === 0) return { error: "Keranjang toko ini kosong" };
   const store = cartItems[0].product.store;
   if (store.status !== "ACTIVE") return { error: "Toko tidak aktif" };
+  if (store.paused) return { error: "Toko sedang tutup sementara" };
   if (store.enabledPaymentTypes.length > 0 && !store.enabledPaymentTypes.includes(input.paymentType)) {
     return { error: "Metode pembayaran tidak tersedia untuk toko ini" };
   }
@@ -239,6 +241,7 @@ export async function checkoutCartAction(
         await db.productVariant.updateMany({ where: { id: it.variantId, stock: { not: null } }, data: { stock: { decrement: it.qty } } });
       } else if (it.product.stock !== null) {
         await db.product.update({ where: { id: it.product.id }, data: { stock: { decrement: it.qty } } });
+        checkLowStockProduct(it.product.id);
       }
     }
     if (voucherId) await db.voucher.update({ where: { id: voucherId }, data: { used: { increment: 1 } } });

@@ -77,6 +77,7 @@ model Store {
   originLat         Float?
   originLng         Float?
   status            String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED
+  paused            Boolean       @default(false) // "tutup sementara" — dikendalikan seller sendiri, beda dari SUSPENDED (admin)
   bankName          String?
   bankAccountNumber String?
   bankAccountName   String?
@@ -102,6 +103,7 @@ model Store {
   reviews           Review[]
   vouchers          Voucher[]
   reports           ProductReport[]
+  notifications     Notification[]
 }
 
 model Category {
@@ -123,6 +125,7 @@ model Product {
   type         String // DIGITAL | PHYSICAL
   price        Int // rupiah
   stock        Int? // null = tidak dibatasi (produk digital)
+  lowStockAlertedAt DateTime? // dedup notifikasi stok menipis — reset ke null saat stok naik lagi
   weightGrams  Int? // untuk produk fisik
   imageUrl     String?
   active       Boolean       @default(true) // toggle tampil/sembunyi oleh seller
@@ -391,6 +394,22 @@ model Announcement {
   message   String
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+// Pusat notifikasi in-app seller (pesanan baru, ulasan, pertanyaan, sengketa, stok menipis, dst).
+model Notification {
+  id        String    @id @default(cuid())
+  storeId   String
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type      String // ORDER_PAID | ORDER_COD_NEW | REVIEW_NEW | QUESTION_NEW | DISPUTE_OPENED | WITHDRAWAL_PAID | LOW_STOCK
+  title     String
+  body      String
+  link      String? // path relatif untuk navigasi, mis. /dashboard/orders
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([storeId, readAt])
+  @@index([storeId, createdAt])
 }
 
 // Jejak audit aksi penting (admin & keuangan).

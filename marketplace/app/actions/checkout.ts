@@ -19,6 +19,7 @@ import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
 import { createShipmentForOrder } from "@/lib/shipping";
 import { notifyNewCodOrder } from "@/lib/notify";
+import { checkLowStockProduct } from "@/lib/lowStock";
 import { effectivePrice } from "@/lib/pricing";
 import { createPaymentRequest, isPaymentoConfigured } from "@/lib/paymento";
 
@@ -91,6 +92,9 @@ export async function checkoutAction(
   });
   if (!product || !product.active || product.moderation !== "APPROVED" || product.store.status !== "ACTIVE") {
     return { error: "Produk tidak tersedia" };
+  }
+  if (product.store.paused) {
+    return { error: "Toko sedang tutup sementara" };
   }
   const allowedPayments = product.store.enabledPaymentTypes;
   if (allowedPayments.length > 0 && !allowedPayments.includes(input.paymentType)) {
@@ -262,6 +266,7 @@ export async function checkoutAction(
       await db.product.update({ where: { id: product.id }, data: { soldCount: { increment: input.qty } } });
     } else if (product.stock !== null) {
       await db.product.update({ where: { id: product.id }, data: { stock: { decrement: input.qty }, soldCount: { increment: input.qty } } });
+      checkLowStockProduct(product.id);
     } else {
       await db.product.update({ where: { id: product.id }, data: { soldCount: { increment: input.qty } } });
     }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireSeller } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 const reviewSchema = z.object({
   code: z.string().min(3),
@@ -69,9 +70,16 @@ export async function submitReviewAction(
   });
   await recomputeAggregates(productId, order.storeId);
 
-  const product = await db.product.findUnique({ where: { id: productId }, select: { slug: true } });
+  const product = await db.product.findUnique({ where: { id: productId }, select: { slug: true, name: true } });
   revalidatePath(`/order/${code}`);
   if (product) revalidatePath(`/p/${product.slug}`);
+  createNotification(
+    order.storeId,
+    "REVIEW_NEW",
+    `Ulasan baru: ${product?.name ?? "produk"}`,
+    `${"⭐".repeat(rating)} ${comment?.trim().slice(0, 120) ?? ""}`.trim(),
+    "/dashboard/reviews"
+  );
   return { ok: true };
 }
 

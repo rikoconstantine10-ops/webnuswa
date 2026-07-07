@@ -31,7 +31,7 @@ export default async function CartCheckoutPage({ params }: { params: Promise<{ s
   });
   if (items.length === 0) redirect("/cart");
   const store = items[0].product.store;
-  if (store.status !== "ACTIVE") notFound();
+  if (store.status !== "ACTIVE" || store.paused) notFound();
 
   const subtotal = items.reduce((s, it) => s + unitPrice(it.product, it.variantId, it.qty) * it.qty, 0);
   const hasPhysical = items.some((it) => it.product.type === "PHYSICAL");

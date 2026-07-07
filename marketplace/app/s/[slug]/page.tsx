@@ -30,6 +30,11 @@ export default async function StorePage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      {store.paused && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 mb-4 text-sm font-semibold text-center">
+          ⏸ Toko ini sedang tutup sementara. Produk bisa dilihat tapi belum bisa dibeli.
+        </div>
+      )}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-8">
         {store.bannerUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

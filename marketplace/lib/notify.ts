@@ -2,6 +2,7 @@ import { db } from "./db";
 import { sendMail, MAILBOX } from "./mailer";
 import { formatRupiah } from "./money";
 import { waSend, waSendToSelf } from "./wa";
+import { createNotification } from "./notifications";
 import {
   orderPaidBuyerEmail,
   orderPaidSellerEmail,
@@ -63,6 +64,7 @@ export function notifyOrderPaid(orderId: string) {
       // WA dari nomor toko (jika seller sudah menghubungkan WA-nya)
       waSendToSelf(order.storeId, sellerMail.text),
       order.buyerPhone ? waSend(order.storeId, order.buyerPhone, buyerMail.text) : Promise.resolve(false),
+      createNotification(order.storeId, "ORDER_PAID", `Pesanan LUNAS — ${order.code}`, `${order.buyerName} · ${formatRupiah(order.total)}`, "/dashboard/orders"),
     ]);
   })().catch((e) => console.error("[NOTIFY] gagal:", e));
 }
@@ -95,6 +97,7 @@ export function notifyNewCodOrder(orderId: string) {
     await Promise.allSettled([
       sendMail(order.store.owner.email, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.seller }),
       waSendToSelf(order.storeId, mail.text),
+      createNotification(order.storeId, "ORDER_COD_NEW", `Pesanan baru (COD) — ${order.code}`, `${order.buyerName} · ${formatRupiah(order.total)}`, "/dashboard/orders"),
     ]);
   })().catch((e) => console.error("[NOTIFY cod] gagal:", e));
 }
@@ -125,6 +128,7 @@ export function notifyDisputeOpened(orderId: string) {
       sendMail(order.store.owner.email, sellerMail.subject, sellerMail.text, { html: sellerMail.html, replyTo: MAILBOX.support }),
       ...adminRecipients().map((to) => sendMail(to, adminMail.subject, adminMail.text, { html: adminMail.html, replyTo: MAILBOX.support })),
       waSendToSelf(order.storeId, sellerMail.text),
+      createNotification(order.storeId, "DISPUTE_OPENED", `Sengketa dibuka — ${order.code}`, order.dispute.reason.slice(0, 140), "/dashboard/orders"),
     ]);
   })().catch((e) => console.error("[NOTIFY dispute] gagal:", e));
 }
@@ -150,7 +154,10 @@ export function notifyWithdrawalPaid(withdrawalId: string) {
     if (!w) return;
     const appUrl = process.env.APP_URL || "https://nuswamart.com";
     const mail = withdrawalPaidEmail({ amountText: formatRupiah(w.amount), bankName: w.bankName, bankAccountNumber: w.bankAccountNumber, appUrl });
-    await sendMail(w.store.owner.email, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.billing });
+    await Promise.allSettled([
+      sendMail(w.store.owner.email, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.billing }),
+      createNotification(w.storeId, "WITHDRAWAL_PAID", "Penarikan dana ditransfer", `${formatRupiah(w.amount)} ke ${w.bankName}`, "/dashboard/withdrawals"),
+    ]);
   })().catch((e) => console.error("[NOTIFY withdrawal paid] gagal:", e));
 }
 

@@ -16,6 +16,16 @@ function parseCoord(v: FormDataEntryValue | null): number | null {
   return n;
 }
 
+// Toko "tutup sementara" — dikendalikan seller sendiri (beda dari SUSPENDED yang admin-only).
+export async function toggleStorePausedAction() {
+  const { store } = await requireSeller();
+  await db.store.update({ where: { id: store.id }, data: { paused: !store.paused } });
+  revalidatePath("/dashboard/store");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath(`/s/${store.slug}`);
+  revalidatePath("/market");
+}
+
 export async function markProcessingAction(formData: FormData) {
   const { store } = await requireSeller();
   const orderId = String(formData.get("orderId"));

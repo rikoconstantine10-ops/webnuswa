@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { currentUser, requireSeller } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 // Pembeli mengajukan pertanyaan pada halaman produk (login opsional).
 export async function askQuestionAction(
@@ -16,13 +17,14 @@ export async function askQuestionAction(
 
   const user = await currentUser();
   const askerName = user?.name || nameInput || "Pembeli";
-  const product = await db.product.findUnique({ where: { id: productId }, select: { id: true, slug: true } });
+  const product = await db.product.findUnique({ where: { id: productId }, select: { id: true, slug: true, name: true, storeId: true } });
   if (!product) return { error: "Produk tidak ditemukan" };
 
   await db.productQuestion.create({
     data: { productId, userId: user?.id ?? null, askerName, question: question.slice(0, 500) },
   });
   revalidatePath(`/p/${product.slug}`);
+  createNotification(product.storeId, "QUESTION_NEW", `Pertanyaan baru: ${product.name}`, question.slice(0, 140), "/dashboard/questions");
   return { ok: true };
 }
 

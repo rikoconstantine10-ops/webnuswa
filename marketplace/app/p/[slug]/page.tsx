@@ -228,7 +228,11 @@ export default async function ProductPage({
         )}
 
         <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          {outOfStock ? (
+          {product.store.paused ? (
+            <p className="text-center text-amber-700 bg-amber-50 rounded-lg py-3 px-4 font-semibold">
+              ⏸ Toko sedang tutup sementara. Coba lagi nanti.
+            </p>
+          ) : outOfStock ? (
             <p className="text-center text-red-600 font-semibold">Stok habis</p>
           ) : (
             <BuyForm
@@ -250,7 +254,7 @@ export default async function ProductPage({
               enabledPaymentTypes={product.store.enabledPaymentTypes}
             />
           )}
-          {!outOfStock && (
+          {!outOfStock && !product.store.paused && (
             <form action={addToCartAction} className="mt-3">
               <input type="hidden" name="productId" value={product.id} />
               <input type="hidden" name="variantId" value={product.variants[0]?.id ?? ""} />

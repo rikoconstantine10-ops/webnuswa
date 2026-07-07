@@ -13,10 +13,20 @@ import BoostButton from "@/components/BoostButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
   const { store } = await requireSeller();
+  const { q, status } = await searchParams;
+
   const products = await db.product.findMany({
-    where: { storeId: store.id },
+    where: {
+      storeId: store.id,
+      ...(status === "active" ? { active: true } : status === "inactive" ? { active: false } : {}),
+      ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -40,9 +50,30 @@ export default async function ProductsPage() {
         </div>
       </div>
 
+      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Cari nama produk..."
+          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+        />
+        <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <option value="">Semua status</option>
+          <option value="active">Aktif</option>
+          <option value="inactive">Nonaktif</option>
+        </select>
+        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+          Cari
+        </button>
+        {(q || status) && (
+          <a href="/dashboard/products" className="text-sm text-slate-500 hover:underline">Reset</a>
+        )}
+      </form>
+
       {products.length === 0 ? (
         <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-          Belum ada produk. Tambahkan produk pertamamu!
+          {q || status ? "Tidak ada produk yang cocok." : "Belum ada produk. Tambahkan produk pertamamu!"}
         </p>
       ) : (
         <div className="space-y-3">

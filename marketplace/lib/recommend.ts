@@ -15,7 +15,7 @@ const CARD_SELECT = {
   store: { select: { name: true, slug: true } },
 } as const;
 
-const baseWhere = { active: true, moderation: "APPROVED", store: { status: "ACTIVE" } } as const;
+const baseWhere = { active: true, moderation: "APPROVED", store: { status: "ACTIVE", paused: false } } as const;
 
 // Produk serupa: kategori sama (fallback: toko sama), diurutkan terlaris.
 export async function similarProducts(product: { id: string; categoryId: string | null; storeId: string }, take = 6) {

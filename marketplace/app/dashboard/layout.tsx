@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 const NAV = [
   { href: "/dashboard", label: "Ringkasan" },
+  { href: "/dashboard/notifications", label: "🔔 Notifikasi" },
   { href: "/dashboard/products", label: "Produk" },
   { href: "/dashboard/orders", label: "Pesanan" },
   { href: "/dashboard/reviews", label: "Ulasan" },
@@ -26,6 +28,8 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
   if (!user.store) redirect("/register-seller");
 
+  const unreadCount = await db.notification.count({ where: { storeId: user.store.id, readAt: null } });
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-6">
       <aside className="md:w-56 shrink-0">
@@ -46,6 +50,11 @@ export default async function DashboardLayout({
                 ? "Menunggu Persetujuan"
                 : "Ditangguhkan"}
           </p>
+          {user.store.paused && (
+            <p className="text-[10px] font-bold uppercase inline-block px-2 py-0.5 rounded-full mb-3 ml-1 bg-slate-200 text-slate-600">
+              ⏸ Tutup Sementara
+            </p>
+          )}
           <a
             href={`/s/${user.store.slug}`}
             target="_blank"
@@ -59,9 +68,14 @@ export default async function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="block text-sm px-3 py-2 rounded-lg text-slate-600 hover:bg-teal-50 hover:text-teal-700"
+                className="flex items-center justify-between text-sm px-3 py-2 rounded-lg text-slate-600 hover:bg-teal-50 hover:text-teal-700"
               >
                 {item.label}
+                {item.href === "/dashboard/notifications" && unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
