@@ -70,9 +70,9 @@ const NAV_ITEMS: { section: string; items: { id: SidebarPage; label: string; ico
 
 const KNOWLEDGE_ARTICLES = [
   {
-    title: "SEO Scoring Guide",
+    title: "SEO Strategy & Scoring",
     icon: "📊",
-    content: `## How SEO Score is Calculated
+    content: `## SEO Score Calculation
 
 SEO score (0–100) is based on heuristic checks applied to generated articles:
 
@@ -90,19 +90,67 @@ SEO score (0–100) is based on heuristic checks applied to generated articles:
 
 **Target: 70+ for strong ranking potential.**
 
-### Tips to Improve SEO Score
-- Keep articles ≥ 1500 words (aim for 2000+)
-- Always include the target keyword in the H1 title
-- Use 3–5 H2 subheadings with related terms
-- Add a bullet or numbered list in every article
-- Ensure Pexels featured image is fetched correctly`,
+---
+
+## Modern SEO Strategy 2024–2025
+
+### 1. E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness)
+Google's quality rater guidelines heavily weight E-E-A-T — especially for YMYL (Your Money Your Life) topics like finance, health, and marketing.
+
+- **Experience**: Add first-person case studies, real data ("our agency tested X and saw Y% improvement")
+- **Expertise**: Include author credentials, cite research papers or industry studies (HubSpot, Semrush, Google)
+- **Authoritativeness**: Earn backlinks from .edu, .gov, or high-DA industry sites
+- **Trustworthiness**: Include accurate statistics with source dates (avoid outdated stats)
+
+### 2. Semantic SEO & Topical Authority
+Google understands topics, not just keywords. Build topic clusters:
+- **Pillar page**: Comprehensive guide on a broad topic (e.g., "Panduan Google Ads Lengkap")
+- **Cluster pages**: Deep-dives on subtopics linked back to pillar (e.g., "Cara Setting Google Ads untuk UMKM")
+- **Entity coverage**: Mention related entities (brands, tools, concepts) naturally in content
+
+### 3. Search Intent Alignment
+Mismatching intent is the #1 reason content doesn't rank:
+
+| Intent | Content Format | Example |
+|---|---|---|
+| Informational | Long-form guide, how-to, definitions | "apa itu google ads" |
+| Commercial | Comparison, review, pros/cons | "google ads vs facebook ads" |
+| Transactional | Landing page, CTA-focused | "jasa google ads jakarta" |
+| Navigational | Brand page, service page | "nuswalab digital marketing" |
+
+### 4. Content Structure for Ranking
+- **Title tag**: Include keyword + power word (e.g., "Panduan Lengkap", "Terbaru 2025", "Terbukti")
+- **Meta description**: 150–160 chars, keyword + clear benefit + CTA
+- **H1**: Exact-match or close variant of target keyword
+- **H2s**: Use question format (Who, What, Why, How, When) — matches "People Also Ask"
+- **First 100 words**: State the keyword and promise what the article delivers
+- **Conclusion**: Summarize key points + CTA (internal link to service page)
+
+### 5. Core Web Vitals (Technical SEO)
+Google's ranking signals since 2021:
+- **LCP (Largest Contentful Paint)**: < 2.5s — optimize images (WebP, lazy load)
+- **FID/INP (Interaction to Next Paint)**: < 200ms — minimize JS blocking
+- **CLS (Cumulative Layout Shift)**: < 0.1 — set width/height on images, avoid ads shifting layout
+
+### 6. Indonesian Local SEO Tips
+- Use Bahasa Indonesia keyword variants: "cara", "panduan", "tips", "terbaik", "murah"
+- Target "[service] + [kota]" for local intent (e.g., "jasa SEO Surabaya")
+- Register Google Business Profile for local pack ranking
+- Get citations from Indonesian directories (Tokopedia seller page, Yellow Pages ID)
+
+### Quick Wins for Article Generator
+- ✅ Aim for 2000–2500 words per article
+- ✅ Include keyword in H1, first paragraph, at least 2 H2s
+- ✅ Add 1 external link to authoritative source (Google, HubSpot, Semrush blog)
+- ✅ Include 1 data table or comparison
+- ✅ End with FAQ section (helps with "People Also Ask" boxes)`,
   },
   {
-    title: "AEO Scoring Guide",
+    title: "AEO Strategy & Scoring",
     icon: "🤖",
-    content: `## How AEO Score is Calculated
+    content: `## AEO Score Calculation
 
-AEO (Answer Engine Optimization) score targets voice search and AI snippets:
+AEO (Answer Engine Optimization) score targets voice search, featured snippets, and AI assistant citations:
 
 | Check | Points |
 |---|---|
@@ -112,21 +160,93 @@ AEO (Answer Engine Optimization) score targets voice search and AI snippets:
 | Answers "what is" / "how to" | +15 |
 | Short direct sentences | +15 |
 
-**Target: 60+ for AI assistant citation.**
+**Target: 60+ for AI assistant citation and featured snippet inclusion.**
 
-### Tips to Improve AEO Score
-- Always include a **FAQ** section (minimum 5 Q&A pairs)
-- Open article with a concise 2-sentence definition
-- Use "How to" H2 sections with numbered steps
-- Answer questions directly — avoid burying the answer
-- The Claude prompt already asks for FAQ, but verify in generated content`,
+---
+
+## Modern AEO Strategy 2024–2025
+
+### What is AEO?
+Answer Engine Optimization is the practice of structuring content so that AI assistants (Siri, Alexa, Google Assistant), voice search, and Google's featured snippet boxes can extract and present your answer directly — without the user clicking through.
+
+### 1. Featured Snippet Optimization
+Google's featured snippets (position zero) are the primary AEO target:
+
+**Paragraph snippets** (most common):
+- Answer the question in the **first 40–60 words** of a section
+- Start with "X adalah..." or "X merupakan..." for definition queries
+- Follow immediately with 2–3 supporting sentences
+
+**List snippets**:
+- Use \`<ol>\` or \`<ul>\` for "cara", "langkah", "tips" queries
+- Keep each item under 10 words
+- 5–8 items is the sweet spot
+
+**Table snippets**:
+- Use for comparison queries ("X vs Y", "perbedaan A dan B")
+- Keep tables simple: 2–4 columns, clear headers
+
+### 2. FAQ Schema Markup
+FAQ schema is critical for AEO — it gets your Q&A directly into Google SERPs:
+
+\`\`\`json
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "Apa itu Google Ads?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Google Ads adalah platform periklanan berbayar dari Google..."
+    }
+  }]
+}
+\`\`\`
+
+- Minimum **5 Q&A pairs** per article
+- Questions should match actual search queries (check "People Also Ask" boxes)
+- Answers: 40–300 words, direct and factual
+
+### 3. Voice Search Optimization
+Voice search queries are **conversational** and **longer** than typed queries:
+- Target natural language: "bagaimana cara setting Google Ads untuk pemula"
+- Use question-format H2 headings: "Berapa Biaya Google Ads per Bulan?"
+- Answer immediately after the question heading (no preamble)
+- Local queries: optimize for "dekat saya" and "[layanan] di [kota]"
+
+### 4. "People Also Ask" (PAA) Optimization
+PAA boxes appear in 40%+ of Google searches and drive significant AEO visibility:
+- Research PAA boxes for your target keyword
+- Create a dedicated H2 section answering each PAA question
+- Format: question as H3, concise 2–3 sentence answer immediately after
+
+### 5. Conversational Content Structure
+AI assistants prefer content that sounds like it's answering a person directly:
+
+**DO:**
+- "Google Ads bekerja dengan cara..."
+- "Untuk memulai, Anda perlu..."
+- "Langkah pertama adalah..."
+
+**DON'T:**
+- Long introductory paragraphs before the answer
+- Passive voice constructions
+- Vague language ("mungkin", "bisa jadi")
+
+### Quick Wins for Article Generator
+- ✅ Always include a ## FAQ section with 5+ Q&As
+- ✅ Open with a crisp 2-sentence definition of the topic
+- ✅ Use numbered lists for any "how to" content
+- ✅ Add FAQ JSON-LD schema in article \`<head>\`
+- ✅ Match H2 headings to question-format PAA queries`,
   },
   {
-    title: "AIO Scoring Guide",
+    title: "AIO / GEO Strategy & Scoring",
     icon: "✨",
-    content: `## How AIO Score is Calculated
+    content: `## AIO Score Calculation
 
-AIO (AI Overview / GEO) score targets Google's AI Overviews and LLM citations:
+AIO (AI Overview / GEO — Generative Engine Optimization) score targets Google's AI Overviews and LLM citation:
 
 | Check | Points |
 |---|---|
@@ -136,14 +256,78 @@ AIO (AI Overview / GEO) score targets Google's AI Overviews and LLM citations:
 | Structured data present | +15 |
 | Expert perspective mentioned | +20 |
 
-**Target: 60+ for AI Overview inclusion.**
+**Target: 60+ for AI Overview inclusion and LLM citation.**
 
-### Tips to Improve AIO Score
-- Include at least 3 statistics with source references
-- Add comparison tables (e.g., Tool A vs Tool B)
-- Mention industry experts or research firms
-- Claude prompt asks for stats — verify numbers are realistic
-- Consider adding JSON-LD FAQ schema to article pages`,
+---
+
+## Modern GEO / AIO Strategy 2024–2025
+
+### What Changed: Google AI Overviews
+Google AI Overviews (formerly Search Generative Experience / SGE) launched globally in 2024. Instead of showing 10 blue links, Google now synthesizes an answer from multiple web sources at the top of the SERP. Being cited = massive exposure without requiring a click.
+
+### 1. The GEO Content Framework
+Research from Princeton/Georgia Tech (2024) identified what content AI systems prefer to cite:
+
+| Signal | Impact | How to Implement |
+|---|---|---|
+| Statistics with sources | Very High | "Menurut laporan HubSpot 2024, 72% marketer..." |
+| Quotations from experts | High | Include named expert quotes |
+| Research citations | High | Reference Google, Semrush, McKinsey reports |
+| Fluency & clarity | Medium | Short paragraphs, active voice |
+| Unique insights | High | First-person data, original analysis |
+
+### 2. Cite-worthy Content Patterns
+LLMs (GPT, Claude, Gemini) and Google AI Overviews prefer to cite content that:
+
+**Has verifiable claims:**
+- ✅ "CTR iklan display rata-rata 0.1% (Google, 2024)"
+- ❌ "CTR iklan display sangat rendah"
+
+**Presents structured comparisons:**
+| Tool | Kelebihan | Kekurangan | Harga |
+|---|---|---|---|
+| Google Ads | Reach terluas, intent tinggi | Mahal, kurva belajar curam | Rp 5.000/klik |
+| Meta Ads | Visual, targeting demografi | Intent lebih rendah | Rp 2.000/klik |
+
+**Contains expert perspectives:**
+- "Neil Patel merekomendasikan..."
+- "Menurut Rand Fishkin dari SparkToro..."
+- "Pakar SEO setuju bahwa..."
+
+### 3. Structured Data Beyond FAQ
+Structured data helps AI understand your content's entities:
+
+**Article schema**: Author, datePublished, organization
+**HowTo schema**: For step-by-step guides
+**BreadcrumbList**: For hierarchy signal
+**Organization schema**: For brand E-E-A-T
+
+### 4. Content Depth & Comprehensiveness
+AI systems prefer content that covers a topic completely:
+- **Primary topic**: 60% of content
+- **Subtopics**: Cover all related angles (why, how, when, who, cost, examples)
+- **Counter-arguments**: Acknowledge limitations ("Google Ads tidak cocok untuk bisnis X karena...")
+- **Next steps**: Always recommend actionable follow-up
+
+### 5. Freshness Signals
+AI Overviews strongly prefer fresh content:
+- Include the current year in the title: "Panduan Google Ads 2025"
+- Mention recent updates: "Setelah pembaruan Google Helpful Content 2024..."
+- Update existing articles with new stats (re-publish date matters)
+- Add "Terakhir diperbarui: [bulan tahun]" near the top
+
+### 6. Multi-Modal Signals
+- **Images with descriptive alt text**: "infografis cara kerja google ads bidding"
+- **Video embeds**: Articles with embedded video get 3x more AI Overview citations
+- **Data visualizations**: Charts and graphs described in text
+
+### Quick Wins for Article Generator
+- ✅ Include 3+ statistics with source and year in parentheses
+- ✅ Add at least 1 comparison table per article
+- ✅ Mention 1–2 industry experts or research firms by name
+- ✅ Add Article + FAQ JSON-LD schema
+- ✅ Include "updated [year]" in title or meta
+- ✅ Cover topic comprehensively — avoid thin content`,
   },
   {
     title: "Keyword Strategy Guide",
@@ -152,14 +336,23 @@ AIO (AI Overview / GEO) score targets Google's AI Overviews and LLM citations:
 
 ### By Search Intent
 
-| Intent | Goal | Example |
-|---|---|---|
-| Informational | Education / top of funnel | "apa itu google ads" |
-| Transactional | Drive conversions | "jasa google ads terpercaya" |
-| Commercial | Research before buy | "google ads vs facebook ads" |
-| Navigational | Brand searches | "nuswalab digital marketing" |
+| Intent | Goal | Content Type | Example |
+|---|---|---|---|
+| Informational | Education / top of funnel | Long-form guide, how-to | "apa itu google ads" |
+| Commercial | Research before buy | Comparison, review | "google ads vs facebook ads" |
+| Transactional | Drive conversions | Landing page, CTA | "jasa google ads terpercaya" |
+| Navigational | Brand searches | Service/brand page | "nuswalab digital marketing" |
 
-### Category Priority
+### Keyword Difficulty vs. Opportunity Matrix
+
+| Zone | KD | Volume | Strategy |
+|---|---|---|---|
+| Quick Wins | Low (0–30) | Medium | Publish fast, rank in 1–3 months |
+| Long-term | High (60+) | High | Build authority slowly |
+| Niche Gold | Low (0–30) | Low | Low effort, high conversion |
+| Avoid | High (60+) | Low | Not worth the effort |
+
+### Category Priority for Nuswalab
 1. **Google Ads** — High commercial intent, direct service match
 2. **SEO** — Long-tail, high volume informational
 3. **Social Media Marketing** — Broad audience, shareable
@@ -167,11 +360,34 @@ AIO (AI Overview / GEO) score targets Google's AI Overviews and LLM citations:
 5. **Content Marketing** — Thought leadership, E-E-A-T signals
 6. **Email Marketing** — Niche but high conversion intent
 
-### Volume & Competition
-- Target 3–5 word long-tail phrases for new keywords
-- Mix 60% informational + 30% commercial + 10% transactional
-- Avoid single-word keywords (too competitive)
-- Use Bahasa Indonesia variants for local SEO`,
+### Long-tail Keyword Formula
+Long-tail keywords (3–5 words) account for 70% of all searches:
+
+\`\`\`
+[modifier] + [main keyword] + [qualifier]
+
+"cara" + "setting google ads" + "untuk pemula"
+"tips" + "seo" + "terbaru 2025"
+"strategi" + "email marketing" + "meningkatkan konversi"
+\`\`\`
+
+### Keyword Mix Strategy
+- **60% Informational** — "apa itu", "cara", "panduan", "tips" → drives organic traffic
+- **30% Commercial** — "terbaik", "rekomendasi", "vs", "perbandingan" → drives leads
+- **10% Transactional** — "jasa", "harga", "biaya", "hire" → drives conversions
+
+### Indonesian Language Variants
+Always generate Bahasa Indonesia variants:
+- Formal: "strategi pemasaran digital"
+- Informal: "cara belajar digital marketing"
+- Slang/colloquial: "tips iklan fb biar laris"
+- Local: "[keyword] + [kota]" for local intent
+
+### Keyword Research Process
+1. Seed keyword → expand with "apa itu", "cara", "tips", "terbaik", "2025"
+2. Check Google autocomplete + PAA boxes for related questions
+3. Validate with free tools: Ubersuggest, Google Keyword Planner, Ahrefs free
+4. Group by intent before adding to queue`,
   },
   {
     title: "Article Generation Workflow",
@@ -207,32 +423,163 @@ Generator runs automatically at **7 PM (19:00) WIB** daily.
 0 19 * * * cd /home/ubuntu/nuswalab && node scripts/keyword-article-gen.js >> logs/article-gen.log 2>&1
 \`\`\`
 
+### Optimal Prompt Structure for Claude
+For best SEO/AEO/AIO scores, prompts should request:
+1. **Definition paragraph** in first 100 words (AEO)
+2. **Word count ≥ 2000** (SEO)
+3. **Numbered steps** for "how to" content (AEO)
+4. **3+ statistics** with source in parentheses (AIO)
+5. **1 comparison table** (AIO)
+6. **5+ FAQ pairs** at the end (AEO + AIO)
+7. **Keyword** in H1 and first 2 H2 headings (SEO)
+
 ### Rate Limits
 - Max 3 articles per run by default (configurable)
 - Anthropic API: up to 5 req/min on standard tier
-- Pexels: 200 req/hour, 20,000 req/month`,
+- Pexels: 200 req/hour, 20,000 req/month
+
+### Quality Checklist (Post-Generation)
+- [ ] SEO score ≥ 70?
+- [ ] AEO score ≥ 60?
+- [ ] AIO score ≥ 60?
+- [ ] Featured image loaded?
+- [ ] No hallucinated statistics?
+- [ ] FAQ section present with ≥5 Q&As?`,
   },
   {
-    title: "Internal Linking Guide",
+    title: "E-E-A-T & Content Quality",
+    icon: "⭐",
+    content: `## E-E-A-T: Google's Quality Framework
+
+E-E-A-T stands for **Experience, Expertise, Authoritativeness, Trustworthiness** — Google's framework for evaluating content quality, especially important since the Helpful Content Updates (2022–2024).
+
+### Why E-E-A-T Matters
+Google's Search Quality Rater Guidelines use E-E-A-T to train ranking algorithms. Low E-E-A-T content gets demoted; high E-E-A-T content ranks even with fewer backlinks.
+
+---
+
+### 1. Experience (Pengalaman)
+**What it means**: Content written by someone with first-hand experience with the topic.
+
+**How to signal it in articles:**
+- Include real examples: "Ketika kami mengelola kampanye Google Ads untuk klien e-commerce..."
+- Add specific data from real projects: "Dengan budget Rp 5 juta/bulan, kami berhasil mencapai ROAS 4x"
+- Use "kami", "tim kami", "berdasarkan pengalaman kami" naturally
+- Show before/after: "Sebelum optimasi CTR 1.2%, setelah optimasi 3.8%"
+
+### 2. Expertise (Keahlian)
+**What it means**: Content demonstrates deep knowledge of the subject.
+
+**How to signal it:**
+- Use correct industry terminology (CPC, ROAS, CTR, Quality Score, Ad Rank)
+- Explain nuances: "Google Ads menggunakan second-price auction, artinya..."
+- Reference official Google documentation or Google's own guidelines
+- Avoid oversimplification — acknowledge edge cases and exceptions
+
+### 3. Authoritativeness (Otoritas)
+**What it means**: Your site/brand is recognized as a go-to source in your niche.
+
+**How to build it:**
+- **Backlink strategy**: Guest post on Glints, IDN Times, Detik Finance, Kompas Tekno
+- **Citation**: Get mentioned in Indonesian marketing forums (Kaskus bisnis, Facebook groups)
+- **Social proof**: Mention client count, years in business, awards
+- **Content depth**: Publish the most comprehensive guide on each topic
+
+### 4. Trustworthiness (Kepercayaan)
+**What it means**: Users and Google can trust your content is accurate and honest.
+
+**How to signal it:**
+- Cite sources: "Menurut laporan Think with Google 2024..."
+- Acknowledge limitations: "Google Ads tidak selalu cocok untuk semua bisnis"
+- Update content: Add "Terakhir diperbarui: [bulan tahun]"
+- Include accurate contact info and about page
+
+---
+
+### Helpful Content Signals (2024)
+Since the Helpful Content Update, Google penalizes "content for search engines":
+
+**Content Google REWARDS:**
+- Written for actual humans with real questions
+- Provides insight or analysis beyond what's obvious
+- Satisfies the user's query without making them search again
+- Has a clear purpose and audience
+
+**Content Google PENALIZES:**
+- Thin content that rephrases other articles
+- Keyword stuffing or forced keyword insertion
+- Content that doesn't add new value
+- Clickbait titles that don't match content
+
+### E-E-A-T Checklist for Generated Articles
+- [ ] Has at least 1 first-person experience statement
+- [ ] Uses correct technical terminology
+- [ ] Cites at least 1 authoritative source
+- [ ] Acknowledges limitations or exceptions
+- [ ] Statistics have source and year
+- [ ] Content fully satisfies the search query`,
+  },
+  {
+    title: "Internal Linking & Site Architecture",
     icon: "🔗",
-    content: `## Internal Linking Best Practices
+    content: `## Internal Linking Strategy
 
-Internal links distribute PageRank and improve crawlability.
+Internal links distribute PageRank (link equity), improve crawlability, and keep users on-site longer — all positive ranking signals.
 
-### Current Setup
-Articles are generated independently. To add internal links:
+### Site Architecture Principle: Flat vs. Deep
 
-1. **After generation**, edit article HTML to add links to related articles
-2. Use keyword-rich anchor text (not "click here")
-3. Link from high-traffic pages to newer, lower-traffic pages
+**Flat architecture (recommended for SEO):**
+\`\`\`
+Homepage
+├── /blog/panduan-google-ads (Pillar)
+│   └── /blog/cara-setting-google-ads (Cluster)
+│   └── /blog/google-ads-untuk-umkm (Cluster)
+└── /blog/panduan-seo (Pillar)
+    └── /blog/teknik-seo-onpage (Cluster)
+\`\`\`
+- No article should be more than **3 clicks from homepage**
+- Pillar pages link to all cluster pages
+- Cluster pages link back to pillar + to related clusters
 
-### Anchor Text Rules
-- ✅ "baca panduan lengkap tentang [keyword]"
-- ✅ "strategi [keyword] yang sudah terbukti"
-- ❌ "klik di sini" (no keyword value)
-- ❌ Same anchor text for different pages (confuses Google)
+### Internal Link Placement
+**High-value placements (pass most PageRank):**
+1. First 200 words of the article (editorial context = high value)
+2. Within the body text using descriptive anchor text
+3. "Related Articles" section at the end
 
-### Minimum: 2–3 internal links per article`,
+**Avoid:**
+- Footer or sidebar "related posts" widgets (low value)
+- Too many links in a single paragraph (dilutes value)
+- Navigation menus only (technical crawl links, less editorial value)
+
+### Anchor Text Best Practices
+
+| Type | Example | Usage |
+|---|---|---|
+| Exact match | "panduan google ads" | Use sparingly (1–2x per site) |
+| Partial match | "strategi google ads terbaik" | Most common, natural |
+| Branded | "layanan Nuswalab" | For service pages |
+| Generic | "klik di sini" | AVOID — no keyword signal |
+| Naked URL | "nuswalab.com/blog/..." | Occasionally OK |
+
+### Minimum Internal Link Requirements
+- **Every article**: 2–3 internal links to related articles
+- **Pillar articles**: 5–8 links to cluster articles
+- **Category pages**: Link to all articles in that category
+- **Homepage**: Link to top 5 pillar articles
+
+### PageRank Flow Strategy
+1. Identify your **top-traffic articles** (check Google Search Console)
+2. Add internal links FROM high-traffic articles TO newer/lower-traffic articles
+3. This "passes" authority to help new content rank faster
+
+### Crawl Efficiency
+- Submit updated sitemap to Google Search Console after each batch publish
+- Ensure all articles appear in \`/sitemap.xml\`
+- Fix broken internal links monthly (crawl with Screaming Frog free tier)
+
+### Implementation in Article Generator
+Add to Claude prompt: "End the article with a 'Artikel Terkait' section suggesting 2-3 related topics from this list: [inject category keywords]"`,
   },
 ];
 
