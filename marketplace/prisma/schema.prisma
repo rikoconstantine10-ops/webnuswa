@@ -61,6 +61,8 @@ model Store {
   logoUrl           String?
   bannerUrl         String?
   layoutBlocks      Json?   // blok kustom halaman toko (banner promo, produk pilihan, dst) — lihat lib/storeBlocks.ts
+  enabledPaymentTypes String[] @default([]) // kosong = semua metode pembayaran diizinkan (lihat lib/louvin.ts PAYMENT_TYPES)
+  enabledCouriers   String[]      @default([]) // kosong = semua kurir default diizinkan (lihat lib/biteship.ts)
   whatsapp          String? // nomor WA toko, format 628xxx
   customDomain      String?       @unique
   metaPixelId       String?

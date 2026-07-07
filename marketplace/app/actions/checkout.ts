@@ -91,6 +91,10 @@ export async function checkoutAction(
   if (!product || !product.active || product.moderation !== "APPROVED" || product.store.status !== "ACTIVE") {
     return { error: "Produk tidak tersedia" };
   }
+  const allowedPayments = product.store.enabledPaymentTypes;
+  if (allowedPayments.length > 0 && !allowedPayments.includes(input.paymentType)) {
+    return { error: "Metode pembayaran tidak tersedia untuk toko ini" };
+  }
 
   // Add-on yang dipilih pembeli (checkbox addonIds). Hanya add-on sah milik produk ini.
   const chosenAddonIds = formData.getAll("addonIds").map(String);
@@ -131,6 +135,12 @@ export async function checkoutAction(
     }
     if (!input.destAreaId || !input.courierCompany || !input.courierType) {
       return { error: "Pilih tujuan dan kurir pengiriman dulu" };
+    }
+    if (
+      product.store.enabledCouriers.length > 0 &&
+      !product.store.enabledCouriers.includes(input.courierCompany)
+    ) {
+      return { error: "Kurir tidak tersedia untuk toko ini" };
     }
     // Kurir instan (Gojek/Grab/Lalamove) butuh koordinat toko & pembeli.
     const isInstant = INSTANT_COURIER_CODES.has(input.courierCompany);

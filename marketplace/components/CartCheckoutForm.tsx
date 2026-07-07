@@ -18,6 +18,7 @@ type Props = {
   defaultName?: string;
   defaultEmail?: string;
   cryptoEnabled?: boolean;
+  enabledPaymentTypes?: string[];
 };
 
 export default function CartCheckoutForm({
@@ -30,6 +31,7 @@ export default function CartCheckoutForm({
   defaultName,
   defaultEmail,
   cryptoEnabled = false,
+  enabledPaymentTypes = [],
 }: Props) {
   const [state, formAction, pending] = useActionState(checkoutCartAction, {});
 
@@ -120,8 +122,9 @@ export default function CartCheckoutForm({
     }
   }
 
-  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal));
-  const vaHidden = available.length < PAYMENT_TYPES.length;
+  const paymentAllowed = (id: string) => enabledPaymentTypes.length === 0 || enabledPaymentTypes.includes(id);
+  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal) && paymentAllowed(pt.id));
+  const vaHidden = available.length < PAYMENT_TYPES.filter((pt) => paymentAllowed(pt.id)).length;
 
   return (
     <form action={formAction} className="space-y-3">
@@ -196,13 +199,13 @@ export default function CartCheckoutForm({
               {pt.label}
             </label>
           ))}
-          {hasPhysical && courier?.cod && (
+          {hasPhysical && courier?.cod && paymentAllowed("cod") && (
             <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
               <input type="radio" name="paymentType" value="cod" required />
               💵 COD — Bayar di Tempat
             </label>
           )}
-          {cryptoEnabled && (
+          {cryptoEnabled && paymentAllowed("crypto") && (
             <label className="flex items-center gap-2 border border-indigo-300 bg-indigo-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 col-span-2">
               <input type="radio" name="paymentType" value="crypto" required />
               ₿ Crypto — USDT / BTC / ETH dll (via Paymento)

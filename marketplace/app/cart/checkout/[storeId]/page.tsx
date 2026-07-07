@@ -69,6 +69,7 @@ export default async function CartCheckoutPage({ params }: { params: Promise<{ s
           defaultName={user?.name ?? undefined}
           defaultEmail={user?.email}
           cryptoEnabled={isPaymentoConfigured()}
+          enabledPaymentTypes={store.enabledPaymentTypes}
         />
       </div>
     </div>

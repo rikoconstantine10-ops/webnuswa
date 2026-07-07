@@ -247,6 +247,7 @@ export default async function ProductPage({
               defaultEmail={user?.email}
               userPoints={user?.points ?? 0}
               cryptoEnabled={isPaymentoConfigured()}
+              enabledPaymentTypes={product.store.enabledPaymentTypes}
             />
           )}
           {!outOfStock && (

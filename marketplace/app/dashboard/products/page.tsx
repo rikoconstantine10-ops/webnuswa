@@ -74,9 +74,9 @@ export default async function ProductsPage() {
                     </Link>
                     <Link
                       href={`/dashboard/products/${p.id}/addons`}
-                      className="text-slate-500 font-semibold hover:underline mr-3"
+                      className="text-teal-600 font-semibold hover:underline mr-3"
                     >
-                      Add-on
+                      🎁 Add-on
                     </Link>
                     <span className="mr-3 inline-block">
                       <BoostButton productId={p.id} boostedUntil={p.boostedUntil} />

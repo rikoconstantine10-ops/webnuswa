@@ -137,6 +137,9 @@ export async function checkoutCartAction(
   if (cartItems.length === 0) return { error: "Keranjang toko ini kosong" };
   const store = cartItems[0].product.store;
   if (store.status !== "ACTIVE") return { error: "Toko tidak aktif" };
+  if (store.enabledPaymentTypes.length > 0 && !store.enabledPaymentTypes.includes(input.paymentType)) {
+    return { error: "Metode pembayaran tidak tersedia untuk toko ini" };
+  }
 
   let subtotal = 0;
   let hasPhysical = false;
@@ -165,6 +168,9 @@ export async function checkoutCartAction(
     if (!input.shippingAddress || input.shippingAddress.trim().length < 10) return { error: "Alamat pengiriman wajib diisi" };
     if (!store.originAreaId) return { error: "Toko belum mengatur alamat asal pengiriman" };
     if (!input.destAreaId || !input.courierCompany || !input.courierType) return { error: "Pilih tujuan & kurir dulu" };
+    if (store.enabledCouriers.length > 0 && !store.enabledCouriers.includes(input.courierCompany)) {
+      return { error: "Kurir tidak tersedia untuk toko ini" };
+    }
     const isInstant = INSTANT_COURIER_CODES.has(input.courierCompany);
     const rates = await getRates({
       originAreaId: store.originAreaId,

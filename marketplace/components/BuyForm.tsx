@@ -25,6 +25,7 @@ type Props = {
   defaultEmail?: string;
   userPoints?: number;
   cryptoEnabled?: boolean;
+  enabledPaymentTypes?: string[];
 };
 
 export default function BuyForm({
@@ -41,6 +42,7 @@ export default function BuyForm({
   defaultEmail,
   userPoints = 0,
   cryptoEnabled = false,
+  enabledPaymentTypes = [],
 }: Props) {
   const [state, formAction, pending] = useActionState(checkoutAction, {});
   const [qty, setQty] = useState(1);
@@ -180,8 +182,9 @@ export default function BuyForm({
     };
   }, [isPhysical, destAreaId, safeQty, productId, destLat, destLng, hasBuyerCoord]);
 
-  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal));
-  const vaHidden = available.length < PAYMENT_TYPES.length;
+  const paymentAllowed = (id: string) => enabledPaymentTypes.length === 0 || enabledPaymentTypes.includes(id);
+  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal) && paymentAllowed(pt.id));
+  const vaHidden = available.length < PAYMENT_TYPES.filter((pt) => paymentAllowed(pt.id)).length;
   const shippingReady = !isPhysical || Boolean(courier);
 
   return (
@@ -426,13 +429,13 @@ export default function BuyForm({
               {pt.label}
             </label>
           ))}
-          {isPhysical && courier?.cod && (
+          {isPhysical && courier?.cod && paymentAllowed("cod") && (
             <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
               <input type="radio" name="paymentType" value="cod" onChange={() => setPayMethod("cod")} required />
               💵 COD — Bayar di Tempat (tunai ke kurir saat barang sampai)
             </label>
           )}
-          {cryptoEnabled && (
+          {cryptoEnabled && paymentAllowed("crypto") && (
             <label className="flex items-center gap-2 border border-indigo-300 bg-indigo-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 col-span-2">
               <input type="radio" name="paymentType" value="crypto" onChange={() => setPayMethod("crypto")} required />
               ₿ Crypto — USDT / BTC / ETH dll (via Paymento)

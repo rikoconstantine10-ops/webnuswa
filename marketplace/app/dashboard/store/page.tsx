@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import StoreSettingsForm from "@/components/StoreSettingsForm";
+import FulfillmentSettingsForm from "@/components/FulfillmentSettingsForm";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function StoreSettingsPage() {
         </Link>
       </div>
       <StoreSettingsForm store={store} />
+      <FulfillmentSettingsForm enabledPaymentTypes={store.enabledPaymentTypes} enabledCouriers={store.enabledCouriers} />
     </div>
   );
 }

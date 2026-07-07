@@ -14,6 +14,7 @@ const NAV = [
   { href: "/dashboard/withdrawals", label: "Saldo & Penarikan" },
   { href: "/dashboard/subscription", label: "Langganan Pro" },
   { href: "/dashboard/store", label: "Pengaturan Toko" },
+  { href: "/dashboard/store/builder", label: "Desain Toko" },
 ];
 
 export default async function DashboardLayout({
@@ -45,6 +46,14 @@ export default async function DashboardLayout({
                 ? "Menunggu Persetujuan"
                 : "Ditangguhkan"}
           </p>
+          <a
+            href={`/s/${user.store.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="block text-xs font-semibold text-teal-600 hover:underline mb-3"
+          >
+            🔗 Lihat Halaman Toko
+          </a>
           <nav className="space-y-1">
             {NAV.map((item) => (
               <Link

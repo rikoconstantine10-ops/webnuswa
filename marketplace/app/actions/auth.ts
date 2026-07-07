@@ -55,7 +55,7 @@ export async function registerSellerAction(
   }
 
   const store = await db.store.create({
-    data: { ownerId: user.id, name, slug, description: description || null },
+    data: { ownerId: user.id, name, slug, description: description || null, status: "ACTIVE" },
   });
   await db.user.update({
     where: { id: user.id },

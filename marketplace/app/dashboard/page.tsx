@@ -63,7 +63,15 @@ export default async function DashboardHome() {
         </p>
       ))}
 
-      <h1 className="text-2xl font-extrabold">Ringkasan Toko</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-extrabold">Ringkasan Toko</h1>
+        <Link
+          href="/dashboard/withdrawals"
+          className="bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700"
+        >
+          💸 Tarik Dana
+        </Link>
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="bg-white rounded-2xl border border-slate-200 p-5">

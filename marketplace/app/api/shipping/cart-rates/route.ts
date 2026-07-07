@@ -56,14 +56,17 @@ export async function POST(req: NextRequest) {
   if (!result.success) return NextResponse.json({ error: result.error, pricing: [] });
 
   const instantSet = new Set(INSTANT_COURIERS.split(","));
-  const pricing = result.pricing.map((p) => ({
-    company: p.courier_code,
-    type: p.courier_service_code,
-    name: `${p.courier_name} ${p.courier_service_name}`,
-    price: p.price,
-    duration: p.duration || p.shipment_duration_range || "",
-    instant: instantSet.has(p.courier_code),
-    cod: Boolean(p.available_for_cash_on_delivery),
-  }));
+  const enabledCouriers = store.enabledCouriers;
+  const pricing = result.pricing
+    .filter((p) => enabledCouriers.length === 0 || enabledCouriers.includes(p.courier_code))
+    .map((p) => ({
+      company: p.courier_code,
+      type: p.courier_service_code,
+      name: `${p.courier_name} ${p.courier_service_name}`,
+      price: p.price,
+      duration: p.duration || p.shipment_duration_range || "",
+      instant: instantSet.has(p.courier_code),
+      cod: Boolean(p.available_for_cash_on_delivery),
+    }));
   return NextResponse.json({ pricing });
 }

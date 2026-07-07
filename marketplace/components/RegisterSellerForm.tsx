@@ -31,7 +31,7 @@ export default function RegisterSellerForm() {
         {pending ? "Membuat toko..." : "Buat Toko"}
       </button>
       <p className="text-xs text-slate-500">
-        Toko baru berstatus <b>menunggu persetujuan admin</b> sebelum produkmu tampil di marketplace.
+        Tokomu langsung aktif setelah dibuat — tidak perlu menunggu persetujuan admin.
       </p>
     </form>
   );

@@ -79,6 +79,19 @@ export async function updateStoreAction(
   return { saved: true };
 }
 
+// Metode pembayaran & kurir yang diizinkan seller (kosong = semua diizinkan, default).
+export async function updateFulfillmentSettingsAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const enabledPaymentTypes = formData.getAll("enabledPaymentTypes").map(String);
+  const enabledCouriers = formData.getAll("enabledCouriers").map(String);
+
+  await db.store.update({
+    where: { id: store.id },
+    data: { enabledPaymentTypes, enabledCouriers },
+  });
+  revalidatePath("/dashboard/store");
+}
+
 export async function requestWithdrawalAction(
   _prev: { error?: string },
   formData: FormData
