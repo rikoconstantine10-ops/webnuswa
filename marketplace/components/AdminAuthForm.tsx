@@ -2,28 +2,12 @@
 
 import { useState } from "react";
 import { useActionState } from "react";
-import Script from "next/script";
+import { TurnstileWidget, TURNSTILE_SITE_KEY } from "./TurnstileWidget";
 import {
   adminRequestOtpAction,
   adminVerifyOtpAction,
   adminPasswordLoginAction,
 } from "@/app/actions/auth";
-
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-
-function TurnstileWidget() {
-  if (!TURNSTILE_SITE_KEY) return null;
-  return (
-    <>
-      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
-      <div
-        className="cf-turnstile"
-        data-sitekey={TURNSTILE_SITE_KEY}
-        data-response-field-name="turnstileToken"
-      />
-    </>
-  );
-}
 
 function OtpTab() {
   const [state, formAction, pending] = useActionState(
@@ -35,6 +19,7 @@ function OtpTab() {
     },
     { step: "email", email: "" }
   );
+  const [turnstileReady, setTurnstileReady] = useState(!TURNSTILE_SITE_KEY);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -47,12 +32,12 @@ function OtpTab() {
             placeholder="Email admin"
             className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
           />
-          <TurnstileWidget />
+          <TurnstileWidget onReadyChange={setTurnstileReady} />
           <button
-            disabled={pending}
+            disabled={pending || !turnstileReady}
             className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 disabled:opacity-50"
           >
-            {pending ? "Mengirim kode..." : "Kirim Kode OTP"}
+            {pending ? "Mengirim kode..." : turnstileReady ? "Kirim Kode OTP" : "Menyiapkan verifikasi keamanan..."}
           </button>
         </>
       ) : (
@@ -88,6 +73,7 @@ function OtpTab() {
 
 function PasswordTab() {
   const [state, formAction, pending] = useActionState(adminPasswordLoginAction, {});
+  const [turnstileReady, setTurnstileReady] = useState(!TURNSTILE_SITE_KEY);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -105,12 +91,12 @@ function PasswordTab() {
         placeholder="Password"
         className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
       />
-      <TurnstileWidget />
+      <TurnstileWidget onReadyChange={setTurnstileReady} />
       <button
-        disabled={pending}
+        disabled={pending || !turnstileReady}
         className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 disabled:opacity-50"
       >
-        {pending ? "Memproses..." : "Masuk dengan Password"}
+        {pending ? "Memproses..." : turnstileReady ? "Masuk dengan Password" : "Menyiapkan verifikasi keamanan..."}
       </button>
       {state.error && (
         <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{state.error}</p>
