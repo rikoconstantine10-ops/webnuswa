@@ -77,7 +77,7 @@ export default async function RootLayout({
               ) : (
                 <>
                   <Link href="/login" className="text-slate-600 hover:text-teal-600 hidden sm:inline">
-                    Masuk
+                    Masuk Pembeli
                   </Link>
                   <Link
                     href="/register-seller"

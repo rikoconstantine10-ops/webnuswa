@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
+import { getGuestId } from "@/lib/guestCart";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { updateCartQtyAction, removeCartItemAction } from "@/app/actions/cart";
@@ -19,13 +19,21 @@ function unitPrice(
 
 export default async function CartPage() {
   const user = await currentUser();
-  if (!user) redirect("/login?next=/cart");
+  const guestId = user ? null : await getGuestId();
 
-  const items = await db.cartItem.findMany({
-    where: { userId: user.id },
-    include: { product: { include: { store: true, variants: true, wholesaleTiers: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const items = user
+    ? await db.cartItem.findMany({
+        where: { userId: user.id },
+        include: { product: { include: { store: true, variants: true, wholesaleTiers: true } } },
+        orderBy: { createdAt: "desc" },
+      })
+    : guestId
+    ? await db.cartItem.findMany({
+        where: { guestId },
+        include: { product: { include: { store: true, variants: true, wholesaleTiers: true } } },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
 
   // Kelompokkan per toko.
   const groups = new Map<string, { storeName: string; storeId: string; items: typeof items }>();

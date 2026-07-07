@@ -402,8 +402,9 @@ model AuditLog {
 // Keranjang: item disimpan per pengguna login (tamu pakai localStorage di client).
 model CartItem {
   id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId   String?  // id keranjang tamu (cookie), dipakai bila userId kosong (checkout tanpa login)
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   variantId String?
@@ -412,7 +413,9 @@ model CartItem {
   remindedAt DateTime? // recovery email keranjang terkirim (anti-spam)
 
   @@unique([userId, productId, variantId])
+  @@unique([guestId, productId, variantId])
   @@index([userId])
+  @@index([guestId])
 }
 
 // Satu sesi checkout dari keranjang bisa memuat beberapa Order (per toko),

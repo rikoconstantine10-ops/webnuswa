@@ -30,7 +30,7 @@ export async function verifyOtpAction(
   const ok = await verifyOtp(email, code);
   if (!ok) return { step: "otp", email, error: "Kode salah atau kedaluwarsa" };
 
-  redirect("/dashboard");
+  redirect("/akun");
 }
 
 export async function logoutAction() {

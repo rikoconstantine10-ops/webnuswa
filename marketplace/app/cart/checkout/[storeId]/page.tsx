@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
+import { getGuestId } from "@/lib/guestCart";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import CartCheckoutForm from "@/components/CartCheckoutForm";
@@ -21,10 +22,11 @@ function unitPrice(
 export default async function CartCheckoutPage({ params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params;
   const user = await currentUser();
-  if (!user) redirect(`/login?next=/cart/checkout/${storeId}`);
+  const guestId = user ? null : await getGuestId();
+  if (!user && !guestId) redirect("/cart");
 
   const items = await db.cartItem.findMany({
-    where: { userId: user.id, product: { storeId } },
+    where: user ? { userId: user.id, product: { storeId } } : { guestId, product: { storeId } },
     include: { product: { include: { store: true, variants: true, wholesaleTiers: true } } },
   });
   if (items.length === 0) redirect("/cart");
@@ -64,8 +66,8 @@ export default async function CartCheckoutPage({ params }: { params: Promise<{ s
           storeCanShip={Boolean(store.originAreaId)}
           storeCanInstant={Boolean(store.originLat && store.originLng)}
           productIdForVoucher={items[0].productId}
-          defaultName={user.name ?? undefined}
-          defaultEmail={user.email}
+          defaultName={user?.name ?? undefined}
+          defaultEmail={user?.email}
           cryptoEnabled={isPaymentoConfigured()}
         />
       </div>

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { requireUser, currentUser } from "@/lib/auth";
+import { currentUser } from "@/lib/auth";
 import {
   createLouvinTransaction,
   extractTrxId,
@@ -21,6 +21,16 @@ import { resolveAffiliateUserId } from "@/lib/affiliate";
 import { effectivePrice } from "@/lib/pricing";
 import { createPaymentRequest, isPaymentoConfigured } from "@/lib/paymento";
 import { cookies } from "next/headers";
+import { getGuestId, getOrCreateGuestId } from "@/lib/guestCart";
+
+// Identitas pemilik keranjang: user login (userId) atau tamu (guestId dari cookie).
+// `create` menentukan apakah boleh membuat cookie guest baru (hanya di Server Action).
+async function cartOwner(create: boolean): Promise<{ userId: string | null; guestId: string | null }> {
+  const user = await currentUser();
+  if (user) return { userId: user.id, guestId: null };
+  const guestId = create ? await getOrCreateGuestId() : await getGuestId();
+  return { userId: null, guestId };
+}
 
 function normalizePhone(digits: string): string {
   const d = digits.replace(/\D/g, "");
@@ -48,8 +58,6 @@ function unitPriceFor(
 }
 
 export async function addToCartAction(formData: FormData) {
-  const user = await currentUser();
-  if (!user) redirect("/login?next=/cart");
   const productId = String(formData.get("productId") ?? "");
   // "" = tanpa varian (null tak bisa dipakai di unique gabungan Prisma).
   const variantId = String(formData.get("variantId") ?? "");
@@ -57,29 +65,40 @@ export async function addToCartAction(formData: FormData) {
   const product = await db.product.findUnique({ where: { id: productId } });
   if (!product || !product.active || product.moderation !== "APPROVED") return;
 
-  await db.cartItem.upsert({
-    where: { userId_productId_variantId: { userId: user.id, productId, variantId } },
-    create: { userId: user.id, productId, variantId, qty },
-    update: { qty: { increment: qty } },
-  });
+  const { userId, guestId } = await cartOwner(true);
+  if (userId) {
+    await db.cartItem.upsert({
+      where: { userId_productId_variantId: { userId, productId, variantId } },
+      create: { userId, productId, variantId, qty },
+      update: { qty: { increment: qty } },
+    });
+  } else {
+    await db.cartItem.upsert({
+      where: { guestId_productId_variantId: { guestId: guestId!, productId, variantId } },
+      create: { guestId, productId, variantId, qty },
+      update: { qty: { increment: qty } },
+    });
+  }
   revalidatePath("/cart");
   redirect("/cart");
 }
 
 export async function updateCartQtyAction(formData: FormData) {
-  const user = await requireUser();
+  const { userId, guestId } = await cartOwner(false);
   const id = String(formData.get("id") ?? "");
   const qty = Math.max(1, Math.min(999, parseInt(String(formData.get("qty") ?? "1"), 10) || 1));
   const item = await db.cartItem.findUnique({ where: { id } });
-  if (item && item.userId === user.id) await db.cartItem.update({ where: { id }, data: { qty } });
+  const owns = item && (userId ? item.userId === userId : Boolean(guestId) && item.guestId === guestId);
+  if (owns) await db.cartItem.update({ where: { id }, data: { qty } });
   revalidatePath("/cart");
 }
 
 export async function removeCartItemAction(formData: FormData) {
-  const user = await requireUser();
+  const { userId, guestId } = await cartOwner(false);
   const id = String(formData.get("id") ?? "");
   const item = await db.cartItem.findUnique({ where: { id } });
-  if (item && item.userId === user.id) await db.cartItem.delete({ where: { id } });
+  const owns = item && (userId ? item.userId === userId : Boolean(guestId) && item.guestId === guestId);
+  if (owns) await db.cartItem.delete({ where: { id } });
   revalidatePath("/cart");
 }
 
@@ -104,13 +123,15 @@ export async function checkoutCartAction(
   _prev: { error?: string },
   formData: FormData
 ): Promise<{ error?: string }> {
-  const user = await requireUser();
+  const { userId, guestId } = await cartOwner(false);
+  if (!userId && !guestId) return { error: "Keranjang kosong" };
+  const ownerWhere = userId ? { userId } : { guestId: guestId! };
   const parsed = cartCheckoutSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: "Data checkout tidak valid" };
   const input = parsed.data;
 
   const cartItems = await db.cartItem.findMany({
-    where: { userId: user.id, product: { storeId: input.storeId } },
+    where: { ...ownerWhere, product: { storeId: input.storeId } },
     include: { product: { include: { store: true, variants: true, wholesaleTiers: true } } },
   });
   if (cartItems.length === 0) return { error: "Keranjang toko ini kosong" };
@@ -186,7 +207,7 @@ export async function checkoutCartAction(
   trackEvent({ type: "CHECKOUT", storeId: store.id });
 
   const affCode = (await cookies()).get("nm_aff")?.value;
-  const affiliateUserId = await resolveAffiliateUserId(affCode, user.id);
+  const affiliateUserId = await resolveAffiliateUserId(affCode, userId);
 
   const code = generateOrderCode();
 
@@ -194,7 +215,7 @@ export async function checkoutCartAction(
   if (isCod) {
     const codOrder = await db.order.create({
       data: {
-        code, storeId: store.id, buyerId: user.id,
+        code, storeId: store.id, buyerId: userId,
         buyerName: input.buyerName, buyerEmail: input.buyerEmail, buyerPhone: normalizePhone(input.buyerPhone),
         subtotal, shippingCost, discountAmount, voucherId, total,
         paymentType: "cod", status: "PROCESSING", affiliateUserId,
@@ -215,7 +236,7 @@ export async function checkoutCartAction(
     }
     if (voucherId) await db.voucher.update({ where: { id: voucherId }, data: { used: { increment: 1 } } });
     createShipmentForOrder(codOrder.id).catch(() => {});
-    await db.cartItem.deleteMany({ where: { userId: user.id, product: { storeId: store.id } } });
+    await db.cartItem.deleteMany({ where: { ...ownerWhere, product: { storeId: store.id } } });
     redirect(`/order/${code}`);
   }
 
@@ -224,7 +245,7 @@ export async function checkoutCartAction(
     if (!isPaymentoConfigured()) return { error: "Pembayaran crypto belum tersedia saat ini." };
     const cryptoOrder = await db.order.create({
       data: {
-        code, storeId: store.id, buyerId: user.id,
+        code, storeId: store.id, buyerId: userId,
         buyerName: input.buyerName, buyerEmail: input.buyerEmail, buyerPhone: normalizePhone(input.buyerPhone),
         subtotal, shippingCost, discountAmount, voucherId, total,
         paymentType: "crypto", affiliateUserId,
@@ -245,7 +266,7 @@ export async function checkoutCartAction(
       where: { id: cryptoOrder.id },
       data: { paymentInfo: JSON.stringify({ provider: "paymento", token: pay.token, fiatAmount: pay.fiatAmount, fiatCurrency: pay.fiatCurrency }) },
     });
-    await db.cartItem.deleteMany({ where: { userId: user.id, product: { storeId: store.id } } });
+    await db.cartItem.deleteMany({ where: { ...ownerWhere, product: { storeId: store.id } } });
     redirect(pay.gatewayUrl!);
   }
 
@@ -262,7 +283,7 @@ export async function checkoutCartAction(
     data: {
       code,
       storeId: store.id,
-      buyerId: user.id,
+      buyerId: userId,
       buyerName: input.buyerName,
       buyerEmail: input.buyerEmail,
       buyerPhone: normalizePhone(input.buyerPhone),
@@ -288,7 +309,7 @@ export async function checkoutCartAction(
   });
 
   // Kosongkan item toko ini dari keranjang.
-  await db.cartItem.deleteMany({ where: { userId: user.id, product: { storeId: store.id } } });
+  await db.cartItem.deleteMany({ where: { ...ownerWhere, product: { storeId: store.id } } });
 
   redirect(`/order/${code}`);
 }

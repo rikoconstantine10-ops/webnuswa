@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   const items = await db.cartItem.findMany({
     where: {
       remindedAt: null,
+      userId: { not: null }, // keranjang tamu tak punya email tersimpan untuk di-recover
       createdAt: { lt: new Date(now - 6 * 3600 * 1000), gt: new Date(now - 3 * 86400 * 1000) },
     },
     include: {
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
   // Kelompokkan per pembeli.
   const byUser = new Map<string, { email: string; name: string | null; items: typeof items }>();
   for (const it of items) {
+    if (!it.userId || !it.user) continue;
     if (!it.product.active) continue;
     const g = byUser.get(it.userId) ?? { email: it.user.email, name: it.user.name, items: [] as typeof items };
     g.items.push(it);

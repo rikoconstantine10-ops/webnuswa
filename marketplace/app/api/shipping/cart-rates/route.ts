@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
+import { getGuestId } from "@/lib/guestCart";
 import { getRates, INSTANT_COURIERS, REGULAR_COURIERS } from "@/lib/biteship";
 
-// Ongkir gabungan untuk semua item satu toko di keranjang pengguna login.
+// Ongkir gabungan untuk semua item satu toko di keranjang (login atau tamu).
 export async function POST(req: NextRequest) {
   const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "login dulu", pricing: [] }, { status: 401 });
+  const guestId = user ? null : await getGuestId();
+  if (!user && !guestId) return NextResponse.json({ error: "keranjang kosong", pricing: [] }, { status: 400 });
 
   const body = (await req.json().catch(() => ({}))) as {
     storeId?: string;
@@ -22,7 +24,9 @@ export async function POST(req: NextRequest) {
   }
 
   const items = await db.cartItem.findMany({
-    where: { userId: user.id, product: { storeId: body.storeId, type: "PHYSICAL" } },
+    where: user
+      ? { userId: user.id, product: { storeId: body.storeId, type: "PHYSICAL" } }
+      : { guestId, product: { storeId: body.storeId, type: "PHYSICAL" } },
     include: { product: { include: { store: true } } },
   });
   if (items.length === 0) return NextResponse.json({ pricing: [] });
