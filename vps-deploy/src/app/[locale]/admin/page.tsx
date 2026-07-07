@@ -10,14 +10,14 @@ const CATEGORIES = [
 const INTENTS = ["informational", "transactional", "navigational", "commercial"];
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:   "bg-amber-100 text-amber-700 border border-amber-200",
-  done:      "bg-emerald-100 text-emerald-700 border border-emerald-200",
-  error:     "bg-red-100 text-red-600 border border-red-200",
-  published: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-  draft:     "bg-gray-100 text-gray-600 border border-gray-200",
-  queued:    "bg-blue-100 text-blue-600 border border-blue-200",
-  scheduled: "bg-purple-100 text-purple-600 border border-purple-200",
-  rejected:  "bg-red-100 text-red-600 border border-red-200",
+  pending:   "bg-amber-50 text-amber-700 border border-amber-200",
+  done:      "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  error:     "bg-red-50 text-red-600 border border-red-200",
+  published: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  draft:     "bg-gray-100 text-gray-500 border border-gray-200",
+  queued:    "bg-blue-50 text-blue-600 border border-blue-200",
+  scheduled: "bg-purple-50 text-purple-600 border border-purple-200",
+  rejected:  "bg-red-50 text-red-500 border border-red-200",
 };
 
 type SidebarPage =
@@ -31,7 +31,7 @@ type SidebarPage =
 function ScoreBadge({ label, value }: { label: string; value: number | null }) {
   if (value == null) return <span className="text-gray-300 text-xs">—</span>;
   const color =
-    value >= 70 ? "text-emerald-500" : value >= 40 ? "text-amber-500" : "text-red-400";
+    value >= 70 ? "text-emerald-600" : value >= 40 ? "text-amber-500" : "text-red-500";
   return (
     <span className={`text-xs font-bold ${color}`}>
       {label}:{value}
@@ -203,9 +203,8 @@ npm build + pm2 restart
 ### Cron Schedule
 Generator runs automatically at **7 PM (19:00) WIB** daily.
 
-Cron entry on VPS:
 \`\`\`
-0 19 * * * cd /home/ubuntu/nuswalab && ANTHROPIC_API_KEY=... PEXELS_API_KEY=... node scripts/keyword-article-gen.js >> logs/article-gen.log 2>&1
+0 19 * * * cd /home/ubuntu/nuswalab && node scripts/keyword-article-gen.js >> logs/article-gen.log 2>&1
 \`\`\`
 
 ### Rate Limits
@@ -227,12 +226,6 @@ Articles are generated independently. To add internal links:
 2. Use keyword-rich anchor text (not "click here")
 3. Link from high-traffic pages to newer, lower-traffic pages
 
-### Future Improvement
-The generator can be enhanced to:
-- Query SQLite for articles in the same category
-- Pass related article titles + slugs to Claude
-- Ask Claude to naturally link to related articles in the body
-
 ### Anchor Text Rules
 - ✅ "baca panduan lengkap tentang [keyword]"
 - ✅ "strategi [keyword] yang sudah terbukti"
@@ -249,7 +242,6 @@ export default function AdminDashboard() {
   const [page, setPage] = useState<SidebarPage>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Keywords state
   const [keywords, setKeywords] = useState<any[]>([]);
   const [kwLoading, setKwLoading] = useState(false);
   const [newKw, setNewKw] = useState("");
@@ -257,23 +249,18 @@ export default function AdminDashboard() {
   const [newIntent, setNewIntent] = useState("informational");
   const [activeCatFilter, setActiveCatFilter] = useState("All");
 
-  // Articles state
   const [articles, setArticles] = useState<any[]>([]);
   const [artTotal, setArtTotal] = useState(0);
   const [artPage, setArtPage] = useState(1);
   const [artLoading, setArtLoading] = useState(false);
 
-  // Generate / logs state
   const [genLoading, setGenLoading] = useState(false);
   const [genMsg, setGenMsg] = useState("");
   const [logs, setLogs] = useState("");
   const [dryRun, setDryRun] = useState(false);
   const [maxGen, setMaxGen] = useState(3);
 
-  // Knowledge base state
   const [kbOpen, setKbOpen] = useState<number | null>(0);
-
-  // Settings state
   const [settingsMaxGen, setSettingsMaxGen] = useState(3);
   const [settingsDryRun, setSettingsDryRun] = useState(false);
 
@@ -318,9 +305,7 @@ export default function AdminDashboard() {
   }, [page, authed]);
 
   async function login() {
-    const res = await fetch("/api/admin/keywords", {
-      headers: { "x-admin-token": token },
-    });
+    const res = await fetch("/api/admin/keywords", { headers: { "x-admin-token": token } });
     if (res.ok) setAuthed(true);
     else alert("Token salah.");
   }
@@ -374,45 +359,38 @@ export default function AdminDashboard() {
     setTimeout(() => { loadLogs(); setPage("logs"); }, 3000);
   }
 
-  // ── computed stats ──────────────────────────────────────────────────
   const kwPending = keywords.filter(k => k.status === "pending").length;
   const kwDone    = keywords.filter(k => k.status === "done").length;
   const kwError   = keywords.filter(k => k.status === "error").length;
-
   const artPublished = articles.filter(a => a.status === "published").length;
   const artDraft     = articles.filter(a => a.status === "draft").length;
 
   const catCounts: Record<string, number> = {};
-  for (const kw of keywords) {
-    catCounts[kw.category] = (catCounts[kw.category] || 0) + 1;
-  }
+  for (const kw of keywords) catCounts[kw.category] = (catCounts[kw.category] || 0) + 1;
 
-  const filteredKw =
-    activeCatFilter === "All"
-      ? keywords
-      : keywords.filter(k => k.category === activeCatFilter);
+  const filteredKw = activeCatFilter === "All" ? keywords : keywords.filter(k => k.category === activeCatFilter);
 
-  // ── login screen ────────────────────────────────────────────────────
+  // ── Login ────────────────────────────────────────────────────────────
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#0f1117] flex items-center justify-center p-4">
-        <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-sm shadow-sm">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">N</div>
             <div>
-              <div className="text-white font-semibold text-sm">Nuswa Lab</div>
-              <div className="text-gray-500 text-xs">Article Generator</div>
+              <div className="text-gray-900 font-semibold text-sm">Nuswa Lab</div>
+              <div className="text-gray-400 text-xs">SEO Article Generator</div>
             </div>
           </div>
-          <h1 className="text-white font-bold text-lg mb-1">Admin Login</h1>
-          <p className="text-gray-500 text-xs mb-6">Enter your admin token to continue</p>
+          <h1 className="text-gray-900 font-bold text-lg mb-1">Admin Login</h1>
+          <p className="text-gray-400 text-xs mb-6">Enter your admin token to continue</p>
           <input
             type="password"
             placeholder="Admin token"
             value={token}
             onChange={e => setToken(e.target.value)}
             onKeyDown={e => e.key === "Enter" && login()}
-            className="w-full bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-4 py-2.5 mb-4 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition"
+            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 mb-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
           />
           <button
             onClick={login}
@@ -425,34 +403,29 @@ export default function AdminDashboard() {
     );
   }
 
-  // ── main layout ─────────────────────────────────────────────────────
+  // ── Main Layout ──────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0f1117] flex">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? "w-56" : "w-14"} transition-all duration-200 bg-[#13151f] border-r border-[#1e2130] flex flex-col shrink-0`}>
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#1e2130]">
+      <aside className={`${sidebarOpen ? "w-56" : "w-14"} transition-all duration-200 bg-white border-r border-gray-200 flex flex-col shrink-0`}>
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
           <div className="w-7 h-7 bg-indigo-600 rounded-md flex items-center justify-center text-white text-xs font-bold shrink-0">N</div>
           {sidebarOpen && (
-            <div className="overflow-hidden">
-              <div className="text-white text-xs font-bold truncate">Nuswa Lab</div>
-              <div className="text-gray-500 text-[10px] truncate">Article Generator</div>
+            <div className="overflow-hidden flex-1">
+              <div className="text-gray-900 text-xs font-bold truncate">Nuswa Lab</div>
+              <div className="text-gray-400 text-[10px] truncate">Article Generator</div>
             </div>
           )}
-          <button
-            onClick={() => setSidebarOpen(o => !o)}
-            className="ml-auto text-gray-600 hover:text-gray-400 text-xs shrink-0"
-          >
+          <button onClick={() => setSidebarOpen(o => !o)} className="text-gray-400 hover:text-gray-600 text-xs shrink-0">
             {sidebarOpen ? "◀" : "▶"}
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-3 overflow-y-auto">
           {NAV_ITEMS.map(section => (
             <div key={section.section} className="mb-1">
               {sidebarOpen && (
-                <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-600 tracking-widest uppercase">
+                <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 tracking-widest uppercase">
                   {section.section}
                 </div>
               )}
@@ -462,8 +435,8 @@ export default function AdminDashboard() {
                   onClick={() => setPage(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition ${
                     page === item.id
-                      ? "text-white bg-indigo-600/20 border-r-2 border-indigo-500"
-                      : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                      ? "text-indigo-700 bg-indigo-50 border-r-2 border-indigo-600 font-medium"
+                      : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
                   }`}
                 >
                   <span className="text-base shrink-0">{item.icon}</span>
@@ -474,16 +447,15 @@ export default function AdminDashboard() {
           ))}
         </nav>
 
-        {/* Bottom: run generator */}
-        <div className="p-3 border-t border-[#1e2130]">
+        <div className="p-3 border-t border-gray-100">
           <button
             onClick={triggerGenerate}
             disabled={genLoading || kwPending === 0}
             title="Run Generator"
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition ${
               genLoading || kwPending === 0
-                ? "bg-gray-800 text-gray-600 cursor-not-allowed"
-                : "bg-indigo-600 text-white hover:bg-indigo-700"
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
             }`}
           >
             <span className="shrink-0">{genLoading ? "⟳" : "▶"}</span>
@@ -495,25 +467,22 @@ export default function AdminDashboard() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
-        <header className="bg-[#13151f] border-b border-[#1e2130] px-6 py-3 flex items-center justify-between shrink-0">
+        <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
           <div>
-            <h1 className="text-white text-sm font-semibold capitalize">
+            <h1 className="text-gray-900 text-sm font-semibold">
               {page === "dashboard" ? "Dashboard Overview" :
                page === "keywords" ? "Keyword Queue" :
                page === "articles" ? "All Articles" :
                page === "logs" ? "Run Logs" :
                page === "knowledge" ? "Knowledge Base" : "Settings"}
             </h1>
-            {genMsg && <p className="text-indigo-400 text-xs mt-0.5">{genMsg}</p>}
+            {genMsg && <p className="text-indigo-600 text-xs mt-0.5">{genMsg}</p>}
           </div>
           <div className="flex items-center gap-3">
-            <div className="text-xs text-gray-500 bg-[#1a1d27] px-3 py-1.5 rounded-lg border border-[#2a2d3a]">
+            <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
               {kwPending} pending · {artTotal} articles
             </div>
-            <button
-              onClick={() => { setAuthed(false); setToken(""); }}
-              className="text-xs text-gray-600 hover:text-gray-400"
-            >
+            <button onClick={() => { setAuthed(false); setToken(""); }} className="text-xs text-gray-400 hover:text-gray-600">
               Sign out
             </button>
           </div>
@@ -522,48 +491,44 @@ export default function AdminDashboard() {
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6">
 
-          {/* ── DASHBOARD ──────────────────────────────────────── */}
+          {/* ── DASHBOARD ─────────────────────────────────────── */}
           {page === "dashboard" && (
-            <div className="space-y-6">
-              {/* Stats grid */}
+            <div className="space-y-5">
+              {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {[
-                  { label: "TOTAL ARTICLES", value: artTotal, color: "text-white" },
-                  { label: "QUEUE", value: kwPending, color: "text-amber-400" },
-                  { label: "DRAFT", value: artDraft, color: "text-gray-400" },
-                  { label: "PUBLISHED", value: artPublished, color: "text-emerald-400" },
-                  { label: "KW DONE", value: kwDone, color: "text-emerald-400" },
-                  { label: "KW ERROR", value: kwError, color: "text-red-400" },
+                  { label: "TOTAL ARTICLES", value: artTotal, bg: "bg-white", val: "text-gray-900" },
+                  { label: "KW QUEUE",       value: kwPending, bg: "bg-amber-50",   val: "text-amber-600" },
+                  { label: "DRAFT",          value: artDraft,  bg: "bg-gray-50",    val: "text-gray-600" },
+                  { label: "PUBLISHED",      value: artPublished, bg: "bg-emerald-50", val: "text-emerald-600" },
+                  { label: "KW DONE",        value: kwDone,    bg: "bg-emerald-50", val: "text-emerald-600" },
+                  { label: "KW ERROR",       value: kwError,   bg: "bg-red-50",     val: "text-red-500" },
                 ].map(s => (
-                  <div key={s.label} className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-4">
-                    <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-2">{s.label}</div>
-                    <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
+                  <div key={s.label} className={`${s.bg} border border-gray-200 rounded-xl p-4`}>
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">{s.label}</div>
+                    <div className={`text-3xl font-bold ${s.val}`}>{s.value}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Pipeline status + Quick actions */}
+              {/* Pipeline + Quick actions */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Pipeline */}
-                <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Pipeline Status</div>
-                  <div className="space-y-2">
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Pipeline Status</div>
+                  <div className="space-y-3">
                     {[
-                      { label: "Keywords Pending", value: kwPending, color: "bg-amber-500", max: Math.max(kwPending + kwDone, 1) },
-                      { label: "Keywords Done", value: kwDone, color: "bg-emerald-500", max: Math.max(kwPending + kwDone, 1) },
-                      { label: "Articles Published", value: artPublished, color: "bg-indigo-500", max: Math.max(artTotal, 1) },
-                      { label: "Articles Draft", value: artDraft, color: "bg-gray-500", max: Math.max(artTotal, 1) },
+                      { label: "Keywords Pending", value: kwPending, color: "bg-amber-400", max: Math.max(kwPending + kwDone, 1) },
+                      { label: "Keywords Done",    value: kwDone,    color: "bg-emerald-500", max: Math.max(kwPending + kwDone, 1) },
+                      { label: "Published",        value: artPublished, color: "bg-indigo-500", max: Math.max(artTotal, 1) },
+                      { label: "Draft",            value: artDraft,  color: "bg-gray-300", max: Math.max(artTotal, 1) },
                     ].map(item => (
                       <div key={item.label}>
                         <div className="flex justify-between text-xs text-gray-500 mb-1">
                           <span>{item.label}</span>
-                          <span className="text-gray-400 font-medium">{item.value}</span>
+                          <span className="text-gray-700 font-medium">{item.value}</span>
                         </div>
-                        <div className="h-1.5 bg-[#0f1117] rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${item.color} rounded-full transition-all`}
-                            style={{ width: `${Math.round((item.value / item.max) * 100)}%` }}
-                          />
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full ${item.color} rounded-full transition-all`} style={{ width: `${Math.round((item.value / item.max) * 100)}%` }} />
                         </div>
                       </div>
                     ))}
@@ -571,32 +536,31 @@ export default function AdminDashboard() {
                   <button
                     onClick={triggerGenerate}
                     disabled={genLoading || kwPending === 0}
-                    className="mt-5 w-full bg-indigo-600 text-white text-xs font-semibold py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    className="mt-5 w-full bg-indigo-600 text-white text-xs font-semibold py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
                   >
                     {genLoading ? "⟳ Running…" : `▶ Run All Queued (${kwPending})`}
                   </button>
                 </div>
 
-                {/* Quick actions */}
-                <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Quick Actions</div>
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Quick Actions</div>
                   <div className="space-y-2">
                     {[
-                      { label: "Keyword Queue", desc: "Add & manage keywords", id: "keywords" as SidebarPage, color: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-                      { label: "All Articles", desc: "Review & publish", id: "articles" as SidebarPage, color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
-                      { label: "Run Logs", desc: "View generation logs", id: "logs" as SidebarPage, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-                      { label: "Knowledge Base", desc: "SEO / AEO / AIO guides", id: "knowledge" as SidebarPage, color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+                      { label: "Keyword Queue",  desc: "Add & manage keywords",     id: "keywords" as SidebarPage, bg: "bg-amber-50 border-amber-200 hover:bg-amber-100", text: "text-amber-700" },
+                      { label: "All Articles",   desc: "Review & publish articles", id: "articles" as SidebarPage, bg: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100", text: "text-indigo-700" },
+                      { label: "Run Logs",       desc: "View generation logs",      id: "logs" as SidebarPage, bg: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100", text: "text-emerald-700" },
+                      { label: "Knowledge Base", desc: "SEO / AEO / AIO guides",   id: "knowledge" as SidebarPage, bg: "bg-purple-50 border-purple-200 hover:bg-purple-100", text: "text-purple-700" },
                     ].map(a => (
                       <button
                         key={a.id}
                         onClick={() => setPage(a.id)}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-xs font-medium transition hover:opacity-90 ${a.color}`}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-xs font-medium transition ${a.bg} ${a.text}`}
                       >
                         <div className="text-left">
                           <div className="font-semibold">{a.label}</div>
                           <div className="text-[10px] opacity-70 mt-0.5">{a.desc}</div>
                         </div>
-                        <span className="opacity-50">→</span>
+                        <span className="opacity-40">→</span>
                       </button>
                     ))}
                   </div>
@@ -604,8 +568,8 @@ export default function AdminDashboard() {
               </div>
 
               {/* Category breakdown */}
-              <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Keywords by Category</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Keywords by Category</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {CATEGORIES.map(cat => {
                     const count = catCounts[cat] || 0;
@@ -614,12 +578,12 @@ export default function AdminDashboard() {
                       <button
                         key={cat}
                         onClick={() => { setPage("keywords"); setActiveCatFilter(cat); }}
-                        className="bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-3 text-left hover:border-indigo-500/50 transition"
+                        className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-3 text-left hover:border-indigo-300 hover:bg-indigo-50 transition"
                       >
-                        <div className="text-white text-sm font-bold">{count}</div>
+                        <div className="text-gray-900 text-sm font-bold">{count}</div>
                         <div className="text-gray-500 text-[10px] mt-0.5 leading-snug">{cat}</div>
                         {pendCount > 0 && (
-                          <div className="mt-1.5 text-[10px] text-amber-400">{pendCount} pending</div>
+                          <div className="mt-1 text-[10px] text-amber-600 font-medium">{pendCount} pending</div>
                         )}
                       </button>
                     );
@@ -629,12 +593,11 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ── KEYWORDS ───────────────────────────────────────── */}
+          {/* ── KEYWORDS ──────────────────────────────────────── */}
           {page === "keywords" && (
             <div className="space-y-4">
-              {/* Add form */}
-              <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Add New Keyword</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Add New Keyword</div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
@@ -642,54 +605,35 @@ export default function AdminDashboard() {
                     value={newKw}
                     onChange={e => setNewKw(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && addKeyword()}
-                    className="flex-1 bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition"
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 transition"
                   />
-                  <select
-                    value={newCat}
-                    onChange={e => setNewCat(e.target.value)}
-                    className="bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-indigo-500"
-                  >
+                  <select value={newCat} onChange={e => setNewCat(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-indigo-400">
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
-                  <select
-                    value={newIntent}
-                    onChange={e => setNewIntent(e.target.value)}
-                    className="bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-indigo-500"
-                  >
+                  <select value={newIntent} onChange={e => setNewIntent(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-indigo-400">
                     {INTENTS.map(i => <option key={i}>{i}</option>)}
                   </select>
-                  <button
-                    onClick={addKeyword}
-                    className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition whitespace-nowrap"
-                  >
+                  <button onClick={addKeyword} className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition whitespace-nowrap shadow-sm">
                     + Add
                   </button>
                 </div>
               </div>
 
-              {/* Options row */}
-              <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-4 flex flex-wrap items-center gap-5">
-                <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
-                  <input type="checkbox" checked={dryRun} onChange={e => setDryRun(e.target.checked)} className="accent-indigo-500" />
+              <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-5">
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" checked={dryRun} onChange={e => setDryRun(e.target.checked)} className="accent-indigo-600" />
                   Dry Run (no save)
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-400">
+                <label className="flex items-center gap-2 text-sm text-gray-600">
                   Max per run:
-                  <input
-                    type="number" min={1} max={10} value={maxGen}
-                    onChange={e => setMaxGen(Number(e.target.value))}
-                    className="w-14 bg-[#0f1117] border border-[#2a2d3a] rounded px-2 py-1 text-sm text-white"
-                  />
+                  <input type="number" min={1} max={10} value={maxGen} onChange={e => setMaxGen(Number(e.target.value))} className="w-14 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm text-gray-900 focus:outline-none focus:border-indigo-400" />
                 </label>
-                <button
-                  onClick={() => kwAction("reset_all", 0)}
-                  className="text-xs text-gray-600 hover:text-gray-400 underline"
-                >
+                <button onClick={() => kwAction("reset_all", 0)} className="text-xs text-gray-400 hover:text-gray-600 underline">
                   Reset all to pending
                 </button>
               </div>
 
-              {/* Category filter tabs */}
+              {/* Category tabs */}
               <div className="flex gap-2 flex-wrap">
                 {["All", ...CATEGORIES].map(cat => {
                   const cnt = cat === "All" ? keywords.length : (catCounts[cat] || 0);
@@ -697,10 +641,10 @@ export default function AdminDashboard() {
                     <button
                       key={cat}
                       onClick={() => setActiveCatFilter(cat)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
                         activeCatFilter === cat
-                          ? "bg-indigo-600 text-white"
-                          : "bg-[#1a1d27] text-gray-500 border border-[#2a2d3a] hover:text-gray-300"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                          : "bg-white text-gray-500 border-gray-200 hover:text-gray-700 hover:border-gray-300"
                       }`}
                     >
                       {cat} <span className="opacity-60">({cnt})</span>
@@ -709,50 +653,45 @@ export default function AdminDashboard() {
                 })}
               </div>
 
-              {/* Keywords table */}
               {kwLoading ? (
-                <div className="text-center py-10 text-gray-600 text-sm">Loading…</div>
+                <div className="text-center py-10 text-gray-400 text-sm">Loading…</div>
               ) : (
-                <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl overflow-hidden">
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="border-b border-[#2a2d3a]">
+                    <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">#</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Keyword</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest hidden sm:table-cell">Category</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest hidden sm:table-cell">Intent</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Status</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Actions</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">#</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Keyword</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest hidden sm:table-cell">Category</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest hidden sm:table-cell">Intent</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Status</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#1e2130]">
+                    <tbody className="divide-y divide-gray-100">
                       {filteredKw.map((kw, i) => (
-                        <tr key={i} className="hover:bg-white/[0.02]">
-                          <td className="px-4 py-3 text-gray-600 text-xs">{i + 1}</td>
-                          <td className="px-4 py-3 text-gray-300 font-medium max-w-xs">{kw.keyword}</td>
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
+                          <td className="px-4 py-3 text-gray-800 font-medium max-w-xs">{kw.keyword}</td>
                           <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">{kw.category}</td>
-                          <td className="px-4 py-3 text-gray-600 text-xs hidden sm:table-cell">{kw.search_intent}</td>
+                          <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">{kw.search_intent}</td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLORS[kw.status] || "bg-gray-800 text-gray-400"}`}>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLORS[kw.status] || "bg-gray-100 text-gray-500"}`}>
                               {kw.status}
                             </span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-3">
                               {kw.status !== "pending" && (
-                                <button onClick={() => kwAction("reset", keywords.indexOf(kw))} className="text-xs text-indigo-400 hover:text-indigo-300">
-                                  Reset
-                                </button>
+                                <button onClick={() => kwAction("reset", keywords.indexOf(kw))} className="text-xs text-indigo-500 hover:text-indigo-700">Reset</button>
                               )}
-                              <button onClick={() => kwAction("delete", keywords.indexOf(kw))} className="text-xs text-red-500 hover:text-red-400">
-                                Delete
-                              </button>
+                              <button onClick={() => kwAction("delete", keywords.indexOf(kw))} className="text-xs text-red-400 hover:text-red-600">Delete</button>
                             </div>
                           </td>
                         </tr>
                       ))}
                       {filteredKw.length === 0 && (
-                        <tr><td colSpan={6} className="text-center py-8 text-gray-600 text-sm">No keywords found</td></tr>
+                        <tr><td colSpan={6} className="text-center py-8 text-gray-400 text-sm">No keywords found</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -761,30 +700,30 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ── ARTICLES ───────────────────────────────────────── */}
+          {/* ── ARTICLES ──────────────────────────────────────── */}
           {page === "articles" && (
             <div className="space-y-4">
               {artLoading ? (
-                <div className="text-center py-10 text-gray-600 text-sm">Loading…</div>
+                <div className="text-center py-10 text-gray-400 text-sm">Loading…</div>
               ) : (
                 <>
-                  <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl overflow-x-auto">
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="border-b border-[#2a2d3a]">
+                      <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
-                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Article</th>
-                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest hidden md:table-cell">Words</th>
-                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest hidden lg:table-cell">Scores</th>
-                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Status</th>
-                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Actions</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Article</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest hidden md:table-cell">Words</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest hidden lg:table-cell">Scores</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Status</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#1e2130]">
+                      <tbody className="divide-y divide-gray-100">
                         {articles.map(a => (
-                          <tr key={a.id} className="hover:bg-white/[0.02]">
+                          <tr key={a.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3">
-                              <div className="font-medium text-gray-300 max-w-xs truncate">{a.title || a.keyword}</div>
-                              <div className="text-[10px] text-gray-600 mt-0.5">{a.category} · {new Date(a.created_at).toLocaleDateString("id-ID")}</div>
+                              <div className="font-medium text-gray-800 max-w-xs truncate">{a.title || a.keyword}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">{a.category} · {new Date(a.created_at).toLocaleDateString("id-ID")}</div>
                             </td>
                             <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">{a.word_count?.toLocaleString() || "—"}</td>
                             <td className="px-4 py-3 hidden lg:table-cell">
@@ -795,41 +734,36 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLORS[a.status] || "bg-gray-800 text-gray-400"}`}>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_COLORS[a.status] || "bg-gray-100 text-gray-500"}`}>
                                 {a.status}
                               </span>
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex gap-3 flex-wrap">
-                                <button onClick={() => toggleArticle(a.id, a.status)} className="text-xs text-indigo-400 hover:text-indigo-300 whitespace-nowrap">
+                                <button onClick={() => toggleArticle(a.id, a.status)} className="text-xs text-indigo-500 hover:text-indigo-700 whitespace-nowrap">
                                   {a.status === "published" ? "Unpublish" : "Publish"}
                                 </button>
                                 {a.slug && (
-                                  <a href={`/blog/${a.slug}`} target="_blank" className="text-xs text-gray-600 hover:text-gray-400">
-                                    View ↗
-                                  </a>
+                                  <a href={`/blog/${a.slug}`} target="_blank" className="text-xs text-gray-400 hover:text-gray-600">View ↗</a>
                                 )}
-                                <button onClick={() => deleteArticle(a.id)} className="text-xs text-red-500 hover:text-red-400">
-                                  Delete
-                                </button>
+                                <button onClick={() => deleteArticle(a.id)} className="text-xs text-red-400 hover:text-red-600">Delete</button>
                               </div>
                             </td>
                           </tr>
                         ))}
                         {articles.length === 0 && (
-                          <tr><td colSpan={5} className="text-center py-8 text-gray-600 text-sm">No articles found</td></tr>
+                          <tr><td colSpan={5} className="text-center py-8 text-gray-400 text-sm">No articles found</td></tr>
                         )}
                       </tbody>
                     </table>
                   </div>
-
                   {artTotal > 20 && (
-                    <div className="flex justify-between items-center text-sm text-gray-600">
+                    <div className="flex justify-between items-center text-sm text-gray-500">
                       <span>{artTotal} articles total</span>
                       <div className="flex gap-2">
-                        <button disabled={artPage === 1} onClick={() => loadArticles(artPage - 1)} className="px-3 py-1.5 rounded-lg border border-[#2a2d3a] text-xs disabled:opacity-30 hover:bg-white/5 text-gray-400">←</button>
-                        <span className="px-3 py-1.5 text-xs text-gray-500">Page {artPage}</span>
-                        <button disabled={artPage * 20 >= artTotal} onClick={() => loadArticles(artPage + 1)} className="px-3 py-1.5 rounded-lg border border-[#2a2d3a] text-xs disabled:opacity-30 hover:bg-white/5 text-gray-400">→</button>
+                        <button disabled={artPage === 1} onClick={() => loadArticles(artPage - 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs disabled:opacity-30 hover:bg-gray-50">←</button>
+                        <span className="px-3 py-1.5 text-xs text-gray-400">Page {artPage}</span>
+                        <button disabled={artPage * 20 >= artTotal} onClick={() => loadArticles(artPage + 1)} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs disabled:opacity-30 hover:bg-gray-50">→</button>
                       </div>
                     </div>
                   )}
@@ -838,37 +772,37 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ── LOGS ───────────────────────────────────────────── */}
+          {/* ── LOGS ──────────────────────────────────────────── */}
           {page === "logs" && (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <div className="text-xs text-gray-500">Last 100 lines of generation log</div>
-                <button onClick={loadLogs} className="text-xs text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-lg border border-[#2a2d3a] hover:bg-white/5">
+                <button onClick={loadLogs} className="text-xs text-indigo-500 hover:text-indigo-700 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 bg-white">
                   ↻ Refresh
                 </button>
               </div>
-              <div className="bg-[#0a0b10] border border-[#1e2130] rounded-xl p-5 text-xs text-emerald-400 font-mono overflow-auto max-h-[70vh] whitespace-pre-wrap leading-relaxed">
+              <div className="bg-gray-900 border border-gray-200 rounded-xl p-5 text-xs text-emerald-400 font-mono overflow-auto max-h-[70vh] whitespace-pre-wrap leading-relaxed shadow-inner">
                 {logs || "No logs yet. Run the generator first."}
               </div>
             </div>
           )}
 
-          {/* ── KNOWLEDGE BASE ─────────────────────────────────── */}
+          {/* ── KNOWLEDGE BASE ────────────────────────────────── */}
           {page === "knowledge" && (
             <div className="space-y-3">
               <p className="text-gray-500 text-sm">Reference guides for article generation, SEO scoring, and content strategy.</p>
               {KNOWLEDGE_ARTICLES.map((art, i) => (
-                <div key={i} className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl overflow-hidden">
+                <div key={i} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <button
                     onClick={() => setKbOpen(kbOpen === i ? null : i)}
-                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-white/[0.02] transition text-left"
+                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition text-left"
                   >
                     <span className="text-xl shrink-0">{art.icon}</span>
-                    <span className="text-white font-semibold text-sm flex-1">{art.title}</span>
-                    <span className="text-gray-600 text-xs">{kbOpen === i ? "▲" : "▼"}</span>
+                    <span className="text-gray-900 font-semibold text-sm flex-1">{art.title}</span>
+                    <span className="text-gray-400 text-xs">{kbOpen === i ? "▲" : "▼"}</span>
                   </button>
                   {kbOpen === i && (
-                    <div className="px-5 pb-5 border-t border-[#2a2d3a] pt-4">
+                    <div className="px-5 pb-5 border-t border-gray-100 pt-4">
                       <MarkdownContent content={art.content} />
                     </div>
                   )}
@@ -877,54 +811,53 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ── SETTINGS ───────────────────────────────────────── */}
+          {/* ── SETTINGS ──────────────────────────────────────── */}
           {page === "settings" && (
             <div className="space-y-4 max-w-lg">
-              <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5 space-y-5">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Generation Settings</div>
-
+              <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Generation Settings</div>
                 <label className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm text-gray-300">Max Articles per Run</div>
-                    <div className="text-xs text-gray-600 mt-0.5">How many keywords to process in one run</div>
+                    <div className="text-sm text-gray-800">Max Articles per Run</div>
+                    <div className="text-xs text-gray-400 mt-0.5">How many keywords to process in one run</div>
                   </div>
                   <input
                     type="number" min={1} max={20} value={settingsMaxGen}
                     onChange={e => { setSettingsMaxGen(Number(e.target.value)); setMaxGen(Number(e.target.value)); }}
-                    className="w-16 bg-[#0f1117] border border-[#2a2d3a] rounded-lg px-3 py-2 text-sm text-white text-center focus:outline-none focus:border-indigo-500"
+                    className="w-16 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 text-center focus:outline-none focus:border-indigo-400"
                   />
                 </label>
-
                 <label className="flex items-center justify-between cursor-pointer">
                   <div>
-                    <div className="text-sm text-gray-300">Dry Run Mode</div>
-                    <div className="text-xs text-gray-600 mt-0.5">Generate article but don't save to DB</div>
+                    <div className="text-sm text-gray-800">Dry Run Mode</div>
+                    <div className="text-xs text-gray-400 mt-0.5">Generate article but don't save to DB</div>
                   </div>
                   <div
                     onClick={() => { setSettingsDryRun(d => !d); setDryRun(d => !d); }}
-                    className={`w-10 h-6 rounded-full transition-colors cursor-pointer flex items-center px-1 ${settingsDryRun ? "bg-indigo-600" : "bg-gray-700"}`}
+                    className={`w-10 h-6 rounded-full transition-colors cursor-pointer flex items-center px-1 ${settingsDryRun ? "bg-indigo-600" : "bg-gray-200"}`}
                   >
-                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${settingsDryRun ? "translate-x-4" : "translate-x-0"}`} />
+                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${settingsDryRun ? "translate-x-4" : "translate-x-0"}`} />
                   </div>
                 </label>
               </div>
 
-              <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">System Info</div>
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">System Info</div>
                 <div className="space-y-2 text-xs text-gray-500">
-                  <div className="flex justify-between"><span>Cron Schedule</span><span className="text-gray-400">Daily 19:00 WIB</span></div>
-                  <div className="flex justify-between"><span>Generator Script</span><span className="text-gray-400 font-mono">scripts/keyword-article-gen.js</span></div>
-                  <div className="flex justify-between"><span>Database</span><span className="text-gray-400 font-mono">data.db (SQLite)</span></div>
-                  <div className="flex justify-between"><span>Image Provider</span><span className="text-gray-400">Pexels API</span></div>
-                  <div className="flex justify-between"><span>AI Model</span><span className="text-gray-400">claude-opus-4-5</span></div>
+                  <div className="flex justify-between"><span>Cron Schedule</span><span className="text-gray-700 font-medium">Daily 19:00 WIB</span></div>
+                  <div className="flex justify-between"><span>Generator Script</span><span className="text-gray-700 font-mono">scripts/keyword-article-gen.js</span></div>
+                  <div className="flex justify-between"><span>Database</span><span className="text-gray-700 font-mono">data.db (SQLite)</span></div>
+                  <div className="flex justify-between"><span>Image Provider</span><span className="text-gray-700">Pexels API</span></div>
+                  <div className="flex justify-between"><span>AI Model</span><span className="text-gray-700">claude-opus-4-5</span></div>
+                  <div className="flex justify-between"><span>Admin URL</span><span className="text-gray-700">seo.nuswalab.com</span></div>
                 </div>
               </div>
 
-              <div className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl p-5">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Danger Zone</div>
+              <div className="bg-white border border-red-100 rounded-xl p-5">
+                <div className="text-xs font-semibold text-red-400 uppercase tracking-widest mb-4">Danger Zone</div>
                 <button
                   onClick={() => kwAction("reset_all", 0)}
-                  className="text-xs text-red-500 hover:text-red-400 border border-red-500/30 rounded-lg px-4 py-2 hover:bg-red-500/10 transition"
+                  className="text-xs text-red-500 hover:text-red-700 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-50 transition"
                 >
                   Reset All Keywords to Pending
                 </button>
@@ -938,7 +871,7 @@ export default function AdminDashboard() {
   );
 }
 
-// Simple markdown renderer (no external deps)
+// Simple inline markdown renderer
 function MarkdownContent({ content }: { content: string }) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
@@ -948,45 +881,36 @@ function MarkdownContent({ content }: { content: string }) {
     const line = lines[i];
 
     if (line.startsWith("## ")) {
-      elements.push(<h2 key={i} className="text-white font-semibold text-sm mt-4 mb-2">{line.slice(3)}</h2>);
+      elements.push(<h2 key={i} className="text-gray-900 font-semibold text-sm mt-4 mb-2">{line.slice(3)}</h2>);
     } else if (line.startsWith("### ")) {
-      elements.push(<h3 key={i} className="text-gray-300 font-semibold text-xs mt-3 mb-1.5">{line.slice(4)}</h3>);
+      elements.push(<h3 key={i} className="text-gray-700 font-semibold text-xs mt-3 mb-1.5">{line.slice(4)}</h3>);
     } else if (line.startsWith("```")) {
       const codeLines: string[] = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith("```")) {
-        codeLines.push(lines[i]);
-        i++;
-      }
+      while (i < lines.length && !lines[i].startsWith("```")) { codeLines.push(lines[i]); i++; }
       elements.push(
-        <pre key={i} className="bg-[#0a0b10] border border-[#1e2130] rounded-lg p-3 text-xs text-emerald-400 font-mono overflow-x-auto my-2 whitespace-pre">
+        <pre key={i} className="bg-gray-900 text-emerald-400 border border-gray-200 rounded-lg p-3 text-xs font-mono overflow-x-auto my-2 whitespace-pre">
           {codeLines.join("\n")}
         </pre>
       );
     } else if (line.startsWith("| ")) {
       const rows: string[][] = [];
       while (i < lines.length && lines[i].startsWith("|")) {
-        if (!lines[i].match(/^\|[-| ]+\|$/)) {
-          rows.push(lines[i].split("|").filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(s => s.trim()));
-        }
+        if (!lines[i].match(/^\|[-| ]+\|$/)) rows.push(lines[i].split("|").filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(s => s.trim()));
         i++;
       }
       elements.push(
         <div key={i} className="overflow-x-auto my-3">
           <table className="w-full text-xs border-collapse">
             <thead>
-              <tr className="border-b border-[#2a2d3a]">
-                {rows[0]?.map((cell, ci) => (
-                  <th key={ci} className="text-left py-2 pr-4 text-gray-400 font-semibold whitespace-nowrap">{cell}</th>
-                ))}
+              <tr className="border-b border-gray-200">
+                {rows[0]?.map((cell, ci) => <th key={ci} className="text-left py-2 pr-4 text-gray-600 font-semibold whitespace-nowrap">{cell}</th>)}
               </tr>
             </thead>
             <tbody>
               {rows.slice(1).map((row, ri) => (
-                <tr key={ri} className="border-b border-[#1e2130]">
-                  {row.map((cell, ci) => (
-                    <td key={ci} className="py-2 pr-4 text-gray-400 whitespace-nowrap">{cell}</td>
-                  ))}
+                <tr key={ri} className="border-b border-gray-100">
+                  {row.map((cell, ci) => <td key={ci} className="py-2 pr-4 text-gray-600 whitespace-nowrap">{cell}</td>)}
                 </tr>
               ))}
             </tbody>
@@ -996,26 +920,25 @@ function MarkdownContent({ content }: { content: string }) {
       continue;
     } else if (line.startsWith("- ") || line.startsWith("✅ ") || line.startsWith("❌ ")) {
       elements.push(
-        <div key={i} className="flex gap-2 text-xs text-gray-400 my-0.5">
-          <span className="shrink-0 mt-0.5">•</span>
-          <span dangerouslySetInnerHTML={{ __html: line.replace(/^[-✅❌] /, "").replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-300">$1</strong>').replace(/`(.*?)`/g, '<code class="bg-[#0a0b10] text-emerald-400 px-1 rounded text-[10px]">$1</code>') }} />
+        <div key={i} className="flex gap-2 text-xs text-gray-600 my-0.5">
+          <span className="shrink-0 mt-0.5 text-gray-400">•</span>
+          <span dangerouslySetInnerHTML={{ __html: line.replace(/^[-✅❌] /, "").replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-800">$1</strong>').replace(/`(.*?)`/g, '<code class="bg-gray-100 text-indigo-700 px-1 rounded text-[10px]">$1</code>') }} />
         </div>
       );
     } else if (line.match(/^\d+\. /)) {
       elements.push(
-        <div key={i} className="flex gap-2 text-xs text-gray-400 my-0.5">
-          <span className="shrink-0 text-gray-600">{line.match(/^\d+/)![0]}.</span>
-          <span dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\. /, "").replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-300">$1</strong>').replace(/`(.*?)`/g, '<code class="bg-[#0a0b10] text-emerald-400 px-1 rounded text-[10px]">$1</code>') }} />
+        <div key={i} className="flex gap-2 text-xs text-gray-600 my-0.5">
+          <span className="shrink-0 text-gray-400">{line.match(/^\d+/)![0]}.</span>
+          <span dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\. /, "").replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-800">$1</strong>').replace(/`(.*?)`/g, '<code class="bg-gray-100 text-indigo-700 px-1 rounded text-[10px]">$1</code>') }} />
         </div>
       );
     } else if (line.trim() !== "") {
       elements.push(
-        <p key={i} className="text-xs text-gray-400 my-1.5 leading-relaxed"
-           dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-300">$1</strong>').replace(/`(.*?)`/g, '<code class="bg-[#0a0b10] text-emerald-400 px-1 rounded text-[10px]">$1</code>') }} />
+        <p key={i} className="text-xs text-gray-600 my-1.5 leading-relaxed"
+           dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-800">$1</strong>').replace(/`(.*?)`/g, '<code class="bg-gray-100 text-indigo-700 px-1 rounded text-[10px]">$1</code>') }} />
       );
     }
     i++;
   }
-
   return <div>{elements}</div>;
 }
