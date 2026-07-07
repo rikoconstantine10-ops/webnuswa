@@ -8,7 +8,8 @@ const STATE_COOKIE = "g_oauth_state";
 
 // GET /api/auth/google/callback?code=...&state=...
 export async function GET(req: NextRequest) {
-  const failUrl = new URL("/register-seller?error=google_failed", req.url);
+  const appUrl = process.env.APP_URL || "https://nuswamart.com";
+  const failUrl = new URL("/register-seller?error=google_failed", appUrl);
   if (!googleOAuthEnabled()) return NextResponse.redirect(failUrl);
 
   const code = req.nextUrl.searchParams.get("code");
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     await createSessionForUser(user.id);
 
     const dest = user.store ? "/dashboard" : "/register-seller";
-    const res = NextResponse.redirect(new URL(dest, req.url));
+    const res = NextResponse.redirect(new URL(dest, appUrl));
     res.cookies.set(STATE_COOKIE, "", { path: "/", maxAge: 0 });
     return res;
   } catch (e) {

@@ -6,9 +6,10 @@ const STATE_COOKIE = "g_oauth_state";
 
 // Mulai alur "Continue with Google" khusus login/register seller.
 // GET /api/auth/google
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
+  const appUrl = process.env.APP_URL || "https://nuswamart.com";
   if (!googleOAuthEnabled()) {
-    return NextResponse.redirect(new URL("/register-seller?error=google_disabled", req.url));
+    return NextResponse.redirect(new URL("/register-seller?error=google_disabled", appUrl));
   }
 
   const state = randomBytes(16).toString("hex");
