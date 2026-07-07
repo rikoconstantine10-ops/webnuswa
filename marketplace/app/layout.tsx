@@ -75,12 +75,17 @@ export default async function RootLayout({
                   </form>
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  className="bg-teal-600 text-white px-4 py-2 rounded-full hover:bg-teal-700"
-                >
-                  Masuk
-                </Link>
+                <>
+                  <Link href="/register-seller" className="text-slate-600 hover:text-teal-600 hidden sm:inline">
+                    Buka Toko
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="bg-teal-600 text-white px-4 py-2 rounded-full hover:bg-teal-700"
+                  >
+                    Masuk
+                  </Link>
+                </>
               )}
             </nav>
           </div>
