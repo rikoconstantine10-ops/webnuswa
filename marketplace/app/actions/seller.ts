@@ -25,6 +25,7 @@ export async function markProcessingAction(formData: FormData) {
   if (!order) return;
   await db.order.update({ where: { id: orderId }, data: { status: "PROCESSING" } });
   revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard");
 }
 
 export async function shipOrderAction(formData: FormData) {

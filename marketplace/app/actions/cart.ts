@@ -17,6 +17,7 @@ import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
 import { createShipmentForOrder } from "@/lib/shipping";
+import { notifyNewCodOrder } from "@/lib/notify";
 import { resolveAffiliateUserId } from "@/lib/affiliate";
 import { effectivePrice } from "@/lib/pricing";
 import { createPaymentRequest, isPaymentoConfigured } from "@/lib/paymento";
@@ -242,6 +243,7 @@ export async function checkoutCartAction(
     }
     if (voucherId) await db.voucher.update({ where: { id: voucherId }, data: { used: { increment: 1 } } });
     createShipmentForOrder(codOrder.id).catch(() => {});
+    notifyNewCodOrder(codOrder.id);
     await db.cartItem.deleteMany({ where: { ...ownerWhere, product: { storeId: store.id } } });
     redirect(`/order/${code}`);
   }

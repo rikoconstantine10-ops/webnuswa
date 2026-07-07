@@ -2,7 +2,13 @@ import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
-import { deleteProductAction, duplicateProductAction } from "@/app/actions/products";
+import {
+  deleteProductAction,
+  duplicateProductAction,
+  bulkActivateAction,
+  bulkDeactivateAction,
+  bulkUpdatePriceAction,
+} from "@/app/actions/products";
 import BoostButton from "@/components/BoostButton";
 
 export const dynamic = "force-dynamic";
@@ -39,10 +45,39 @@ export default async function ProductsPage() {
           Belum ada produk. Tambahkan produk pertamamu!
         </p>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+        <div className="space-y-3">
+          <form id="bulk-products" />
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-xs text-slate-500 mr-1">Aksi massal (centang produk lalu pilih):</span>
+            <button form="bulk-products" formAction={bulkActivateAction} className="border border-emerald-300 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-50">
+              Aktifkan
+            </button>
+            <button form="bulk-products" formAction={bulkDeactivateAction} className="border border-slate-300 text-slate-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-50">
+              Nonaktifkan
+            </button>
+            <span className="w-px h-5 bg-slate-200 mx-1" />
+            <select name="mode" form="bulk-products" defaultValue="percent" className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
+              <option value="percent">Ubah harga %</option>
+              <option value="fixed">Ubah harga (+/− Rp)</option>
+              <option value="set">Set harga jadi</option>
+            </select>
+            <input
+              type="number"
+              name="value"
+              form="bulk-products"
+              placeholder="Nilai"
+              className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm w-28"
+            />
+            <button form="bulk-products" formAction={bulkUpdatePriceAction} className="bg-teal-600 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-teal-700">
+              Terapkan Harga
+            </button>
+            <span className="text-xs text-slate-400 w-full">Harga dasar saja — tidak mengubah harga varian/grosir.</span>
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+                <th className="px-4 py-3 w-8"></th>
                 <th className="px-4 py-3">Produk</th>
                 <th className="px-4 py-3">Tipe</th>
                 <th className="px-4 py-3">Harga</th>
@@ -54,6 +89,9 @@ export default async function ProductsPage() {
             <tbody>
               {products.map((p) => (
                 <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <input type="checkbox" name="ids" value={p.id} form="bulk-products" />
+                  </td>
                   <td className="px-4 py-3 font-medium">{p.name}</td>
                   <td className="px-4 py-3">{p.type === "DIGITAL" ? "💾 Digital" : "📦 Fisik"}</td>
                   <td className="px-4 py-3">{formatRupiah(p.price)}</td>
@@ -98,6 +136,7 @@ export default async function ProductsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

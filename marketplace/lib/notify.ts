@@ -5,6 +5,7 @@ import { waSend, waSendToSelf } from "./wa";
 import {
   orderPaidBuyerEmail,
   orderPaidSellerEmail,
+  orderNewCodEmail,
   orderShippedEmail,
   disputeOpenedEmail,
   disputeResolvedEmail,
@@ -64,6 +65,38 @@ export function notifyOrderPaid(orderId: string) {
       order.buyerPhone ? waSend(order.storeId, order.buyerPhone, buyerMail.text) : Promise.resolve(false),
     ]);
   })().catch((e) => console.error("[NOTIFY] gagal:", e));
+}
+
+// Notifikasi ke seller saat ada order COD baru (belum lunas — dibayar tunai saat barang
+// sampai). Order COD dibuat langsung dengan status PROCESSING, tak lewat markOrderPaid,
+// jadi butuh notifikasi terpisah supaya seller tetap tahu ada pesanan masuk.
+export function notifyNewCodOrder(orderId: string) {
+  (async () => {
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      include: { store: { include: { owner: { select: { email: true } } } }, items: true },
+    });
+    if (!order) return;
+
+    const appUrl = process.env.APP_URL || "https://nuswamart.com";
+    const itemLines = order.items.map(
+      (i) => `${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.qty} = ${formatRupiah(i.price * i.qty)}`
+    );
+    const mail = orderNewCodEmail({
+      code: order.code,
+      buyerName: order.buyerName,
+      buyerPhone: order.buyerPhone,
+      itemLines,
+      totalText: formatRupiah(order.total),
+      shippingAddress: order.shippingAddress,
+      appUrl,
+    });
+
+    await Promise.allSettled([
+      sendMail(order.store.owner.email, mail.subject, mail.text, { html: mail.html, replyTo: MAILBOX.seller }),
+      waSendToSelf(order.storeId, mail.text),
+    ]);
+  })().catch((e) => console.error("[NOTIFY cod] gagal:", e));
 }
 
 // Email pembeli saat pesanan dikirim (resi tersedia).

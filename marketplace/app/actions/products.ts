@@ -264,3 +264,47 @@ export async function duplicateProductAction(formData: FormData) {
   });
   revalidatePath("/dashboard/products");
 }
+
+// ===== Aksi massal (dipilih via checkbox di /dashboard/products) =====
+
+export async function bulkActivateAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const ids = formData.getAll("ids").map(String);
+  if (ids.length === 0) return;
+  await db.product.updateMany({ where: { id: { in: ids }, storeId: store.id }, data: { active: true } });
+  revalidatePath("/dashboard/products");
+}
+
+export async function bulkDeactivateAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const ids = formData.getAll("ids").map(String);
+  if (ids.length === 0) return;
+  await db.product.updateMany({ where: { id: { in: ids }, storeId: store.id }, data: { active: false } });
+  revalidatePath("/dashboard/products");
+}
+
+// Ubah harga dasar massal (tidak menyentuh harga varian/grosir). mode: percent | fixed | set.
+export async function bulkUpdatePriceAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const ids = formData.getAll("ids").map(String);
+  const mode = String(formData.get("mode") ?? "");
+  const value = parseFloat(String(formData.get("value") ?? ""));
+  if (ids.length === 0 || !Number.isFinite(value) || !["percent", "fixed", "set"].includes(mode)) return;
+
+  const products = await db.product.findMany({
+    where: { id: { in: ids }, storeId: store.id },
+    select: { id: true, price: true },
+  });
+
+  await db.$transaction(
+    products.map((p) => {
+      let price = p.price;
+      if (mode === "percent") price = p.price * (1 + value / 100);
+      else if (mode === "fixed") price = p.price + value;
+      else price = value;
+      price = Math.max(0, Math.round(price));
+      return db.product.update({ where: { id: p.id }, data: { price } });
+    })
+  );
+  revalidatePath("/dashboard/products");
+}

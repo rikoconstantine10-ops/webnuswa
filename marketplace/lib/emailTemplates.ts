@@ -96,6 +96,28 @@ export function orderPaidSellerEmail(input: {
   return { subject, html, text };
 }
 
+// Beda dari orderPaidSellerEmail: order COD belum lunas (dibayar tunai saat barang sampai),
+// jadi wordingnya tidak boleh bilang "LUNAS" — supaya seller tak salah kira dana sudah cair.
+export function orderNewCodEmail(input: {
+  code: string; buyerName: string; buyerPhone?: string | null; itemLines: string[]; totalText: string;
+  shippingAddress?: string | null; appUrl: string;
+}): EmailPayload {
+  const subject = `Pesanan baru (COD) — ${input.code}`;
+  const text = `Pesanan baru masuk (bayar di tempat)!\n\nKode: ${input.code}\nPembeli: ${input.buyerName}${input.buyerPhone ? ` (${input.buyerPhone})` : ""}\n${input.itemLines.join("\n")}\nTotal (tunai saat barang sampai): ${input.totalText}\n\nAlamat kirim:\n${input.shippingAddress ?? "-"}\n\nSegera proses & input resi di dashboard.\n\nKelola: ${input.appUrl}/dashboard/orders`;
+  const html = wrapEmail({
+    title: "📦 Pesanan Baru (COD)",
+    bodyHtml: `
+      <p>Pembeli: <b>${input.buyerName}</b>${input.buyerPhone ? ` (${input.buyerPhone})` : ""}</p>
+      <ul style="padding-left:18px;margin:12px 0">${input.itemLines.map((l) => `<li>${l}</li>`).join("")}</ul>
+      <p><b>Total (tunai saat barang sampai): ${input.totalText}</b></p>
+      <p>Alamat kirim:<br/>${input.shippingAddress ?? "-"}</p>
+      <p>Segera proses &amp; input resi di dashboard.</p>
+      ${ctaButton("Kelola Pesanan", `${input.appUrl}/dashboard/orders`)}
+    `,
+  });
+  return { subject, html, text };
+}
+
 export function orderShippedEmail(input: { code: string; storeName: string; courier?: string | null; tracking?: string | null; appUrl: string }): EmailPayload {
   const subject = `Pesanan dikirim — ${input.code}`;
   const text = `Pesanan ${input.code} di ${input.storeName} sudah dikirim!\n\nKurir: ${input.courier ?? "-"}\nNo. resi: ${input.tracking ?? "-"}\n\nLacak & konfirmasi penerimaan di:\n${input.appUrl}/order/${input.code}`;

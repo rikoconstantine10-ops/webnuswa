@@ -3,7 +3,9 @@ import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { storeBalance, storeHeldBalance } from "@/lib/ledger";
 import { formatRupiah } from "@/lib/money";
+import { waStatus } from "@/lib/wa";
 import SalesChart from "@/components/SalesChart";
+import { markProcessingAction } from "@/app/actions/seller";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +13,7 @@ export default async function DashboardHome() {
   const { store } = await requireSeller();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [balance, heldBalance, productCount, pendingOrders, totalSales, paidOrders, topItems, announcements] =
+  const [balance, heldBalance, productCount, pendingOrders, totalSales, paidOrders, topItems, announcements, actionableOrders, wa] =
     await Promise.all([
       storeBalance(store.id),
       storeHeldBalance(store.id),
@@ -33,7 +35,21 @@ export default async function DashboardHome() {
         take: 5,
       }),
       db.announcement.findMany({ where: { active: true }, orderBy: { createdAt: "desc" }, take: 3 }),
+      db.order.findMany({
+        where: { storeId: store.id, status: { in: ["PAID", "PROCESSING"] } },
+        orderBy: { paidAt: "desc" },
+        take: 5,
+      }),
+      waStatus(store.id),
     ]);
+
+  const checklist = [
+    { done: productCount > 0, label: "Tambah produk pertama", href: "/dashboard/products/new" },
+    { done: Boolean(store.bankName && store.bankAccountNumber), label: "Atur rekening bank", href: "/dashboard/store" },
+    { done: Boolean(store.originAreaId), label: "Atur alamat asal pengiriman", href: "/dashboard/store" },
+    { done: wa.status === "connected", label: "Sambungkan WhatsApp", href: "/dashboard/whatsapp" },
+  ];
+  const checklistDone = checklist.filter((c) => c.done).length;
 
   // Agregasi penjualan per hari, 30 hari terakhir
   const days: { label: string; value: number }[] = [];
@@ -85,6 +101,65 @@ export default async function DashboardHome() {
         <p className="text-sm bg-amber-50 text-amber-700 rounded-xl px-4 py-3">
           Tokomu sedang menunggu persetujuan admin. Produk belum tampil di marketplace sampai toko disetujui.
         </p>
+      )}
+
+      {checklistDone < checklist.length && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-sm">Lengkapi Setup Toko</h2>
+            <span className="text-xs text-slate-400">{checklistDone}/{checklist.length} selesai</span>
+          </div>
+          <div className="space-y-2">
+            {checklist.map((c) => (
+              <Link
+                key={c.label}
+                href={c.href}
+                className={`flex items-center gap-2 text-sm rounded-lg px-3 py-2 ${
+                  c.done ? "text-slate-400 line-through" : "text-slate-700 hover:bg-teal-50 hover:text-teal-700"
+                }`}
+              >
+                <span>{c.done ? "✅" : "⬜"}</span>
+                {c.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {actionableOrders.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-sm">Perlu Diproses</h2>
+            <Link href="/dashboard/orders" className="text-teal-600 text-xs font-bold hover:underline">
+              Lihat Semua Pesanan →
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {actionableOrders.map((o) => (
+              <div key={o.id} className="flex items-center justify-between gap-2 text-sm border-b border-slate-50 pb-2">
+                <div className="min-w-0">
+                  <p className="font-mono font-bold">{o.code}</p>
+                  <p className="text-xs text-slate-500 truncate">{o.buyerName} · {formatRupiah(o.total)}</p>
+                </div>
+                {o.status === "PAID" ? (
+                  <form action={markProcessingAction}>
+                    <input type="hidden" name="orderId" value={o.id} />
+                    <button className="bg-teal-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-teal-700 shrink-0">
+                      Proses
+                    </button>
+                  </form>
+                ) : (
+                  <Link
+                    href="/dashboard/orders"
+                    className="text-amber-600 text-xs font-bold px-3 py-1.5 rounded-lg border border-amber-300 shrink-0"
+                  >
+                    Diproses
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       <SalesChart data={days} title="Penjualan 30 Hari Terakhir (Rp)" />
