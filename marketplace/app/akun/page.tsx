@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import SetPasswordForm from "@/components/SetPasswordForm";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,18 @@ export default async function AccountHomePage() {
           <Link href="/register-seller" className="inline-block bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700">
             Buka Toko Gratis
           </Link>
+        </div>
+      )}
+
+      {user.store && (
+        <div className="mt-6 bg-white border border-slate-200 rounded-2xl p-6">
+          <h2 className="font-bold mb-1">
+            {user.passwordHash ? "Ubah Password Login Toko" : "Atur Password Login Toko"}
+          </h2>
+          <p className="text-sm text-slate-600 mb-3">
+            Selain kode OTP, kamu bisa masuk ke dashboard toko pakai email + password.
+          </p>
+          <SetPasswordForm />
         </div>
       )}
     </div>

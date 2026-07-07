@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requestOtp, verifyOtp, logout, requireUser } from "@/lib/auth";
+import bcrypt from "bcryptjs";
+import { requestOtp, verifyOtp, logout, requireUser, createSessionForUser } from "@/lib/auth";
+import { verifyTurnstile } from "@/lib/turnstile";
 import { db } from "@/lib/db";
 import { slugify, randomSuffix } from "@/lib/slug";
 import { notifyAdminNewSeller } from "@/lib/notify";
@@ -62,4 +64,76 @@ export async function registerSellerAction(
   notifyAdminNewSeller(store.id);
 
   redirect("/dashboard");
+}
+
+// ===== Auth khusus alur seller (hybrid OTP + password + Google), digunakan di /register-seller =====
+
+type SellerAuthState = { step: string; email: string; error?: string };
+
+function afterSellerLoginPath(hasStore: boolean) {
+  return hasStore ? "/dashboard" : "/register-seller";
+}
+
+export async function sellerRequestOtpAction(
+  _prev: SellerAuthState,
+  formData: FormData
+): Promise<SellerAuthState> {
+  const ok = await verifyTurnstile(String(formData.get("turnstileToken") ?? "") || null);
+  if (!ok) return { step: "email", email: "", error: "Verifikasi keamanan gagal, coba lagi" };
+
+  const email = z.string().email().safeParse(String(formData.get("email")).trim().toLowerCase());
+  if (!email.success) return { step: "email", email: "", error: "Email tidak valid" };
+
+  await requestOtp(email.data);
+  return { step: "otp", email: email.data };
+}
+
+export async function sellerVerifyOtpAction(
+  _prev: SellerAuthState,
+  formData: FormData
+): Promise<SellerAuthState> {
+  const email = String(formData.get("email")).trim().toLowerCase();
+  const code = String(formData.get("code")).trim();
+
+  const ok = await verifyOtp(email, code);
+  if (!ok) return { step: "otp", email, error: "Kode salah atau kedaluwarsa" };
+
+  const user = await db.user.findUnique({ where: { email }, include: { store: true } });
+  redirect(afterSellerLoginPath(Boolean(user?.store)));
+}
+
+export async function sellerPasswordLoginAction(
+  _prev: { error?: string },
+  formData: FormData
+): Promise<{ error?: string }> {
+  const ok = await verifyTurnstile(String(formData.get("turnstileToken") ?? "") || null);
+  if (!ok) return { error: "Verifikasi keamanan gagal, coba lagi" };
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!email || !password) return { error: "Email dan password wajib diisi" };
+
+  const user = await db.user.findUnique({ where: { email }, include: { store: true } });
+  if (!user?.passwordHash) return { error: "Email atau password salah" };
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return { error: "Email atau password salah" };
+
+  await createSessionForUser(user.id);
+  redirect(afterSellerLoginPath(Boolean(user.store)));
+}
+
+// Atur/ubah password login dari halaman Akun (mengganti alur "lupa password" — cukup
+// masuk via OTP lalu set password baru di sini).
+export async function setPasswordAction(
+  _prev: { saved?: boolean; error?: string },
+  formData: FormData
+): Promise<{ saved?: boolean; error?: string }> {
+  const user = await requireUser();
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) return { error: "Password minimal 8 karakter" };
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await db.user.update({ where: { id: user.id }, data: { passwordHash } });
+  return { saved: true };
 }

@@ -51,11 +51,17 @@ export async function verifyOtp(email: string, code: string): Promise<boolean> {
     update: isAdmin ? { role: "ADMIN" } : {},
   });
 
+  await createSessionForUser(user.id);
+  return true;
+}
+
+// Buat session + set cookie mp_session untuk userId manapun (dipakai OTP, password, Google).
+export async function createSessionForUser(userId: string) {
   const token = randomBytes(32).toString("hex");
   await db.session.create({
     data: {
       token,
-      userId: user.id,
+      userId,
       expiresAt: new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000),
     },
   });
@@ -70,8 +76,6 @@ export async function verifyOtp(email: string, code: string): Promise<boolean> {
     // Berlaku lintas subdomain (admin./seller./apex) jika COOKIE_DOMAIN diset.
     ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
   });
-
-  return true;
 }
 
 export async function currentUser() {

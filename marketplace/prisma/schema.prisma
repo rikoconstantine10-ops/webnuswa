@@ -14,6 +14,8 @@ model User {
   role          String    @default("BUYER") // BUYER | SELLER | ADMIN
   points        Int       @default(0) // poin loyalitas (1 poin = Rp1)
   affiliateCode String?   @unique // kode afiliasi bila user ikut program
+  passwordHash  String?   // login password opsional (hybrid dgn OTP), khusus alur seller
+  googleId      String?   @unique // sub id dari Google OAuth, bila login via Google
   createdAt     DateTime  @default(now())
   sessions      Session[]
   store         Store?

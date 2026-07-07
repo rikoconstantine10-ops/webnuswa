@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import RegisterSellerForm from "@/components/RegisterSellerForm";
+import SellerAuthForm from "@/components/SellerAuthForm";
 
 export default async function RegisterSellerPage() {
   const user = await currentUser();
-  if (!user) redirect("/login");
-  if (user.store) redirect("/dashboard");
+  if (user?.store) redirect("/dashboard");
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
@@ -14,7 +14,7 @@ export default async function RegisterSellerPage() {
         <p className="text-sm text-slate-500 mb-6">
           Gratis. Jual produk digital maupun fisik, dana masuk ke saldo tokomu.
         </p>
-        <RegisterSellerForm />
+        {user ? <RegisterSellerForm /> : <SellerAuthForm />}
       </div>
     </div>
   );
