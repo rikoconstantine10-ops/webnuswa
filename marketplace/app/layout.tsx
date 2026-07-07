@@ -5,6 +5,8 @@ import "./globals.css";
 import { currentUser, logout } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import ServiceWorker from "@/components/ServiceWorker";
+import HeatmapTracker from "@/components/HeatmapTracker";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -13,6 +15,12 @@ export const metadata: Metadata = {
   description: "Marketplace produk digital & fisik — jual apa saja, bayar mudah via QRIS & VA.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "NuswaMart", statusBarStyle: "default" },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
+  },
 };
 
 export const viewport: Viewport = {
@@ -34,6 +42,8 @@ export default async function RootLayout({
     <html lang="id">
       <body className={`${geist.className} bg-slate-50 text-slate-900 min-h-screen flex flex-col`}>
         <ServiceWorker />
+        <HeatmapTracker />
+        <GoogleAnalytics />
         <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
           <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
             <Link href="/" className="text-xl font-extrabold text-teal-600">

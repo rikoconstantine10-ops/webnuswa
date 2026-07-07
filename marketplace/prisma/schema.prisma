@@ -426,6 +426,29 @@ model AdminNotification {
   @@index([createdAt])
 }
 
+// Klik heatmap (posisi dinormalisasi 0..100 relatif ke ukuran dokumen penuh, bukan viewport).
+model HeatmapClick {
+  id        String   @id @default(cuid())
+  path      String
+  device    String // "mobile" | "desktop"
+  xPct      Float
+  yPct      Float
+  createdAt DateTime @default(now())
+
+  @@index([path, device, createdAt])
+}
+
+// Kedalaman scroll maksimum per kunjungan halaman.
+model HeatmapScroll {
+  id        String   @id @default(cuid())
+  path      String
+  device    String
+  depthPct  Int
+  createdAt DateTime @default(now())
+
+  @@index([path, device, createdAt])
+}
+
 // Jejak audit aksi penting (admin & keuangan).
 model AuditLog {
   id        String   @id @default(cuid())
