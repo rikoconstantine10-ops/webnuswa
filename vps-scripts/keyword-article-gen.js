@@ -7,10 +7,10 @@
  *
  * Setup:
  *   npm install rss-parser @anthropic-ai/sdk better-sqlite3   (run once)
- *   ANTHROPIC_API_KEY=sk-ant-... UNSPLASH_ACCESS_KEY=xxx node scripts/keyword-article-gen.js
+ *   ANTHROPIC_API_KEY=sk-ant-... PEXELS_API_KEY=xxx node scripts/keyword-article-gen.js
  *
  * Crontab (daily 02:00 WIB / 19:00 UTC):
- *   0 19 * * * cd /home/ubuntu/nuswalab && ANTHROPIC_API_KEY=sk-ant-xxx UNSPLASH_ACCESS_KEY=xxx node scripts/keyword-article-gen.js >> logs/article-gen.log 2>&1
+ *   0 19 * * * cd /home/ubuntu/nuswalab && ANTHROPIC_API_KEY=sk-ant-xxx PEXELS_API_KEY=xxx node scripts/keyword-article-gen.js >> logs/article-gen.log 2>&1
  */
 
 "use strict";
@@ -29,7 +29,7 @@ const DB_PATH         = "/home/ubuntu/articel generator/data.db";
 const KEYWORDS_FILE   = path.join(VPS_ROOT, "scripts/keywords.json");
 const IMAGE_DIR       = path.join(VPS_ROOT, "public/images/blog");
 const API_KEY         = process.env.ANTHROPIC_API_KEY;
-const UNSPLASH_KEY    = process.env.UNSPLASH_ACCESS_KEY;
+const PEXELS_KEY      = process.env.PEXELS_API_KEY;
 const BASE_URL        = process.env.ANTHROPIC_BASE_URL || "https://ai.sumopod.com";
 const MODEL           = process.env.ANTHROPIC_MODEL    || "claude-opus-4-8";
 const DRY_RUN         = process.env.DRY_RUN === "1";
@@ -206,25 +206,25 @@ function fetchJson(url, headers = {}) {
 }
 
 async function fetchAndSaveImage(keyword, slug) {
-  if (!UNSPLASH_KEY) {
-    log("⚠ UNSPLASH_ACCESS_KEY not set — skipping image");
+  if (!PEXELS_KEY) {
+    log("⚠ PEXELS_API_KEY not set — skipping image");
     return null;
   }
 
   const query = encodeURIComponent(keyword + " business marketing");
-  const apiUrl = `https://api.unsplash.com/search/photos?query=${query}&orientation=landscape&per_page=5&order_by=relevant`;
+  const apiUrl = `https://api.pexels.com/v1/search?query=${query}&orientation=landscape&per_page=5`;
 
   try {
-    const data = await fetchJson(apiUrl, { Authorization: `Client-ID ${UNSPLASH_KEY}` });
-    if (!data.results || data.results.length === 0) {
-      log(`⚠ No Unsplash results for "${keyword}"`);
+    const data = await fetchJson(apiUrl, { Authorization: PEXELS_KEY });
+    if (!data.photos || data.photos.length === 0) {
+      log(`⚠ No Pexels results for "${keyword}"`);
       return null;
     }
 
     // Pick a random result from top 5 for variety
-    const idx = Math.floor(Math.random() * Math.min(5, data.results.length));
-    const photo = data.results[idx];
-    const imageUrl = photo.urls.regular; // ~1080px wide
+    const idx = Math.floor(Math.random() * Math.min(5, data.photos.length));
+    const photo = data.photos[idx];
+    const imageUrl = photo.src.large; // ~940px wide
 
     if (!fs.existsSync(IMAGE_DIR)) {
       fs.mkdirSync(IMAGE_DIR, { recursive: true });
@@ -232,7 +232,7 @@ async function fetchAndSaveImage(keyword, slug) {
 
     const dest = path.join(IMAGE_DIR, `${slug}.jpg`);
     await downloadFile(imageUrl, dest);
-    log(`✓ Image saved: /images/blog/${slug}.jpg (by ${photo.user.name} on Unsplash)`);
+    log(`✓ Image saved: /images/blog/${slug}.jpg (by ${photo.photographer} on Pexels)`);
     return `/images/blog/${slug}.jpg`;
   } catch (err) {
     log(`⚠ Image fetch failed: ${err.message}`);
@@ -336,7 +336,7 @@ async function main() {
   log("=== Keyword Article Generator START ===");
 
   if (!API_KEY) { log("✗ ANTHROPIC_API_KEY not set. Exiting."); process.exit(1); }
-  if (!UNSPLASH_KEY) log("⚠ UNSPLASH_ACCESS_KEY not set — articles will have no featured image");
+  if (!PEXELS_KEY) log("⚠ PEXELS_API_KEY not set — articles will have no featured image");
   if (DRY_RUN) log("⚠ DRY RUN mode — nothing will be written to DB or rebuilt");
 
   const client = new Anthropic({ apiKey: API_KEY, baseURL: BASE_URL });

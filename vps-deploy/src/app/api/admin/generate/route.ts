@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const envContent = fs.existsSync(envFile) ? fs.readFileSync(envFile, "utf-8") : "";
 
     const apiKey = (envContent.match(/^ANTHROPIC_API_KEY=(.+)$/m) || [])[1]?.trim() || "";
-    const unsplashKey = (envContent.match(/^UNSPLASH_ACCESS_KEY=(.+)$/m) || [])[1]?.trim() || "";
+    const pexelsKey = (envContent.match(/^PEXELS_API_KEY=(.+)$/m) || [])[1]?.trim() || "";
 
     if (!apiKey || apiKey.includes("YOUR_KEY")) {
       return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured in .env.local" }, { status: 400 });
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
     const env = [
       `ANTHROPIC_API_KEY=${apiKey}`,
-      unsplashKey && !unsplashKey.includes("YOUR_") ? `UNSPLASH_ACCESS_KEY=${unsplashKey}` : "",
+      pexelsKey ? `PEXELS_API_KEY=${pexelsKey}` : "",
       dry_run ? "DRY_RUN=1" : "",
       max ? `MAX_DAILY=${max}` : "",
     ].filter(Boolean).join(" ");
