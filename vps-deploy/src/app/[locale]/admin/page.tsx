@@ -26,7 +26,10 @@ type SidebarPage =
   | "articles"
   | "logs"
   | "knowledge"
-  | "settings";
+  | "settings"
+  | "health"
+  | "research"
+  | "calendar";
 
 function ScoreBadge({ label, value }: { label: string; value: number | null }) {
   if (value == null) return <span className="text-gray-300 text-xs">—</span>;
@@ -58,6 +61,9 @@ const NAV_ITEMS: { section: string; items: { id: SidebarPage; label: string; ico
     section: "CONTENT TOOLS",
     items: [
       { id: "knowledge", label: "Knowledge Base", icon: "❓" },
+      { id: "research", label: "Keyword Research", icon: "🔍" },
+      { id: "health",   label: "Health Check",     icon: "❤️" },
+      { id: "calendar", label: "Content Calendar", icon: "📅" },
     ],
   },
   {
@@ -611,6 +617,26 @@ export default function AdminDashboard() {
   const [settingsMaxGen, setSettingsMaxGen] = useState(3);
   const [settingsDryRun, setSettingsDryRun] = useState(false);
 
+  // Bulk import
+  const [bulkKwText, setBulkKwText] = useState("");
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState("");
+  const [showBulk, setShowBulk] = useState(false);
+
+  // Research
+  const [researchSeed, setResearchSeed] = useState("");
+  const [researchCat, setResearchCat] = useState("Digital Marketing");
+  const [researchType, setResearchType] = useState<"expand" | "competitor">("expand");
+  const [researchResults, setResearchResults] = useState<any[]>([]);
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchMsg, setResearchMsg] = useState("");
+  const [addedKws, setAddedKws] = useState<Set<string>>(new Set());
+
+  // All articles (health check + calendar)
+  const [allArticles, setAllArticles] = useState<any[]>([]);
+  const [allArtLoading, setAllArtLoading] = useState(false);
+  const [healthFilter, setHealthFilter] = useState<"all" | "low_seo" | "low_aeo" | "low_aio" | "no_image">("all");
+
   const headers = { "x-admin-token": token, "Content-Type": "application/json" };
 
   const loadKeywords = useCallback(async () => {
@@ -649,6 +675,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!authed) return;
     if (page === "logs") loadLogs();
+  }, [page, authed]);
+
+  useEffect(() => {
+    if (!authed) return;
+    if ((page === "health" || page === "calendar") && allArticles.length === 0) loadAllArticles();
   }, [page, authed]);
 
   async function login() {
@@ -693,6 +724,76 @@ export default function AdminDashboard() {
     loadArticles(artPage);
   }
 
+  async function bulkImport() {
+    const lines = bulkKwText.split("\n").map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return;
+    setBulkImporting(true);
+    setBulkMsg("");
+    for (const kw of lines) {
+      await fetch("/api/admin/keywords", {
+        method: "POST", headers,
+        body: JSON.stringify({ action: "add", keyword: kw, category: newCat, search_intent: newIntent }),
+      });
+    }
+    setBulkMsg(`✓ ${lines.length} keywords imported`);
+    setBulkKwText("");
+    loadKeywords();
+    setBulkImporting(false);
+  }
+
+  async function loadAllArticles() {
+    setAllArtLoading(true);
+    let all: any[] = [];
+    for (let p = 1; p <= 4; p++) {
+      const res = await fetch(`/api/admin/articles?page=${p}&limit=50`, { headers });
+      if (!res.ok) break;
+      const data = await res.json();
+      all = [...all, ...(data.articles || [])];
+      if (all.length >= (data.total || 0)) break;
+    }
+    setAllArticles(all);
+    setAllArtLoading(false);
+  }
+
+  async function triggerResearch() {
+    if (!researchSeed.trim()) return;
+    setResearchLoading(true);
+    setResearchMsg("");
+    setResearchResults([]);
+    const res = await fetch("/api/admin/research", {
+      method: "POST", headers,
+      body: JSON.stringify({ seed: researchSeed, category: researchCat, type: researchType }),
+    });
+    const data = await res.json();
+    if (data.keywords) setResearchResults(data.keywords);
+    else setResearchMsg(data.error || "Failed to generate suggestions");
+    setResearchLoading(false);
+  }
+
+  async function addResearchKw(kw: any) {
+    await fetch("/api/admin/keywords", {
+      method: "POST", headers,
+      body: JSON.stringify({ action: "add", keyword: kw.keyword, category: kw.category || researchCat, search_intent: kw.search_intent }),
+    });
+    setAddedKws(prev => new Set([...prev, kw.keyword]));
+    loadKeywords();
+  }
+
+  function exportCSV() {
+    const rows = allArticles.length ? allArticles : articles;
+    if (!rows.length) { alert("No articles to export"); return; }
+    const cols = ["id","title","keyword","category","status","word_count","seo_score","aeo_score","geo_score","created_at","published_date"];
+    const csv = [
+      cols.join(","),
+      ...rows.map(a => cols.map(c => `"${String(a[c] ?? "").replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url; link.download = `articles-${new Date().toISOString().slice(0,10)}.csv`; link.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function triggerGenerate() {
     setGenLoading(true);
     setGenMsg("");
@@ -705,6 +806,33 @@ export default function AdminDashboard() {
     setGenLoading(false);
     setTimeout(() => { loadLogs(); setPage("logs"); }, 3000);
   }
+
+  const avgSeo = articles.length ? Math.round(articles.reduce((s, a) => s + (a.seo_score || 0), 0) / articles.length) : 0;
+  const avgAeo = articles.length ? Math.round(articles.reduce((s, a) => s + (a.aeo_score || 0), 0) / articles.length) : 0;
+  const avgAio = articles.length ? Math.round(articles.reduce((s, a) => s + (a.geo_score || 0), 0) / articles.length) : 0;
+
+  const healthGood = articles.filter(a => (a.seo_score || 0) >= 70 && (a.aeo_score || 0) >= 60).length;
+  const healthWarn = articles.filter(a => (a.seo_score || 0) >= 40 && (a.seo_score || 0) < 70).length;
+  const healthBad  = articles.filter(a => (a.seo_score || 0) < 40).length;
+
+  // Calendar grouping
+  const calendarGroups: Record<string, any[]> = {};
+  const calRows = allArticles.length ? allArticles : articles;
+  for (const a of calRows) {
+    if (!a.created_at) continue;
+    const month = new Date(a.created_at).toLocaleDateString("id-ID", { year: "numeric", month: "long" });
+    if (!calendarGroups[month]) calendarGroups[month] = [];
+    calendarGroups[month].push(a);
+  }
+
+  // Health filter
+  const healthRows = (allArticles.length ? allArticles : articles).filter(a => {
+    if (healthFilter === "low_seo") return (a.seo_score || 0) < 60;
+    if (healthFilter === "low_aeo") return (a.aeo_score || 0) < 50;
+    if (healthFilter === "low_aio") return (a.geo_score || 0) < 50;
+    if (healthFilter === "no_image") return !a.featured_image;
+    return (a.seo_score || 0) < 60 || (a.aeo_score || 0) < 50 || (a.geo_score || 0) < 50;
+  });
 
   const kwPending = keywords.filter(k => k.status === "pending").length;
   const kwDone    = keywords.filter(k => k.status === "done").length;
@@ -821,7 +949,10 @@ export default function AdminDashboard() {
                page === "keywords" ? "Keyword Queue" :
                page === "articles" ? "All Articles" :
                page === "logs" ? "Run Logs" :
-               page === "knowledge" ? "Knowledge Base" : "Settings"}
+               page === "knowledge" ? "Knowledge Base" :
+               page === "health" ? "Health Check" :
+               page === "research" ? "Keyword Research" :
+               page === "calendar" ? "Content Calendar" : "Settings"}
             </h1>
             {genMsg && <p className="text-indigo-600 text-xs mt-0.5">{genMsg}</p>}
           </div>
@@ -937,6 +1068,70 @@ export default function AdminDashboard() {
                   })}
                 </div>
               </div>
+
+              {/* Score Overview */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "AVG SEO SCORE", value: avgSeo, thresh: 70, color: avgSeo >= 70 ? "text-emerald-600" : avgSeo >= 40 ? "text-amber-500" : "text-red-500" },
+                  { label: "AVG AEO SCORE", value: avgAeo, thresh: 60, color: avgAeo >= 60 ? "text-emerald-600" : avgAeo >= 40 ? "text-amber-500" : "text-red-500" },
+                  { label: "AVG AIO SCORE", value: avgAio, thresh: 60, color: avgAio >= 60 ? "text-emerald-600" : avgAio >= 40 ? "text-amber-500" : "text-red-500" },
+                ].map(s => (
+                  <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4">
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">{s.label}</div>
+                    <div className={`text-3xl font-bold ${s.color}`}>{s.value}<span className="text-sm font-normal text-gray-300">/100</span></div>
+                    <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${s.color.replace("text-", "bg-").replace("-600","-500").replace("-500","-400")}`} style={{ width: `${s.value}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Content Health */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Content Health</div>
+                  <button onClick={() => setPage("health")} className="text-xs text-indigo-500 hover:text-indigo-700">View All Issues →</button>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Good", count: healthGood, color: "bg-emerald-50 border-emerald-200 text-emerald-700", dot: "bg-emerald-400" },
+                    { label: "Needs Attention", count: healthWarn, color: "bg-amber-50 border-amber-200 text-amber-700", dot: "bg-amber-400" },
+                    { label: "Critical", count: healthBad, color: "bg-red-50 border-red-200 text-red-600", dot: "bg-red-400" },
+                  ].map(h => (
+                    <div key={h.label} className={`border rounded-lg px-4 py-3 ${h.color}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-2 h-2 rounded-full ${h.dot}`} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{h.label}</span>
+                      </div>
+                      <div className="text-2xl font-bold">{h.count}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Articles */}
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Recent Articles</div>
+                  <button onClick={() => setPage("articles")} className="text-xs text-indigo-500 hover:text-indigo-700">View All →</button>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {articles.slice(0, 5).map(a => (
+                    <div key={a.id} className="flex items-center justify-between py-2.5 gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-800 font-medium truncate">{a.title || a.keyword}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">{a.category} · {new Date(a.created_at).toLocaleDateString("id-ID")}</div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <ScoreBadge label="S" value={a.seo_score} />
+                        <ScoreBadge label="A" value={a.aeo_score} />
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUS_COLORS[a.status] || "bg-gray-100 text-gray-500"}`}>{a.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {articles.length === 0 && <div className="text-center py-4 text-gray-400 text-sm">No articles yet</div>}
+                </div>
+              </div>
             </div>
           )}
 
@@ -964,6 +1159,39 @@ export default function AdminDashboard() {
                     + Add
                   </button>
                 </div>
+              </div>
+
+              {/* Bulk Import */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setShowBulk(b => !b)}
+                  className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 text-left"
+                >
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Bulk Import</div>
+                  <span className="text-gray-400 text-xs">{showBulk ? "▲" : "▼"}</span>
+                </button>
+                {showBulk && (
+                  <div className="px-5 pb-5 border-t border-gray-100 pt-4 space-y-3">
+                    <p className="text-xs text-gray-400">Paste keywords, one per line. Will use selected Category & Intent from above.</p>
+                    <textarea
+                      value={bulkKwText}
+                      onChange={e => setBulkKwText(e.target.value)}
+                      placeholder={"cara setting google ads\nstrategi seo untuk pemula\ntips email marketing"}
+                      rows={6}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 font-mono resize-none"
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={bulkImport}
+                        disabled={bulkImporting || !bulkKwText.trim()}
+                        className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm"
+                      >
+                        {bulkImporting ? "Importing…" : `Import ${bulkKwText.split("\n").filter(l => l.trim()).length} Keywords`}
+                      </button>
+                      {bulkMsg && <span className="text-xs text-emerald-600 font-medium">{bulkMsg}</span>}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-5">
@@ -1054,6 +1282,12 @@ export default function AdminDashboard() {
                 <div className="text-center py-10 text-gray-400 text-sm">Loading…</div>
               ) : (
                 <>
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="text-xs text-gray-500">{artTotal} articles total</div>
+                    <button onClick={exportCSV} className="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:bg-gray-50 transition">
+                      ↓ Export CSV
+                    </button>
+                  </div>
                   <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 border-b border-gray-200">
@@ -1155,6 +1389,231 @@ export default function AdminDashboard() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── HEALTH CHECK ─────────────────────────────────────────────────────────── */}
+          {page === "health" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                {[
+                  { id: "all", label: "All Issues" },
+                  { id: "low_seo", label: "Low SEO (<60)" },
+                  { id: "low_aeo", label: "Low AEO (<50)" },
+                  { id: "low_aio", label: "Low AIO (<50)" },
+                  { id: "no_image", label: "No Image" },
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setHealthFilter(f.id as any)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${healthFilter === f.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+                <button
+                  onClick={loadAllArticles}
+                  disabled={allArtLoading}
+                  className="ml-auto px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                >
+                  {allArtLoading ? "Loading…" : `↻ Load All (${allArticles.length || articles.length})`}
+                </button>
+              </div>
+
+              {healthRows.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-xl py-12 text-center text-gray-400 text-sm">
+                  No articles match this filter — great job!
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Article</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Scores</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Issues</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {healthRows.map(a => {
+                        const issues = [];
+                        if ((a.seo_score || 0) < 60) issues.push({ label: "SEO " + (a.seo_score || 0), tip: "Add more H2s, increase word count to 2000+, ensure keyword in title", color: "text-red-500 bg-red-50" });
+                        if ((a.aeo_score || 0) < 50) issues.push({ label: "AEO " + (a.aeo_score || 0), tip: "Add FAQ section (5+ Q&A pairs), open with definition paragraph", color: "text-amber-600 bg-amber-50" });
+                        if ((a.geo_score || 0) < 50) issues.push({ label: "AIO " + (a.geo_score || 0), tip: "Add 3+ statistics with sources, include comparison table", color: "text-purple-600 bg-purple-50" });
+                        if (!a.featured_image) issues.push({ label: "No Image", tip: "Featured image missing — check Pexels API key", color: "text-gray-500 bg-gray-100" });
+                        return (
+                          <tr key={a.id} className="hover:bg-gray-50 align-top">
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-gray-800 max-w-xs truncate">{a.title || a.keyword}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">{a.category} · {new Date(a.created_at).toLocaleDateString("id-ID")}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-col gap-1">
+                                <ScoreBadge label="SEO" value={a.seo_score} />
+                                <ScoreBadge label="AEO" value={a.aeo_score} />
+                                <ScoreBadge label="AIO" value={a.geo_score} />
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="space-y-1.5">
+                                {issues.map((issue, ii) => (
+                                  <div key={ii}>
+                                    <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded ${issue.color}`}>{issue.label}</span>
+                                    <div className="text-[10px] text-gray-400 mt-0.5">{issue.tip}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-400">{healthRows.length} articles with issues</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── KEYWORD RESEARCH ──────────────────────────────────────────────────── */}
+          {page === "research" && (
+            <div className="space-y-5 max-w-3xl">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Research Mode</div>
+
+                <div className="flex gap-2 mb-4">
+                  {[
+                    { id: "expand", label: "🌱 Expand Keyword", desc: "Generate variations from a seed keyword" },
+                    { id: "competitor", label: "🏆 Competitor Gap", desc: "Find keywords your competitor targets" },
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setResearchType(t.id as any)}
+                      className={`flex-1 text-left px-4 py-3 rounded-lg border text-xs transition ${researchType === t.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"}`}
+                    >
+                      <div className="font-semibold">{t.label}</div>
+                      <div className="opacity-70 mt-0.5">{t.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder={researchType === "competitor" ? "e.g. digimind.id, sribulancer.com" : "e.g. google ads, email marketing"}
+                    value={researchSeed}
+                    onChange={e => setResearchSeed(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && triggerResearch()}
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50"
+                  />
+                  <select value={researchCat} onChange={e => setResearchCat(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-indigo-400">
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                  <button
+                    onClick={triggerResearch}
+                    disabled={researchLoading || !researchSeed.trim()}
+                    className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition whitespace-nowrap shadow-sm"
+                  >
+                    {researchLoading ? "Generating…" : "Generate"}
+                  </button>
+                </div>
+                {researchMsg && <p className="text-xs text-red-500 mt-2">{researchMsg}</p>}
+              </div>
+
+              {researchResults.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{researchResults.length} Keyword Suggestions</div>
+                    <button
+                      onClick={async () => {
+                        for (const kw of researchResults) await addResearchKw(kw);
+                      }}
+                      className="text-xs text-indigo-500 hover:text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-50"
+                    >
+                      + Add All to Queue
+                    </button>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Keyword</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest hidden sm:table-cell">Intent</th>
+                        <th className="text-left px-4 py-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest hidden lg:table-cell">Why</th>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {researchResults.map((kw, i) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-gray-800 font-medium">{kw.keyword}</td>
+                          <td className="px-4 py-3 hidden sm:table-cell">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
+                              kw.search_intent === "informational" ? "bg-blue-50 text-blue-600 border-blue-200" :
+                              kw.search_intent === "commercial" ? "bg-orange-50 text-orange-600 border-orange-200" :
+                              "bg-emerald-50 text-emerald-600 border-emerald-200"
+                            }`}>{kw.search_intent}</span>
+                          </td>
+                          <td className="px-4 py-3 text-[10px] text-gray-400 hidden lg:table-cell max-w-xs truncate">{kw.reason}</td>
+                          <td className="px-4 py-3">
+                            {addedKws.has(kw.keyword) ? (
+                              <span className="text-xs text-emerald-500 font-medium">✓ Added</span>
+                            ) : (
+                              <button onClick={() => addResearchKw(kw)} className="text-xs text-indigo-500 hover:text-indigo-700 border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-50">
+                                + Add
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── CONTENT CALENDAR ──────────────────────────────────────────────────── */}
+          {page === "calendar" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-gray-500 text-sm">{(allArticles.length || articles.length)} articles across {Object.keys(calendarGroups).length} months</p>
+                <button onClick={loadAllArticles} disabled={allArtLoading} className="text-xs text-indigo-500 hover:text-indigo-700 border border-gray-200 px-3 py-1.5 rounded-lg bg-white">
+                  {allArtLoading ? "Loading…" : "↻ Load All"}
+                </button>
+              </div>
+
+              {Object.keys(calendarGroups).length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-xl py-12 text-center text-gray-400 text-sm">No articles yet</div>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(calendarGroups).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime()).map(([month, arts]) => (
+                    <div key={month} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
+                        <div className="text-sm font-semibold text-gray-700">{month}</div>
+                        <div className="text-xs text-gray-400">{arts.length} articles</div>
+                      </div>
+                      <div className="divide-y divide-gray-100">
+                        {arts.map(a => (
+                          <div key={a.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 text-xs font-bold shrink-0">
+                              {new Date(a.created_at).getDate()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm text-gray-800 font-medium truncate">{a.title || a.keyword}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">{a.category} · {a.word_count?.toLocaleString() || "—"} words</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <ScoreBadge label="SEO" value={a.seo_score} />
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUS_COLORS[a.status] || "bg-gray-100 text-gray-500"}`}>{a.status}</span>
+                              {a.slug && <a href={`/blog/${a.slug}`} target="_blank" className="text-[10px] text-gray-300 hover:text-gray-500">↗</a>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
