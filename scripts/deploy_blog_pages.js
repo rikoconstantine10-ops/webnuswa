@@ -1359,3 +1359,266 @@ if (sitemap.includes(OLD_SITEMAP_BLOCK)) {
 }
 
 console.log('Blog pages deployed. Rebuild nuswalab to apply.');
+
+// ── Portfolio AI page ──────────────────────────────────────────────────────────
+const PORTFOLIO_AI_PAGE = "/home/ubuntu/nuswalab/src/app/[locale]/portofolio/ai-development/page.tsx";
+fs.mkdirSync(path.dirname(PORTFOLIO_AI_PAGE), { recursive: true });
+fs.writeFileSync(PORTFOLIO_AI_PAGE, `import { setRequestLocale } from 'next-intl/server';
+import Link from 'next/link';
+import Image from 'next/image';
+import Nav from '@/components/Nav';
+import Footer from '@/components/Footer';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Portofolio AI Agentic Development & Automation — Nuswa Lab',
+  description: 'Lihat portofolio solusi AI kami: multi-agent orchestration, workflow automation, dan AI customer service yang sudah membantu bisnis di Indonesia.',
+};
+
+const STATS = [
+  { num: '50+', label: 'Proyek AI selesai' },
+  { num: '87%', label: 'Rata-rata task terautomasi' },
+  { num: '4.8×', label: 'ROI rata-rata klien' },
+  { num: '24/7', label: 'Agents berjalan non-stop' },
+];
+
+const PROJECTS = [
+  {
+    tag: 'AI Agentic Development',
+    tagColor: 'blue',
+    title: 'Multi-Agent Orchestration Platform',
+    desc: 'Sistem orkestrasi 12+ AI agent yang berjalan paralel — lead qualifier, email outreach, data analyst, web scraper — dengan monitoring real-time dan auto-recovery.',
+    features: [
+      'Fleet management: 12 agents, 2.800+ task/hari',
+      'Decision latency 1,2 detik, success rate 98,7%',
+      'Live log, alerting, dan auto-escalation',
+    ],
+    tech: ['Claude API', 'GPT-4o', 'Node.js', 'PostgreSQL', 'Redis'],
+    image: '/portfolio/portfolio-ai-agent-orchestrator.png',
+    imageAlt: 'AI Agent Orchestrator Dashboard',
+    reverse: false,
+  },
+  {
+    tag: 'AI Workflow Automation',
+    tagColor: 'indigo',
+    title: 'Visual AI Automation Builder',
+    desc: 'Platform untuk membangun automation workflow bisnis — dari lead nurturing, email sequence, hingga CRM sync — dengan node AI terintegrasi Claude & GPT-4o.',
+    features: [
+      'Visual flow builder dengan 40+ node siap pakai',
+      'Claude & GPT-4o nodes untuk reasoning dalam workflow',
+      'Real-time debug, run history, dan retry otomatis',
+    ],
+    tech: ['n8n', 'Claude Sonnet', 'Webhook', 'Google Sheets', 'WhatsApp API'],
+    image: '/portfolio/portfolio-ai-automation-builder.png',
+    imageAlt: 'AI Automation Workflow Builder',
+    reverse: true,
+  },
+  {
+    tag: 'AI Customer Service',
+    tagColor: 'teal',
+    title: 'AI-Powered Support Console',
+    desc: 'Sistem customer support bertenaga AI yang mampu menangani 87% percakapan secara otonom — dengan lead scoring real-time, sentiment analysis, dan eskalasi cerdas ke agen manusia.',
+    features: [
+      '87% tiket resolved oleh AI tanpa intervensi manusia',
+      'Lead scoring otomatis + kalender booking terintegrasi',
+      'CSAT 4,8/5 — respons rata-rata <1,2 detik',
+    ],
+    tech: ['Claude Sonnet', 'Tool Use', 'CRM API', 'WhatsApp', 'Next.js'],
+    image: '/portfolio/portfolio-ai-customer-support.png',
+    imageAlt: 'AI Customer Support Console',
+    reverse: false,
+  },
+];
+
+const SERVICES = [
+  { icon: '🤖', title: 'Custom AI Agent Development', desc: 'Bangun AI agent yang dapat berpikir, mengambil keputusan, dan mengeksekusi task secara otonom — disesuaikan dengan proses bisnis Anda.' },
+  { icon: '⚡', title: 'Business Process Automation', desc: 'Automasi alur kerja manual yang memakan waktu: lead nurturing, laporan, invoice, hingga komunikasi pelanggan — berjalan 24/7 tanpa error.' },
+  { icon: '💬', title: 'AI Chatbot & Customer Service', desc: 'Chatbot cerdas yang memahami konteks, terhubung ke sistem Anda, dan mampu menyelesaikan permintaan pelanggan end-to-end.' },
+  { icon: '🔗', title: 'AI Integration & API', desc: 'Integrasi Claude, GPT-4o, atau model AI lain ke dalam sistem yang sudah berjalan — ERP, CRM, e-commerce, atau aplikasi custom.' },
+  { icon: '📊', title: 'AI Data Pipeline & Analytics', desc: 'Pipeline AI untuk mengekstrak insight dari data bisnis — otomatis, real-time, dan disajikan dalam dashboard yang mudah dibaca.' },
+  { icon: '🛡️', title: 'AI Strategy & Consulting', desc: 'Konsultasi roadmap AI untuk bisnis Anda — identifikasi use case tertinggi ROI, pilih teknologi yang tepat, dan rencanakan implementasi bertahap.' },
+];
+
+const TAG_COLORS: Record<string, string> = {
+  blue: 'bg-blue-50 text-blue-700 border border-blue-200',
+  indigo: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+  teal: 'bg-teal-50 text-teal-700 border border-teal-200',
+};
+
+export default async function PortfolioAIPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Nav />
+
+      {/* Hero */}
+      <section className="max-w-6xl mx-auto px-6 pt-20 pb-14 text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold tracking-widest uppercase mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 inline-block" />
+          AI Development · Portofolio
+        </div>
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight mb-5">
+          Solusi{' '}
+          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
+            AI Agentic &<br />AI Automation
+          </span>{' '}
+          Kami
+        </h1>
+        <p className="text-lg text-slate-500 max-w-xl mx-auto mb-9 leading-relaxed">
+          Kami membangun sistem AI yang benar-benar bekerja — dari agent otonom hingga otomasi proses bisnis end-to-end.
+        </p>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <Link href="/contact" className="px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-lg shadow-blue-200 hover:-translate-y-0.5">
+            Diskusi Proyek Anda →
+          </Link>
+          <Link href="/services" className="px-7 py-3.5 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 text-slate-600 font-semibold text-sm transition-all">
+            Lihat Layanan
+          </Link>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <div className="border-y border-slate-100 bg-white">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 sm:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.label} className="py-5 text-center border-r border-slate-100 last:border-r-0">
+              <div className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{s.num}</div>
+              <div className="text-xs text-slate-500 mt-1 font-medium">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Portfolio Cards */}
+      <section className="max-w-6xl mx-auto px-6 py-16">
+        <div className="flex items-center gap-4 mb-10">
+          <span className="text-xs font-bold tracking-widest uppercase text-slate-400">Portofolio Proyek</span>
+          <div className="flex-1 h-px bg-slate-100" />
+        </div>
+
+        <div className="flex flex-col gap-8">
+          {PROJECTS.map((p) => (
+            <div
+              key={p.title}
+              className={\`bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 hover:border-blue-300 grid \${p.reverse ? 'sm:grid-cols-[1fr_1.4fr]' : 'sm:grid-cols-[1.4fr_1fr]'}\`}
+            >
+              {p.reverse ? (
+                <>
+                  {/* Content first when reverse */}
+                  <div className="p-8 sm:p-10 flex flex-col justify-center">
+                    <span className={\`inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase mb-4 w-fit \${TAG_COLORS[p.tagColor]}\`}>
+                      {p.tag}
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug mb-3">{p.title}</h2>
+                    <p className="text-sm text-slate-500 leading-relaxed mb-5">{p.desc}</p>
+                    <ul className="flex flex-col gap-2 mb-5">
+                      {p.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2.5 text-sm text-slate-600">
+                          <span className="w-4 h-4 rounded bg-blue-50 border border-blue-200 text-blue-600 text-xs grid place-items-center flex-shrink-0 mt-0.5">✓</span>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex flex-wrap gap-1.5 mb-5">
+                      {p.tech.map((t) => (
+                        <span key={t} className="px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 text-xs font-mono">{t}</span>
+                      ))}
+                    </div>
+                    <Link href="/contact" className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:gap-3 transition-all">
+                      Bangun sistem serupa →
+                    </Link>
+                  </div>
+                  {/* Image */}
+                  <div className="relative bg-slate-900 min-h-[280px]">
+                    <Image src={p.image} alt={p.imageAlt} fill className="object-cover object-left-top" sizes="(max-width:768px) 100vw, 57vw" />
+                    <div className="absolute inset-0 bg-gradient-to-l from-transparent to-slate-900/10 pointer-events-none" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Image first */}
+                  <div className="relative bg-slate-900 min-h-[280px]">
+                    <Image src={p.image} alt={p.imageAlt} fill className="object-cover object-left-top" sizes="(max-width:768px) 100vw, 57vw" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-900/10 pointer-events-none" />
+                  </div>
+                  {/* Content */}
+                  <div className="p-8 sm:p-10 flex flex-col justify-center">
+                    <span className={\`inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase mb-4 w-fit \${TAG_COLORS[p.tagColor]}\`}>
+                      {p.tag}
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug mb-3">{p.title}</h2>
+                    <p className="text-sm text-slate-500 leading-relaxed mb-5">{p.desc}</p>
+                    <ul className="flex flex-col gap-2 mb-5">
+                      {p.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2.5 text-sm text-slate-600">
+                          <span className="w-4 h-4 rounded bg-blue-50 border border-blue-200 text-blue-600 text-xs grid place-items-center flex-shrink-0 mt-0.5">✓</span>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex flex-wrap gap-1.5 mb-5">
+                      {p.tech.map((t) => (
+                        <span key={t} className="px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 text-xs font-mono">{t}</span>
+                      ))}
+                    </div>
+                    <Link href="/contact" className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:gap-3 transition-all">
+                      Bangun sistem serupa →
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Services */}
+      <section className="bg-slate-50 border-y border-slate-100 py-16">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-3">Layanan AI yang Kami Tawarkan</h2>
+            <p className="text-slate-500 text-base max-w-md mx-auto">Dari konsultasi hingga deployment production — kami handle end-to-end.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {SERVICES.map((s) => (
+              <div key={s.title} className="bg-white rounded-2xl border border-slate-200 p-6 hover:border-blue-300 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 grid place-items-center text-xl mb-4 group-hover:bg-blue-100 transition-colors">{s.icon}</div>
+                <h3 className="font-bold text-slate-900 mb-2 text-[15px] leading-snug">{s.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="max-w-6xl mx-auto px-6 py-16">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-12 sm:p-16 grid sm:grid-cols-[1fr_auto] gap-8 items-center">
+          <div className="absolute inset-0 opacity-10" style={{backgroundImage:'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',backgroundSize:'28px 28px'}} />
+          <div className="relative">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3">Siap otomasi bisnis Anda dengan AI?</h2>
+            <p className="text-blue-100 text-base leading-relaxed max-w-lg">Konsultasi gratis 30 menit. Kami analisis proses bisnis Anda dan rekomendasikan solusi AI yang paling menguntungkan.</p>
+          </div>
+          <div className="relative flex flex-col gap-3 flex-shrink-0">
+            <Link href="/contact" className="px-7 py-3.5 rounded-xl bg-white text-blue-700 font-bold text-sm text-center hover:-translate-y-0.5 hover:shadow-lg transition-all whitespace-nowrap">
+              Konsultasi Gratis →
+            </Link>
+            <Link href="https://wa.me/6281234567890" className="px-7 py-3.5 rounded-xl border-2 border-white/40 hover:border-white/80 hover:bg-white/10 text-white font-semibold text-sm text-center transition-all whitespace-nowrap">
+              WhatsApp Kami
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+}
+`, 'utf8');
+console.log('[portofolio/ai-development/page.tsx] Written');
