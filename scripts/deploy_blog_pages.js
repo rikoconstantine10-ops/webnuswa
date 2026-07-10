@@ -213,7 +213,7 @@ const blogSlugContent = `export const revalidate = 3600;
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getPostBySlug, getRelatedPosts, extractHeadings } from '@/lib/blog';
+import { getPostBySlug, getAllPosts, getRelatedPosts, extractHeadings } from '@/lib/blog';
 import { Nav } from '@/components/layout/Nav';
 import { Footer } from '@/components/layout/Footer';
 import { Calendar, Clock, ChevronRight, ArrowLeft, BookOpen } from 'lucide-react';
