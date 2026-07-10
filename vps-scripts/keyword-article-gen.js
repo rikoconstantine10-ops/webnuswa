@@ -34,6 +34,7 @@ const BASE_URL        = process.env.ANTHROPIC_BASE_URL || "https://ai.sumopod.co
 const MODEL           = process.env.ANTHROPIC_MODEL    || "claude-opus-4-8";
 const DRY_RUN         = process.env.DRY_RUN === "1";
 const MAX_DAILY       = parseInt(process.env.MAX_DAILY || "3");
+const ARTICLE_STATUS  = process.env.ARTICLE_STATUS || "draft";
 
 // ─── Internal links for diaspora context ─────────────────────────────────────
 
@@ -430,15 +431,16 @@ async function main() {
           ?, ?, ?,
           ?, ?, ?, ?,
           ?, ?, ?,
-          datetime('now'), datetime('now'), 'published'
+          datetime('now'), datetime('now'), ?
         )
       `).run(
         title, slug, kw.keyword, metaDesc, contentHtml,
         scores.word_count, kw.keyword, secondaryKw,
         kw.category, tags, `Ilustrasi artikel tentang ${kw.keyword}`, featuredImage,
         scores.seo_score, scores.aeo_score, scores.aio_score,
+        ARTICLE_STATUS,
       );
-      log(`  ✓ Inserted [published]: ${slug}`);
+      log(`  ✓ Inserted [${ARTICLE_STATUS}]: ${slug}`);
     }
 
     // Mark keyword as done

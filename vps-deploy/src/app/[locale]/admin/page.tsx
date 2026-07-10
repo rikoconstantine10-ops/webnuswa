@@ -907,6 +907,14 @@ export default function AdminDashboard() {
   const [researchMsg, setResearchMsg] = useState("");
   const [addedKws, setAddedKws] = useState<Set<string>>(new Set());
 
+  // Article preview / edit
+  const [previewArt, setPreviewArt]   = useState<any | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [editArt, setEditArt]         = useState<any | null>(null);
+  const [editSaving, setEditSaving]   = useState(false);
+  const [editMsg, setEditMsg]         = useState<string>("");
+  const [publishingId, setPublishingId] = useState<number | null>(null);
+
   // All articles (health check + calendar)
   const [allArticles, setAllArticles] = useState<any[]>([]);
   const [allArtLoading, setAllArtLoading] = useState(false);
@@ -969,6 +977,52 @@ export default function AdminDashboard() {
     if (d.ok) setCfgMsg({ type: "ok", text: `Tersimpan: ${d.updated?.join(", ") || "settings"}` });
     else setCfgMsg({ type: "err", text: d.error || "Gagal simpan" });
     setCfgSaving(false);
+  };
+
+  const openPreview = async (id: number) => {
+    setPreviewLoading(true);
+    setPreviewArt(null);
+    const res = await fetch(`/api/admin/articles/${id}`, { headers });
+    if (res.ok) { const d = await res.json(); setPreviewArt(d.article); }
+    setPreviewLoading(false);
+  };
+
+  const openEdit = async (id: number) => {
+    const res = await fetch(`/api/admin/articles/${id}`, { headers });
+    if (res.ok) { const d = await res.json(); setEditArt({ ...d.article }); setEditMsg(""); }
+  };
+
+  const saveEdit = async () => {
+    if (!editArt) return;
+    setEditSaving(true);
+    setEditMsg("");
+    const res = await fetch(`/api/admin/articles/${editArt.id}`, {
+      method: "PUT", headers,
+      body: JSON.stringify({
+        title: editArt.title,
+        content_html: editArt.content_html,
+        meta_description: editArt.meta_description,
+        slug: editArt.slug,
+        category: editArt.category,
+        featured_image: editArt.featured_image,
+      }),
+    });
+    const d = await res.json();
+    if (d.ok) { setEditMsg("✓ Tersimpan"); loadArticles(artPage); }
+    else setEditMsg("✗ " + (d.error || "Gagal simpan"));
+    setEditSaving(false);
+  };
+
+  const publishArticle = async (id: number) => {
+    setPublishingId(id);
+    await fetch(`/api/admin/articles/${id}`, {
+      method: "PUT", headers,
+      body: JSON.stringify({ status: "published" }),
+    });
+    setPublishingId(null);
+    loadArticles(artPage);
+    // If editing this article, close edit modal
+    if (editArt?.id === id) setEditArt(prev => prev ? { ...prev, status: "published" } : null);
   };
 
   const loadKeywords = useCallback(async () => {
@@ -1653,14 +1707,28 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex gap-3 flex-wrap">
-                                <button onClick={() => toggleArticle(a.id, a.status)} className="text-xs text-indigo-500 hover:text-indigo-700 whitespace-nowrap">
-                                  {a.status === "published" ? "Unpublish" : "Publish"}
-                                </button>
-                                {a.slug && (
-                                  <a href={`/blog/${a.slug}`} target="_blank" className="text-xs text-gray-400 hover:text-gray-600">View ↗</a>
+                              <div className="flex gap-2 flex-wrap items-center">
+                                <button
+                                  onClick={() => openPreview(a.id)}
+                                  className="text-xs px-2 py-1 rounded bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 whitespace-nowrap"
+                                >👁 Preview</button>
+                                <button
+                                  onClick={() => openEdit(a.id)}
+                                  className="text-xs px-2 py-1 rounded bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 whitespace-nowrap"
+                                >✏️ Edit</button>
+                                {a.status !== "published" ? (
+                                  <button
+                                    onClick={() => publishArticle(a.id)}
+                                    disabled={publishingId === a.id}
+                                    className="text-xs px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-emerald-300 whitespace-nowrap"
+                                  >{publishingId === a.id ? "..." : "🚀 Publish"}</button>
+                                ) : (
+                                  <div className="flex gap-1">
+                                    <a href={`/blog/${a.slug}`} target="_blank" className="text-xs px-2 py-1 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 whitespace-nowrap">🔗 Live ↗</a>
+                                    <button onClick={() => toggleArticle(a.id, a.status)} className="text-xs text-gray-400 hover:text-gray-600 px-1">Unpublish</button>
+                                  </div>
                                 )}
-                                <button onClick={() => deleteArticle(a.id)} className="text-xs text-red-400 hover:text-red-600">Delete</button>
+                                <button onClick={() => deleteArticle(a.id)} className="text-xs text-red-400 hover:text-red-600 px-1">✕</button>
                               </div>
                             </td>
                           </tr>
@@ -2161,6 +2229,214 @@ export default function AdminDashboard() {
         </main>
       </div>
     </div>
+
+    {/* ── PREVIEW MODAL ───────────────────────────────────────────────────── */}
+    {(previewArt || previewLoading) && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setPreviewArt(null)}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        <div
+          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-gray-800">{previewArt?.title || "Loading..."}</span>
+              {previewArt?.status && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[previewArt.status] || "bg-gray-100 text-gray-500"}`}>
+                  {previewArt.status}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {previewArt && previewArt.status !== "published" && (
+                <button
+                  onClick={() => { publishArticle(previewArt.id); setPreviewArt((p: any) => p ? { ...p, status: "published" } : null); }}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg"
+                >🚀 Publish</button>
+              )}
+              {previewArt?.status === "published" && previewArt?.slug && (
+                <a href={`/blog/${previewArt.slug}`} target="_blank" className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-medium rounded-lg hover:bg-indigo-100">
+                  🔗 Lihat Live ↗
+                </a>
+              )}
+              <button
+                onClick={() => { if (previewArt) openEdit(previewArt.id); setPreviewArt(null); }}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg"
+              >✏️ Edit</button>
+              <button onClick={() => setPreviewArt(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 text-lg">×</button>
+            </div>
+          </div>
+
+          {/* Article meta strip */}
+          {previewArt && (
+            <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-4 text-xs text-gray-500 shrink-0">
+              <span>📖 {previewArt.word_count?.toLocaleString()} kata</span>
+              <span>🏷️ {previewArt.keyword}</span>
+              <span>📁 {previewArt.category}</span>
+              {previewArt.seo_score != null && <span className="text-emerald-600 font-semibold">SEO {previewArt.seo_score}</span>}
+              {previewArt.aeo_score != null && <span className="text-blue-600 font-semibold">AEO {previewArt.aeo_score}</span>}
+              {previewArt.geo_score != null && <span className="text-purple-600 font-semibold">AIO {previewArt.geo_score}</span>}
+            </div>
+          )}
+
+          {/* Article content */}
+          <div className="flex-1 overflow-y-auto">
+            {previewLoading && (
+              <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading artikel...</div>
+            )}
+            {previewArt && (
+              <div className="p-6 md:p-10">
+                {previewArt.featured_image && (
+                  <img src={previewArt.featured_image} alt={previewArt.title} className="w-full h-48 md:h-64 object-cover rounded-xl mb-6" />
+                )}
+                <div
+                  className="prose prose-sm prose-gray max-w-none
+                    prose-headings:font-bold prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+                    prose-h3:text-base prose-h3:mt-4 prose-h3:mb-2
+                    prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-3
+                    prose-ul:pl-5 prose-li:mb-1 prose-strong:text-gray-900
+                    prose-table:text-sm prose-th:bg-gray-50 prose-th:font-medium
+                    prose-code:bg-gray-100 prose-code:text-indigo-700 prose-code:px-1 prose-code:rounded
+                    prose-blockquote:border-l-indigo-300 prose-blockquote:bg-indigo-50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r"
+                  dangerouslySetInnerHTML={{ __html: previewArt.content_html }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── EDIT MODAL ──────────────────────────────────────────────────────── */}
+    {editArt && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setEditArt(null)}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        <div
+          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Modal header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-800">Edit Artikel</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[editArt.status] || "bg-gray-100 text-gray-500"}`}>
+                {editArt.status}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {editMsg && (
+                <span className={`text-xs px-2 py-1 rounded ${editMsg.startsWith("✓") ? "text-emerald-600 bg-emerald-50" : "text-red-500 bg-red-50"}`}>
+                  {editMsg}
+                </span>
+              )}
+              {editArt.status !== "published" && (
+                <button
+                  onClick={() => publishArticle(editArt.id)}
+                  disabled={publishingId === editArt.id}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-xs font-medium rounded-lg"
+                >{publishingId === editArt.id ? "Publishing..." : "🚀 Publish"}</button>
+              )}
+              {editArt.status === "published" && editArt.slug && (
+                <a href={`/blog/${editArt.slug}`} target="_blank" className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-medium rounded-lg hover:bg-indigo-100">
+                  🔗 Live ↗
+                </a>
+              )}
+              <button
+                onClick={saveEdit}
+                disabled={editSaving}
+                className="px-3 py-1.5 bg-gray-900 hover:bg-gray-700 disabled:bg-gray-300 text-white text-xs font-medium rounded-lg"
+              >{editSaving ? "Menyimpan..." : "Simpan"}</button>
+              <button onClick={() => setEditArt(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 text-lg">×</button>
+            </div>
+          </div>
+
+          {/* Edit form */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {/* Title */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Judul Artikel</label>
+              <input
+                type="text"
+                value={editArt.title || ""}
+                onChange={e => setEditArt((a: any) => ({ ...a, title: e.target.value }))}
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+              />
+            </div>
+
+            {/* Slug + Category row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Slug (URL)</label>
+                <input
+                  type="text"
+                  value={editArt.slug || ""}
+                  onChange={e => setEditArt((a: any) => ({ ...a, slug: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-900 focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Kategori</label>
+                <select
+                  value={editArt.category || ""}
+                  onChange={e => setEditArt((a: any) => ({ ...a, category: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
+                >
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Meta description */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Meta Description
+                <span className="ml-2 font-normal text-gray-400">({(editArt.meta_description || "").length}/160 karakter)</span>
+              </label>
+              <textarea
+                value={editArt.meta_description || ""}
+                onChange={e => setEditArt((a: any) => ({ ...a, meta_description: e.target.value }))}
+                rows={2}
+                maxLength={160}
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-indigo-400 resize-none"
+              />
+            </div>
+
+            {/* Featured image */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Featured Image URL</label>
+              <div className="flex gap-3 items-start">
+                <input
+                  type="url"
+                  value={editArt.featured_image || ""}
+                  onChange={e => setEditArt((a: any) => ({ ...a, featured_image: e.target.value }))}
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-xs font-mono text-gray-900 focus:outline-none focus:border-indigo-400"
+                />
+                {editArt.featured_image && (
+                  <img src={editArt.featured_image} alt="" className="w-16 h-12 object-cover rounded-lg border border-gray-200 shrink-0" />
+                )}
+              </div>
+            </div>
+
+            {/* Content HTML */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Konten HTML
+                <span className="ml-2 font-normal text-gray-400">({Math.round((editArt.content_html || "").split(/\s+/).filter(Boolean).length / 1)} kata approx)</span>
+              </label>
+              <textarea
+                value={editArt.content_html || ""}
+                onChange={e => setEditArt((a: any) => ({ ...a, content_html: e.target.value }))}
+                rows={16}
+                className="w-full bg-gray-900 text-emerald-300 border border-gray-700 rounded-lg px-3 py-2.5 text-xs font-mono focus:outline-none focus:border-indigo-400 resize-y"
+                spellCheck={false}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
   );
 }
 

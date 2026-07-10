@@ -31,18 +31,26 @@ export async function POST(req: Request) {
     const envFile = path.join(VPS_ROOT, ".env.local");
     const envContent = fs.existsSync(envFile) ? fs.readFileSync(envFile, "utf-8") : "";
 
-    const apiKey = (envContent.match(/^ANTHROPIC_API_KEY=(.+)$/m) || [])[1]?.trim() || "";
-    const pexelsKey = (envContent.match(/^PEXELS_API_KEY=(.+)$/m) || [])[1]?.trim() || "";
+    const openaiKey    = (envContent.match(/^OPENAI_API_KEY=(.+)$/m) || [])[1]?.trim() || "";
+    const anthropicKey = (envContent.match(/^ANTHROPIC_API_KEY=(.+)$/m) || [])[1]?.trim() || "";
+    const pexelsKey    = (envContent.match(/^PEXELS_API_KEY=(.+)$/m) || [])[1]?.trim() || "";
+    const openaiUrl    = (envContent.match(/^OPENAI_BASE_URL=(.+)$/m) || [])[1]?.trim() || "";
+    const openaiModel  = (envContent.match(/^OPENAI_MODEL=(.+)$/m) || [])[1]?.trim() || "";
 
+    const apiKey = openaiKey || anthropicKey;
     if (!apiKey || apiKey.includes("YOUR_KEY")) {
-      return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured in .env.local" }, { status: 400 });
+      return NextResponse.json({ error: "OPENAI_API_KEY or ANTHROPIC_API_KEY not configured in .env.local" }, { status: 400 });
     }
 
     const env = [
-      `ANTHROPIC_API_KEY=${apiKey}`,
-      pexelsKey ? `PEXELS_API_KEY=${pexelsKey}` : "",
-      dry_run ? "DRY_RUN=1" : "",
-      max ? `MAX_DAILY=${max}` : "",
+      openaiKey    ? `OPENAI_API_KEY=${openaiKey}`       : "",
+      anthropicKey ? `ANTHROPIC_API_KEY=${anthropicKey}` : "",
+      openaiUrl    ? `OPENAI_BASE_URL=${openaiUrl}`       : "",
+      openaiModel  ? `OPENAI_MODEL=${openaiModel}`        : "",
+      pexelsKey    ? `PEXELS_API_KEY=${pexelsKey}`        : "",
+      dry_run      ? "DRY_RUN=1"                          : "",
+      max          ? `MAX_DAILY=${max}`                   : "",
+      "ARTICLE_STATUS=draft",
     ].filter(Boolean).join(" ");
 
     execSync(
