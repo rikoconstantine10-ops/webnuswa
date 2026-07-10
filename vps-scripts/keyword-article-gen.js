@@ -265,7 +265,7 @@ INSTRUKSI WAJIB:
 6. Tambahkan setidaknya 1 contoh nyata dengan angka/data spesifik
 7. Di akhir, section <h2>FAQ: Pertanyaan Umum</h2> dengan 5 Q&A format:
    <h3>Pertanyaan?</h3><p>Jawaban 40-60 kata yang langsung dan informatif.</p>
-8. Penutup <h2> dengan CTA natural ke layanan Nuswa Lab
+8. Penutup <h2> dengan CTA natural ke layanan Nuswa Lab dan mention blog Nuswa Lab di /blog untuk baca artikel lainnya
 
 === SEO REQUIREMENTS ===
 - Keyword "${kw.keyword}" harus muncul di: H1, intro paragraph, minimal 2 H2, dan body text (density 1-2%)
@@ -313,6 +313,11 @@ function processHtml(raw) {
 
   // Inject diaspora internal links
   html = injectInternalLinks(html);
+
+  // Append "Baca juga" section with link to blog
+  html += `\n<div class="baca-juga" style="margin-top:2rem;padding:1rem 1.5rem;background:#f8f9fa;border-left:4px solid #0070f3;border-radius:4px;">
+  <p style="margin:0;font-size:0.95rem;">📚 <strong>Baca juga:</strong> Temukan lebih banyak artikel seputar digital marketing, AI automation, dan strategi bisnis diaspora Indonesia di <a href="/blog" style="color:#0070f3;font-weight:600;">Blog Nuswa Lab</a>.</p>
+</div>`;
 
   return html;
 }
