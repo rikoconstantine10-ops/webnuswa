@@ -72,32 +72,41 @@ const navCompany = [
   { label: "Blog", href: "/blog", icon: FileText, desc: "Tips & insight digital" },
 ];
 
-const iconColors: Record<string, string> = {
-  Target:   "oklch(0.94 0.05 265)",
-  Share2:   "oklch(0.94 0.05 200)",
-  BarChart3:"oklch(0.94 0.06 300)",
-  Search:   "oklch(0.94 0.05 150)",
-  Palette:  "oklch(0.94 0.06 30)",
-  Camera:   "oklch(0.94 0.05 240)",
-  ShoppingBag:"oklch(0.94 0.05 60)",
-  Video:    "oklch(0.94 0.06 350)",
-  Globe:    "oklch(0.94 0.05 190)",
-  Smartphone:"oklch(0.94 0.06 265)",
-  Zap:      "oklch(0.94 0.06 80)",
-  Users:    "oklch(0.94 0.05 320)",
-  Building2:"oklch(0.94 0.05 230)",
-  Heart:    "oklch(0.94 0.06 10)",
-  GraduationCap:"oklch(0.94 0.05 150)",
-  UtensilsCrossed:"oklch(0.94 0.06 50)",
-  Landmark: "oklch(0.94 0.05 280)",
-  Store:    "oklch(0.94 0.06 200)",
-  Info:     "oklch(0.94 0.05 265)",
-  BookOpen: "oklch(0.94 0.05 300)",
-  ImageIcon:"oklch(0.94 0.06 240)",
-  Star:     "oklch(0.94 0.06 70)",
-  Handshake:"oklch(0.94 0.05 160)",
-  FileText: "oklch(0.94 0.05 220)",
+// Per-icon bg colors: marketing=blue, creative=warm, tech=green
+const iconColors: Record<string, { bg: string; fg: string }> = {
+  Target:          { bg: "oklch(0.92 0.07 265)", fg: "oklch(0.38 0.18 265)" },
+  Share2:          { bg: "oklch(0.92 0.07 220)", fg: "oklch(0.38 0.18 220)" },
+  BarChart3:       { bg: "oklch(0.92 0.07 290)", fg: "oklch(0.38 0.18 290)" },
+  Search:          { bg: "oklch(0.92 0.07 240)", fg: "oklch(0.38 0.18 240)" },
+  Palette:         { bg: "oklch(0.93 0.07 35)",  fg: "oklch(0.40 0.18 35)"  },
+  Camera:          { bg: "oklch(0.93 0.07 355)", fg: "oklch(0.40 0.18 355)" },
+  ShoppingBag:     { bg: "oklch(0.93 0.07 55)",  fg: "oklch(0.40 0.18 55)"  },
+  Video:           { bg: "oklch(0.93 0.07 320)", fg: "oklch(0.40 0.18 320)" },
+  Globe:           { bg: "oklch(0.92 0.07 175)", fg: "oklch(0.38 0.18 175)" },
+  Smartphone:      { bg: "oklch(0.92 0.07 155)", fg: "oklch(0.38 0.18 155)" },
+  Zap:             { bg: "oklch(0.93 0.08 90)",  fg: "oklch(0.40 0.20 90)"  },
+  Users:           { bg: "oklch(0.92 0.07 195)", fg: "oklch(0.38 0.18 195)" },
+  Building2:       { bg: "oklch(0.92 0.06 230)", fg: "oklch(0.38 0.16 230)" },
+  Heart:           { bg: "oklch(0.93 0.07 10)",  fg: "oklch(0.42 0.20 10)"  },
+  GraduationCap:   { bg: "oklch(0.92 0.07 155)", fg: "oklch(0.38 0.18 155)" },
+  UtensilsCrossed: { bg: "oklch(0.93 0.07 50)",  fg: "oklch(0.40 0.18 50)"  },
+  Landmark:        { bg: "oklch(0.92 0.06 270)", fg: "oklch(0.38 0.16 270)" },
+  Store:           { bg: "oklch(0.92 0.07 195)", fg: "oklch(0.38 0.18 195)" },
+  Info:            { bg: "oklch(0.92 0.07 265)", fg: "oklch(0.38 0.18 265)" },
+  BookOpen:        { bg: "oklch(0.92 0.07 290)", fg: "oklch(0.38 0.18 290)" },
+  ImageIcon:       { bg: "oklch(0.92 0.06 240)", fg: "oklch(0.38 0.16 240)" },
+  Star:            { bg: "oklch(0.93 0.08 75)",  fg: "oklch(0.40 0.20 75)"  },
+  Handshake:       { bg: "oklch(0.92 0.07 160)", fg: "oklch(0.38 0.18 160)" },
+  FileText:        { bg: "oklch(0.92 0.06 220)", fg: "oklch(0.38 0.16 220)" },
 };
+
+const GROUP_META: Record<string, { pill: string; pillText: string; dot: string }> = {
+  "Marketing & Ads":    { pill: "oklch(0.90 0.09 265)", pillText: "oklch(0.32 0.18 265)", dot: "oklch(0.55 0.22 265)" },
+  "Creative & Content": { pill: "oklch(0.91 0.09 355)", pillText: "oklch(0.35 0.18 355)", dot: "oklch(0.55 0.22 355)" },
+  "Tech & Growth":      { pill: "oklch(0.90 0.09 160)", pillText: "oklch(0.32 0.18 160)", dot: "oklch(0.50 0.22 160)" },
+};
+
+const BADGE_NEW = new Set(["AI Automation"]);
 
 type ServiceItem = { label: string; href: string; icon: React.ElementType; desc?: string; sub?: { label: string; href: string }[] };
 type ServiceGroup = { group: string; items: ServiceItem[] };
@@ -110,84 +119,169 @@ function ServicesMegaMenu({ open, onClose }: { open: boolean; onClose: () => voi
 
   return (
     <div
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 rounded-2xl overflow-hidden z-50"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 rounded-2xl z-50 overflow-visible"
       style={{
-        width: "720px",
-        background: "oklch(1 0 0 / 0.98)",
-        backdropFilter: "blur(32px) saturate(200%)",
-        border: "1px solid oklch(0.9 0.02 265 / 0.6)",
-        boxShadow: "0 24px 80px -12px oklch(0.4 0.12 265 / 0.18), 0 0 0 1px oklch(0.88 0.02 265 / 0.3)",
+        width: "760px",
+        background: "oklch(1 0 0 / 0.99)",
+        backdropFilter: "blur(40px) saturate(180%)",
+        border: "1px solid oklch(0.88 0.03 265 / 0.5)",
+        boxShadow: "0 32px 80px -12px oklch(0.35 0.14 265 / 0.22), 0 0 0 1px oklch(0.9 0.02 265 / 0.25)",
       }}
     >
       {/* Header strip */}
-      <div className="px-5 py-3 flex items-center justify-between border-b" style={{ borderColor: "oklch(0.92 0.02 265 / 0.5)", background: "oklch(0.985 0.01 265)" }}>
-        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--color-primary)" }}>Semua Layanan</span>
-        <Link href="/service" onClick={onClose} className="text-xs font-medium flex items-center gap-1 hover:opacity-70 transition" style={{ color: "var(--color-primary)" }}>
+      <div
+        className="px-5 py-3 flex items-center justify-between rounded-t-2xl"
+        style={{
+          background: "linear-gradient(90deg, oklch(0.97 0.04 265) 0%, oklch(0.98 0.02 300) 50%, oklch(0.97 0.03 175) 100%)",
+          borderBottom: "1px solid oklch(0.90 0.03 265 / 0.4)",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--color-primary)" }} />
+          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--color-primary)" }}>
+            Layanan Nuswa Lab
+          </span>
+        </div>
+        <Link
+          href="/service"
+          onClick={onClose}
+          className="text-xs font-semibold flex items-center gap-1 px-3 py-1 rounded-full transition-all hover:opacity-80"
+          style={{ color: "var(--color-primary)", background: "oklch(0.92 0.06 265 / 0.5)" }}
+        >
           Lihat semua <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-3 gap-0 p-4">
-        {(navServices as ServiceGroup[]).map((group) => (
-          <div key={group.group} className="px-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-2 px-2" style={{ color: "var(--color-muted-foreground)" }}>{group.group}</p>
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const iconBg = iconColors[Icon.displayName || ""] || "oklch(0.94 0.05 265)";
-                return (
-                  <div key={item.href} className="relative" onMouseEnter={() => item.sub ? setHoveredSub(item.href) : setHoveredSub(null)}>
-                    <Link
-                      href={item.href}
-                      onClick={onClose}
-                      className="flex items-center gap-3 px-2 py-2 rounded-xl transition-all duration-150 group cursor-pointer"
-                      style={{ color: "var(--color-foreground)" }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "oklch(0.97 0.02 265)")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "")}
+      {/* 3-column grid */}
+      <div className="grid grid-cols-3 divide-x p-0" style={{ divideColor: "oklch(0.93 0.02 265 / 0.4)" }}>
+        {(navServices as ServiceGroup[]).map((group, gi) => {
+          const gMeta = GROUP_META[group.group] ?? { pill: "oklch(0.92 0.05 265)", pillText: "oklch(0.38 0.16 265)", dot: "oklch(0.55 0.22 265)" };
+          return (
+            <div key={group.group} className="p-4" style={gi < 2 ? { borderRight: "1px solid oklch(0.92 0.02 265 / 0.4)" } : {}}>
+              {/* Group header pill */}
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: gMeta.dot }}
+                />
+                <span
+                  className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full"
+                  style={{ background: gMeta.pill, color: gMeta.pillText }}
+                >
+                  {group.group}
+                </span>
+              </div>
+
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const iName = (Icon as { displayName?: string }).displayName ?? Icon.name ?? "";
+                  const col = iconColors[iName] ?? { bg: "oklch(0.92 0.06 265)", fg: "oklch(0.38 0.16 265)" };
+                  const isNew = BADGE_NEW.has(item.label);
+                  return (
+                    <div
+                      key={item.href}
+                      className="relative"
+                      onMouseEnter={() => item.sub ? setHoveredSub(item.href) : setHoveredSub(null)}
+                      onMouseLeave={() => {}}
                     >
-                      <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: iconBg }}>
-                        <Icon className="w-4 h-4" style={{ color: "var(--color-primary)" }} />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium leading-tight truncate group-hover:text-primary transition-colors">{item.label}</div>
-                        {item.desc && <div className="text-[11px] leading-tight truncate mt-0.5" style={{ color: "var(--color-muted-foreground)" }}>{item.desc}</div>}
-                      </div>
-                      {item.sub && <ChevronDown className="w-3 h-3 ml-auto -rotate-90 opacity-30 flex-shrink-0" />}
-                    </Link>
-                    {item.sub && hoveredSub === item.href && (
-                      <div
-                        className="absolute left-full top-0 ml-2 w-52 rounded-2xl overflow-hidden z-50"
-                        style={{
-                          background: "oklch(1 0 0 / 0.98)",
-                          backdropFilter: "blur(24px)",
-                          border: "1px solid oklch(0.9 0.02 265 / 0.6)",
-                          boxShadow: "0 16px 40px -8px oklch(0.4 0.12 265 / 0.15)",
-                        }}
+                      <Link
+                        href={item.href}
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all duration-150 group cursor-pointer"
+                        style={{ color: "var(--color-foreground)" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = col.bg + "88"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = ""; }}
                       >
-                        <div className="p-2">
-                          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--color-muted-foreground)" }}>Platform</p>
-                          {item.sub.map((s) => (
-                            <Link
-                              key={s.href}
-                              href={s.href}
-                              onClick={onClose}
-                              className="block px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150"
-                              style={{ color: "var(--color-foreground)" }}
-                              onMouseEnter={e => (e.currentTarget.style.background = "oklch(0.97 0.02 265)")}
-                              onMouseLeave={e => (e.currentTarget.style.background = "")}
-                            >
-                              {s.label}
-                            </Link>
-                          ))}
+                        <span
+                          className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-110 group-hover:shadow-sm"
+                          style={{ background: col.bg }}
+                        >
+                          <Icon className="w-4 h-4" style={{ color: col.fg }} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold leading-tight truncate" style={{ color: "oklch(0.18 0.03 265)" }}>
+                              {item.label}
+                            </span>
+                            {isNew && (
+                              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                style={{ background: "oklch(0.90 0.12 160)", color: "oklch(0.30 0.18 160)" }}>
+                                Baru
+                              </span>
+                            )}
+                          </div>
+                          {item.desc && (
+                            <div className="text-[11px] leading-tight mt-0.5 truncate" style={{ color: "var(--color-muted-foreground)" }}>
+                              {item.desc}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                        {item.sub && <ChevronDown className="w-3 h-3 -rotate-90 flex-shrink-0 opacity-30 group-hover:opacity-60 transition-opacity" />}
+                      </Link>
+
+                      {/* Flyout sub-menu */}
+                      {item.sub && hoveredSub === item.href && (
+                        <div
+                          className="absolute left-full top-0 ml-2 w-52 rounded-2xl overflow-hidden z-[60]"
+                          style={{
+                            background: "oklch(1 0 0 / 0.99)",
+                            backdropFilter: "blur(24px)",
+                            border: "1px solid oklch(0.90 0.02 265 / 0.5)",
+                            boxShadow: "0 16px 40px -8px oklch(0.35 0.14 265 / 0.18)",
+                          }}
+                        >
+                          <div className="p-2">
+                            <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest mb-1"
+                              style={{ color: "var(--color-muted-foreground)" }}>
+                              Platform
+                            </p>
+                            {item.sub.map((s) => (
+                              <Link
+                                key={s.href}
+                                href={s.href}
+                                onClick={onClose}
+                                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 group"
+                                style={{ color: "var(--color-foreground)" }}
+                                onMouseEnter={e => (e.currentTarget.style.background = col.bg + "88")}
+                                onMouseLeave={e => (e.currentTarget.style.background = "")}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 opacity-40 group-hover:opacity-100 transition-opacity"
+                                  style={{ background: col.fg }} />
+                                {s.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
+      </div>
+
+      {/* CTA footer strip */}
+      <div
+        className="px-5 py-3 flex items-center justify-between rounded-b-2xl"
+        style={{
+          background: "oklch(0.975 0.015 265)",
+          borderTop: "1px solid oklch(0.91 0.02 265 / 0.4)",
+        }}
+      >
+        <p className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>
+          💡 Belum tahu layanan yang tepat?
+        </p>
+        <Link
+          href="/contact"
+          onClick={onClose}
+          className="text-xs font-semibold flex items-center gap-1 px-3 py-1.5 rounded-full transition-all hover:opacity-80"
+          style={{ background: "var(--gradient-primary)", color: "white" }}
+        >
+          Konsultasi gratis <ArrowRight className="w-3 h-3" />
+        </Link>
       </div>
     </div>
   );
@@ -204,35 +298,52 @@ function SimpleDropdown({ label, items, open, onClose }: {
     <div
       className="absolute top-full left-0 mt-3 rounded-2xl overflow-hidden z-50"
       style={{
-        width: "260px",
-        background: "oklch(1 0 0 / 0.98)",
-        backdropFilter: "blur(32px) saturate(200%)",
-        border: "1px solid oklch(0.9 0.02 265 / 0.6)",
-        boxShadow: "0 24px 80px -12px oklch(0.4 0.12 265 / 0.18), 0 0 0 1px oklch(0.88 0.02 265 / 0.3)",
+        width: "272px",
+        background: "oklch(1 0 0 / 0.99)",
+        backdropFilter: "blur(40px) saturate(180%)",
+        border: "1px solid oklch(0.88 0.03 265 / 0.5)",
+        boxShadow: "0 32px 80px -12px oklch(0.35 0.14 265 / 0.22), 0 0 0 1px oklch(0.9 0.02 265 / 0.25)",
       }}
     >
-      <div className="px-3 py-2 border-b" style={{ borderColor: "oklch(0.92 0.02 265 / 0.5)", background: "oklch(0.985 0.01 265)" }}>
+      <div
+        className="px-4 py-2.5"
+        style={{
+          background: "linear-gradient(90deg, oklch(0.96 0.05 265) 0%, oklch(0.97 0.03 300) 100%)",
+          borderBottom: "1px solid oklch(0.91 0.02 265 / 0.4)",
+        }}
+      >
         <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--color-primary)" }}>{label}</span>
       </div>
       <div className="p-2 space-y-0.5">
         {items.map((item) => {
           const Icon = item.icon;
+          const iName = (Icon as { displayName?: string }).displayName ?? Icon.name ?? "";
+          const col = iconColors[iName] ?? { bg: "oklch(0.92 0.06 265)", fg: "oklch(0.38 0.16 265)" };
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onClose}
-              className="flex items-center gap-3 px-2 py-2 rounded-xl transition-all duration-150 group"
+              className="flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-150 group"
               style={{ color: "var(--color-foreground)" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "oklch(0.97 0.02 265)")}
+              onMouseEnter={e => (e.currentTarget.style.background = col.bg + "88")}
               onMouseLeave={e => (e.currentTarget.style.background = "")}
             >
-              <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: "oklch(0.94 0.04 265)" }}>
-                <Icon className="w-3.5 h-3.5" style={{ color: "var(--color-primary)" }} />
+              <span
+                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-110"
+                style={{ background: col.bg }}
+              >
+                <Icon className="w-4 h-4" style={{ color: col.fg }} />
               </span>
               <div className="min-w-0">
-                <div className="text-sm font-medium leading-tight group-hover:text-primary transition-colors">{item.label}</div>
-                {item.desc && <div className="text-[11px] leading-tight mt-0.5 truncate" style={{ color: "var(--color-muted-foreground)" }}>{item.desc}</div>}
+                <div className="text-sm font-semibold leading-tight" style={{ color: "oklch(0.18 0.03 265)" }}>
+                  {item.label}
+                </div>
+                {item.desc && (
+                  <div className="text-[11px] leading-tight mt-0.5 truncate" style={{ color: "var(--color-muted-foreground)" }}>
+                    {item.desc}
+                  </div>
+                )}
               </div>
             </Link>
           );
