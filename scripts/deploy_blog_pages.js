@@ -25,8 +25,9 @@ export const metadata = {
   description: 'Artikel terbaru seputar digital marketing, SEO, content marketing, dan strategi bisnis online dari Nuswalab.',
 };
 
-export default async function BlogPage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
+export default async function BlogPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const posts = getAllPosts();
   const featured = posts[0];
   const rest = posts.slice(1);
@@ -220,16 +221,17 @@ import { Calendar, Clock, ChevronRight, ArrowLeft, BookOpen } from 'lucide-react
 import { setRequestLocale } from 'next-intl/server';
 
 interface Props {
-  params: { slug: string; locale: string };
+  params: Promise<{ slug: string; locale: string }>;
 }
 
 export async function generateStaticParams() {
   const posts = getAllPosts();
-  return posts.map(p => ({ slug: p.slug }));
+  return ['id', 'en'].flatMap(locale => posts.map(p => ({ locale, slug: p.slug })));
 }
 
 export async function generateMetadata({ params }: Props) {
-  const post = getPostBySlug(params.slug);
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
   if (!post) return { title: 'Artikel Tidak Ditemukan' };
   return {
     title: \`\${post.title} | Blog Nuswalab\`,
@@ -243,8 +245,9 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  setRequestLocale(params.locale);
-  const post = getPostBySlug(params.slug);
+  const { slug, locale } = await params;
+  setRequestLocale(locale);
+  const post = getPostBySlug(slug);
   if (!post) notFound();
 
   const related = getRelatedPosts(post.slug, post.focusKeyword || post.category || '', 3);
