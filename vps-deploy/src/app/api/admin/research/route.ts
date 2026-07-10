@@ -17,31 +17,40 @@ export async function POST(req: Request) {
 
   const envFile = path.join(VPS_ROOT, ".env.local");
   const envContent = fs.existsSync(envFile) ? fs.readFileSync(envFile, "utf-8") : "";
-  const apiKey = (envContent.match(/^ANTHROPIC_API_KEY=(.+)$/m) || [])[1]?.trim() || process.env.ANTHROPIC_API_KEY || "";
+  const apiKey = (envContent.match(/^OPENAI_API_KEY=(.+)$/m) || [])[1]?.trim()
+    || (envContent.match(/^ANTHROPIC_API_KEY=(.+)$/m) || [])[1]?.trim()
+    || process.env.OPENAI_API_KEY || "";
+  const baseUrl = (envContent.match(/^OPENAI_BASE_URL=(.+)$/m) || [])[1]?.trim()
+    || process.env.OPENAI_BASE_URL || "https://openagentic.id/api/v1";
+  const model = (envContent.match(/^OPENAI_MODEL=(.+)$/m) || [])[1]?.trim()
+    || process.env.OPENAI_MODEL || "claude-sonnet-5";
 
-  if (!apiKey) return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 400 });
+  if (!apiKey) return NextResponse.json({ error: "OPENAI_API_KEY not configured" }, { status: 400 });
 
-  const prompt = type === "competitor"
-    ? `You are an SEO expert for Indonesian digital marketing. Given the competitor domain or brand "${seed}", suggest 15 long-tail keywords in Bahasa Indonesia they likely target in the "${category || "Digital Marketing"}" niche. Return ONLY a valid JSON array with no other text. Each item: {"keyword": "...", "search_intent": "informational|commercial|transactional", "category": "...", "reason": "short reason why"}`
-    : `You are an SEO expert for Indonesian digital marketing. Generate 15 long-tail keyword variations in Bahasa Indonesia based on seed keyword "${seed}" for "${category || "Digital Marketing"}" category. Mix intents. Return ONLY a valid JSON array with no other text. Each item: {"keyword": "...", "search_intent": "informational|commercial|transactional", "category": "...", "reason": "short reason why"}`;
+  const systemPrompt = "You are an SEO expert for Indonesian digital marketing. Return ONLY a valid JSON array with no other text. No markdown, no explanation.";
+  const userPrompt = type === "competitor"
+    ? `Given the competitor domain or brand "${seed}", suggest 15 long-tail keywords in Bahasa Indonesia they likely target in the "${category || "Digital Marketing"}" niche. Each item: {"keyword": "...", "search_intent": "informational|commercial|transactional", "category": "...", "reason": "short reason why"}`
+    : `Generate 15 long-tail keyword variations in Bahasa Indonesia based on seed keyword "${seed}" for "${category || "Digital Marketing"}" category. Mix intents. Each item: {"keyword": "...", "search_intent": "informational|commercial|transactional", "category": "...", "reason": "short reason why"}`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model,
         max_tokens: 2000,
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
       }),
     });
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || "[]";
+    const text = data.choices?.[0]?.message?.content || "[]";
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     const keywords = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
     return NextResponse.json({ keywords });
