@@ -402,7 +402,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   const related  = getRelatedPosts(post.slug, post.focusKeyword || post.category || '', 3);
   const headings = extractHeadings(post.content);
-  const readTime = post.readTime || (post.wordCount ? Math.ceil(post.wordCount / 200) : null);
+  const readTime = post.readTime || post.readingTime || (post.wordCount ? Math.ceil(post.wordCount / 200) : null);
   const pageUrl  = \`\${BASE_URL}/blog/\${post.slug}\`;
   const ogImage  = post.featuredImage
     ? post.featuredImage.startsWith('http') ? post.featuredImage : \`\${BASE_URL}\${post.featuredImage}\`
@@ -417,7 +417,9 @@ export default async function BlogPostPage({ params }: Props) {
     image: ogImage ? [ogImage] : [],
     datePublished: post.publishedAt,
     dateModified: post.updatedAt || post.publishedAt,
-    author: { '@type': 'Organization', name: 'Nuswalab', url: BASE_URL },
+    author: post.author
+      ? { '@type': 'Organization', name: post.author.name, url: post.author.url }
+      : { '@type': 'Organization', name: 'Nuswalab', url: BASE_URL },
     publisher: {
       '@type': 'Organization',
       name: 'Nuswalab',
@@ -427,11 +429,42 @@ export default async function BlogPostPage({ params }: Props) {
     keywords: post.focusKeyword || post.tags?.join(', '),
     wordCount: post.wordCount,
     articleSection: post.category,
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['article h2:first-of-type', '.article-intro', '.key-takeaways'],
+    },
+  };
+
+  // FAQPage schema (if article has FAQ items)
+  const faqJsonLd = post.faqItems && post.faqItems.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: post.faqItems.map((item: { question: string; answer: string }) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  } : null;
+
+  // BreadcrumbList schema
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Beranda', item: BASE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: \`\${BASE_URL}/blog\` },
+      { '@type': 'ListItem', position: 3, name: post.title, item: pageUrl },
+    ],
   };
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
 
       <Nav />
       <main className="min-h-screen" style={{ background: 'var(--background)' }}>
