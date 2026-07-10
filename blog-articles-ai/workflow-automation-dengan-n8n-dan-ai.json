@@ -1,0 +1,11 @@
+{
+  "slug": "workflow-automation-dengan-n8n-dan-ai",
+  "title": "Workflow Automation dengan n8n dan AI: Panduan Praktis untuk Bisnis",
+  "description": "Pelajari cara membangun workflow automation powerful menggunakan n8n yang terintegrasi dengan AI. Otomatiskan proses bisnis Anda tanpa coding yang rumit.",
+  "date": "2026-07-06",
+  "author": "Tim Nuswalab",
+  "tags": ["n8n", "Workflow Automation", "AI Integration", "No-code"],
+  "focusKeyword": "workflow automation n8n ai",
+  "readingTime": 8,
+  "content": "<h2>Mengapa n8n untuk AI Workflow Automation?</h2>\n<p>n8n adalah platform workflow automation open-source yang populer untuk mengintegrasikan AI ke dalam proses operasional bisnis.</p>\n\n<h2>Use Case Populer AI Workflow dengan n8n</h2>\n<h3>1. Lead Enrichment Otomatis</h3>\n<p>Ketika ada lead baru masuk, n8n otomatis mencari informasi perusahaan, menganalisis fit dengan AI, dan update CRM.</p>\n\n<h3>2. Content Repurposing Pipeline</h3>\n<p>Dari satu blog post, AI workflow menghasilkan thread Twitter, LinkedIn article, email newsletter, dan Instagram caption.</p>\n\n<h3>3. Customer Feedback Analysis</h3>\n<p>Kumpulkan feedback dari berbagai channel, gunakan AI untuk sentiment analysis, dan generate laporan insight otomatis.</p>\n\n<h3>4. Invoice Processing</h3>\n<p>AI membaca invoice dari email, ekstrak data, validasi terhadap PO, dan masukkan ke accounting system.</p>\n\n<h2>Membangun AI Workflow di n8n</h2>\n<h3>Step 1: Setup n8n</h3>\n<p>Gunakan n8n Cloud atau self-host dengan Docker untuk kontrol penuh.</p>\n\n<h3>Step 2: Tambahkan AI Node</h3>\n<p>n8n menyediakan node untuk berbagai LLM: OpenAI, Anthropic Claude, dan Gemini.</p>\n\n<h3>Step 3: Hubungkan dengan Tools Lain</h3>\n<p>n8n memiliki 400+ integrasi: Gmail, Slack, HubSpot, Google Sheets, Notion.</p>\n\n<h2>Nuswalab: Partner n8n AI Automation</h2>\n<p>Tim Nuswalab berpengalaman membangun workflow automation dengan n8n dan AI integration untuk bisnis di Indonesia.</p>"
+}

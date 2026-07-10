@@ -1,0 +1,11 @@
+{
+  "slug": "rag-ai-agent-untuk-knowledge-management",
+  "title": "RAG AI Agent untuk Knowledge Management Bisnis: Manfaat dan Implementasi",
+  "description": "Pelajari bagaimana Retrieval-Augmented Generation (RAG) AI agent dapat mentransformasi knowledge management bisnis Anda dan meningkatkan produktivitas tim.",
+  "date": "2026-07-04",
+  "author": "Tim Nuswalab",
+  "tags": ["RAG", "AI Agent", "Knowledge Management", "LLM"],
+  "focusKeyword": "rag ai agent knowledge management",
+  "readingTime": 7,
+  "content": "<h2>Apa Itu RAG?</h2>\n<p>RAG (Retrieval-Augmented Generation) menggabungkan kemampuan LLM dengan sistem pencarian dari knowledge base spesifik bisnis Anda.</p>\n\n<h2>Keunggulan RAG vs Fine-tuning</h2>\n<ul>\n<li>Update mudah tanpa retraining model</li>\n<li>Lebih murah tanpa biaya GPU training</li>\n<li>Transparent: AI bisa menyebut sumber informasi</li>\n<li>Akurasi tinggi, mengurangi hallucination</li>\n</ul>\n\n<h2>Komponen RAG System</h2>\n<h3>Document Ingestion Pipeline</h3>\n<p>Mengumpulkan dan memproses dokumen dari berbagai sumber: PDF, Word, Google Docs, Confluence.</p>\n\n<h3>Vector Database</h3>\n<p>Database khusus menyimpan embeddings untuk pencarian semantic yang sangat cepat.</p>\n\n<h2>Use Case Knowledge Management</h2>\n<h3>Internal Knowledge Base</h3>\n<p>Karyawan bisa bertanya tentang kebijakan, prosedur, dan benefit perusahaan dalam hitungan detik.</p>\n\n<h3>Customer-facing Helpdesk</h3>\n<p>Chatbot yang menjawab pertanyaan pelanggan berdasarkan dokumentasi produk dan FAQ.</p>\n\n<h2>Membangun RAG AI Agent</h2>\n<ol>\n<li>Inventarisasi knowledge dan dokumen</li>\n<li>Preprocessing dan chunking</li>\n<li>Embedding dan indexing</li>\n<li>Build retrieval pipeline</li>\n<li>Prompt engineering</li>\n<li>Evaluation dan testing</li>\n</ol>"
+}
