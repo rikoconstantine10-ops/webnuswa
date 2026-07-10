@@ -465,10 +465,12 @@ export default async function BlogPostPage({ params }: Props) {
 }
 `;
 
+// Ensure [locale]/blog/ directory exists
+fs.mkdirSync(path.dirname(BLOG_PAGE), { recursive: true });
 fs.writeFileSync(BLOG_PAGE, blogListingContent, 'utf8');
-console.log('[blog/page.tsx] Written');
+console.log('[locale]/blog/page.tsx] Written');
 
-// Ensure [slug] directory exists
+// Ensure [locale]/blog/[slug]/ directory exists
 const slugDir = path.dirname(BLOG_SLUG_PAGE);
 fs.mkdirSync(slugDir, { recursive: true });
 
