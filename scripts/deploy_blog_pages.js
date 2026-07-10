@@ -15,8 +15,8 @@ const blogListingContent = `export const revalidate = 3600;
 import Link from 'next/link';
 import Image from 'next/image';
 import { getAllPosts } from '@/lib/blog';
-import Nav from '@/components/layout/Nav';
-import Footer from '@/components/layout/Footer';
+import { Nav } from '@/components/layout/Nav';
+import { Footer } from '@/components/layout/Footer';
 import { Calendar, Clock, Tag, ArrowRight, BookOpen, Sparkles } from 'lucide-react';
 
 export const metadata = {
@@ -212,8 +212,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getPostBySlug, getAllPosts, getRelatedPosts, extractHeadings } from '@/lib/blog';
-import Nav from '@/components/layout/Nav';
-import Footer from '@/components/layout/Footer';
+import { Nav } from '@/components/layout/Nav';
+import { Footer } from '@/components/layout/Footer';
 import { Calendar, Clock, Tag, ChevronRight, ArrowLeft, BookOpen, Share2 } from 'lucide-react';
 
 interface Props {
