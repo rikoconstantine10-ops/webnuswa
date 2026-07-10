@@ -81,7 +81,7 @@ export default async function BlogPage() {
                     <p className="text-sm text-gray-500 line-clamp-2 mb-3">{article.meta_description}</p>
                   )}
                   <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>{article.word_count?.toLocaleString()} kata</span>
+                    <span>📖 {Math.max(1, Math.round((article.word_count || 0) / 200))} menit baca</span>
                     <span>{new Date(article.published_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
                   </div>
                 </div>
