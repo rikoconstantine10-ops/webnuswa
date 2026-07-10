@@ -2,16 +2,21 @@
 'use strict';
 /**
  * Deploy redesigned blog pages to nuswalab matching the site theme.
- * Improvements: category filter, JSON-LD schema, fixed TOC, CTA, share buttons, sitemap patch.
+ * Improvements: category filter, JSON-LD schema, fixed TOC, CTA, share buttons, sitemap patch,
+ * ReadingProgress, AuthorBox, BlogSearch, tag page, next/prev nav, HowTo schema.
  */
 const fs = require('fs');
 const path = require('path');
 
-const BLOG_PAGE      = "/home/ubuntu/nuswalab/src/app/[locale]/blog/page.tsx";
-const BLOG_SLUG_PAGE = "/home/ubuntu/nuswalab/src/app/[locale]/blog/[slug]/page.tsx";
-const SHARE_BTN_FILE = "/home/ubuntu/nuswalab/src/components/blog/ShareButtons.tsx";
-const SITEMAP_FILE   = "/home/ubuntu/nuswalab/src/app/sitemap.ts";
-const BLOG_LIB       = "/home/ubuntu/nuswalab/src/lib/blog.ts";
+const BLOG_PAGE        = "/home/ubuntu/nuswalab/src/app/[locale]/blog/page.tsx";
+const BLOG_SLUG_PAGE   = "/home/ubuntu/nuswalab/src/app/[locale]/blog/[slug]/page.tsx";
+const BLOG_TAG_PAGE    = "/home/ubuntu/nuswalab/src/app/[locale]/blog/tag/[tag]/page.tsx";
+const SHARE_BTN_FILE   = "/home/ubuntu/nuswalab/src/components/blog/ShareButtons.tsx";
+const READING_PROGRESS = "/home/ubuntu/nuswalab/src/components/blog/ReadingProgress.tsx";
+const AUTHOR_BOX_FILE  = "/home/ubuntu/nuswalab/src/components/blog/AuthorBox.tsx";
+const BLOG_SEARCH_FILE = "/home/ubuntu/nuswalab/src/components/blog/BlogSearch.tsx";
+const SITEMAP_FILE     = "/home/ubuntu/nuswalab/src/app/sitemap.ts";
+const BLOG_LIB         = "/home/ubuntu/nuswalab/src/lib/blog.ts";
 
 // ── 1. Fix extractHeadings in lib/blog.ts to include h2+h3 with level ────────
 let blogLib = fs.readFileSync(BLOG_LIB, 'utf8');
@@ -82,7 +87,271 @@ export function ShareButtons({ url, title }: Props) {
 `, 'utf8');
 console.log('[ShareButtons.tsx] Written');
 
-// ── 3. Blog listing page with category filter ─────────────────────────────────
+// ── 3. ReadingProgress client component ──────────────────────────────────────
+fs.mkdirSync(path.dirname(READING_PROGRESS), { recursive: true });
+fs.writeFileSync(READING_PROGRESS, `'use client';
+import { useEffect, useState } from 'react';
+
+export function ReadingProgress() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setProgress(Math.min(100, Math.max(0, pct)));
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        height: '3px',
+        background: 'var(--muted)',
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          height: '100%',
+          width: \`\${progress}%\`,
+          background: 'var(--gradient-primary, oklch(0.52 0.22 265))',
+          transition: 'width 0.1s linear',
+        }}
+      />
+    </div>
+  );
+}
+`, 'utf8');
+console.log('[ReadingProgress.tsx] Written');
+
+// ── 4. AuthorBox static component ────────────────────────────────────────────
+fs.mkdirSync(path.dirname(AUTHOR_BOX_FILE), { recursive: true });
+fs.writeFileSync(AUTHOR_BOX_FILE, `import Link from 'next/link';
+
+export function AuthorBox() {
+  return (
+    <div
+      className="glass rounded-2xl p-6 mt-10"
+      style={{ background: 'linear-gradient(135deg, oklch(0.52 0.22 265 / 0.06), oklch(0.52 0.25 300 / 0.06))' }}
+    >
+      <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+        {/* Avatar */}
+        <div
+          className="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center font-display font-bold text-lg"
+          style={{ background: 'oklch(0.52 0.22 265 / 0.18)', color: 'oklch(0.52 0.22 265)' }}
+        >
+          NL
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-bold text-base mb-0.5" style={{ color: 'var(--foreground)' }}>
+            Tim Nuswa Lab
+          </p>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--muted-foreground)' }}>
+            Tim ahli digital marketing Nuswa Lab dengan pengalaman membantu ratusan bisnis berkembang secara online di Indonesia.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/about"
+              className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-full glass transition-opacity hover:opacity-80"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Tentang Kami
+            </Link>
+            <Link href="/contact" className="btn-primary text-sm py-2 px-4">
+              Konsultasi Gratis
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+`, 'utf8');
+console.log('[AuthorBox.tsx] Written');
+
+// ── 5. BlogSearch client component ───────────────────────────────────────────
+fs.mkdirSync(path.dirname(BLOG_SEARCH_FILE), { recursive: true });
+fs.writeFileSync(BLOG_SEARCH_FILE, `'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Search, BookOpen, Calendar, Clock } from 'lucide-react';
+
+export interface PostMeta {
+  slug: string;
+  title: string;
+  metaDescription?: string;
+  category?: string;
+  tags?: string[];
+  featuredImage?: string;
+  publishedAt: string;
+  wordCount?: number;
+  readingTime?: number;
+}
+
+interface Props {
+  posts: PostMeta[];
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'SEO':               'oklch(0.52 0.22 265)',
+  'Google Ads':        'oklch(0.55 0.20 30)',
+  'Social Media':      'oklch(0.52 0.22 300)',
+  'Website':           'oklch(0.48 0.18 200)',
+  'Digital Marketing': 'oklch(0.50 0.20 160)',
+};
+const getCatColor = (cat: string) => CATEGORY_COLORS[cat] || 'oklch(0.52 0.22 265)';
+
+export function BlogSearch({ posts }: Props) {
+  const [query, setQuery] = useState('');
+
+  if (!query.trim()) {
+    return (
+      <div className="mb-8">
+        <div className="relative max-w-xl">
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+            style={{ color: 'var(--muted-foreground)' }}
+          />
+          <input
+            type="search"
+            placeholder="Cari artikel..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="glass w-full pl-11 pr-4 py-3 rounded-full text-sm outline-none transition-all"
+            style={{ color: 'var(--foreground)', background: 'var(--muted)' }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const q = query.toLowerCase();
+  const results = posts.filter(p =>
+    p.title.toLowerCase().includes(q) ||
+    (p.metaDescription || '').toLowerCase().includes(q) ||
+    (p.category || '').toLowerCase().includes(q) ||
+    (p.tags || []).some(t => t.toLowerCase().includes(q))
+  );
+
+  return (
+    <div className="mb-10">
+      {/* Input */}
+      <div className="relative max-w-xl mb-6">
+        <Search
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+          style={{ color: 'var(--muted-foreground)' }}
+        />
+        <input
+          type="search"
+          placeholder="Cari artikel..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          className="glass w-full pl-11 pr-4 py-3 rounded-full text-sm outline-none transition-all"
+          style={{ color: 'var(--foreground)', background: 'var(--muted)' }}
+        />
+      </div>
+
+      {/* Result header */}
+      <p className="text-sm mb-4" style={{ color: 'var(--muted-foreground)' }}>
+        <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>{results.length} hasil</span>
+        {' '}untuk &ldquo;{query}&rdquo;
+      </p>
+
+      {/* Empty state */}
+      {results.length === 0 && (
+        <div className="text-center py-16">
+          <BookOpen className="w-14 h-14 mx-auto mb-4" style={{ color: 'var(--muted-foreground)' }} />
+          <p className="font-display font-bold text-lg mb-1" style={{ color: 'var(--foreground)' }}>
+            Tidak ada hasil
+          </p>
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            Coba kata kunci lain atau jelajahi kategori di atas.
+          </p>
+        </div>
+      )}
+
+      {/* Results grid */}
+      {results.length > 0 && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {results.map(post => (
+            <Link key={post.slug} href={\`/blog/\${post.slug}\`} className="group block">
+              <article className="glass rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[var(--shadow-glow)]">
+                <div
+                  className="relative aspect-video overflow-hidden"
+                  style={{ background: 'linear-gradient(135deg, oklch(0.52 0.22 265 / 0.1), oklch(0.52 0.25 300 / 0.1))' }}
+                >
+                  {post.featuredImage ? (
+                    <Image
+                      src={post.featuredImage}
+                      alt={post.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <BookOpen className="w-12 h-12" style={{ color: 'oklch(0.52 0.22 265 / 0.25)' }} />
+                    </div>
+                  )}
+                </div>
+                <div className="p-6 flex flex-col flex-1">
+                  {post.category && (
+                    <span
+                      className="inline-flex self-start text-xs font-semibold px-2.5 py-0.5 rounded-full mb-3"
+                      style={{ background: 'oklch(0.52 0.22 265 / 0.1)', color: getCatColor(post.category) }}
+                    >
+                      {post.category}
+                    </span>
+                  )}
+                  <h3
+                    className="font-display font-bold text-lg mb-2 leading-snug line-clamp-2 flex-1"
+                    style={{ color: 'var(--foreground)' }}
+                  >
+                    {post.title}
+                  </h3>
+                  <p className="text-sm line-clamp-2 mb-4" style={{ color: 'var(--muted-foreground)' }}>
+                    {post.metaDescription}
+                  </p>
+                  <div
+                    className="flex items-center justify-between text-xs mt-auto pt-4"
+                    style={{ borderTop: '1px solid var(--border)', color: 'var(--muted-foreground)' }}
+                  >
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {new Date(post.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                    {(post.readingTime || post.wordCount) && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {post.readingTime || Math.ceil((post.wordCount || 800) / 200)} menit
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </article>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+`, 'utf8');
+console.log('[BlogSearch.tsx] Written');
+
+// ── 6. Blog listing page with BlogSearch + tag links ─────────────────────────
 const blogListingContent = `export const revalidate = 3600;
 
 import Link from 'next/link';
@@ -90,6 +359,7 @@ import Image from 'next/image';
 import { getAllPosts } from '@/lib/blog';
 import { Nav } from '@/components/layout/Nav';
 import { Footer } from '@/components/layout/Footer';
+import { BlogSearch } from '@/components/blog/BlogSearch';
 import { Calendar, Clock, ArrowRight, BookOpen, Sparkles, Tag } from 'lucide-react';
 import { setRequestLocale } from 'next-intl/server';
 
@@ -133,6 +403,18 @@ export default async function BlogPage({
 
   const featured = filtered[0];
   const rest     = filtered.slice(1);
+
+  const postsMeta = allPosts.map(p => ({
+    slug: p.slug,
+    title: p.title,
+    metaDescription: p.metaDescription || p.excerpt || '',
+    category: p.category || '',
+    tags: p.tags || [],
+    featuredImage: p.featuredImage || '',
+    publishedAt: p.publishedAt,
+    wordCount: p.wordCount || 0,
+    readingTime: p.readingTime || p.readTime || Math.ceil((p.wordCount || 800) / 200),
+  }));
 
   return (
     <>
@@ -197,6 +479,9 @@ export default async function BlogPage({
             })}
           </div>
 
+          {/* Blog Search */}
+          <BlogSearch posts={postsMeta} />
+
           {/* Featured post */}
           {featured && (
             <div className="mb-16">
@@ -223,8 +508,7 @@ export default async function BlogPage({
                     <div className="p-8 md:p-12 flex flex-col justify-center">
                       {featured.category && (
                         <span className="inline-flex self-start text-xs font-semibold px-3 py-1 rounded-full mb-4"
-                          style={{ background: \`\${getCatColor(featured.category)} / 0.12\`, color: getCatColor(featured.category),
-                            background: \`oklch(from \${getCatColor(featured.category)} l c h / 0.12)\` }}>
+                          style={{ background: \`oklch(from \${getCatColor(featured.category)} l c h / 0.12)\`, color: getCatColor(featured.category) }}>
                           {featured.category}
                         </span>
                       )}
@@ -232,9 +516,25 @@ export default async function BlogPage({
                         style={{ color: 'var(--foreground)' }}>
                         {featured.title}
                       </h2>
-                      <p className="mb-6 line-clamp-3" style={{ color: 'var(--muted-foreground)' }}>
+                      <p className="mb-4 line-clamp-3" style={{ color: 'var(--muted-foreground)' }}>
                         {featured.metaDescription || featured.excerpt}
                       </p>
+                      {/* Tag links */}
+                      {featured.tags && featured.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {featured.tags.slice(0, 2).map(tag => (
+                            <Link
+                              key={tag}
+                              href={\`/blog/tag/\${encodeURIComponent(tag)}\`}
+                              onClick={e => e.stopPropagation()}
+                              className="text-xs px-2.5 py-0.5 rounded-full transition-opacity hover:opacity-80"
+                              style={{ background: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                            >
+                              #{tag}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--muted-foreground)' }}>
                           <span className="flex items-center gap-1">
@@ -293,9 +593,25 @@ export default async function BlogPage({
                           style={{ color: 'var(--foreground)' }}>
                           {post.title}
                         </h3>
-                        <p className="text-sm line-clamp-2 mb-4" style={{ color: 'var(--muted-foreground)' }}>
+                        <p className="text-sm line-clamp-2 mb-3" style={{ color: 'var(--muted-foreground)' }}>
                           {post.metaDescription || post.excerpt}
                         </p>
+                        {/* Tag links */}
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {post.tags.slice(0, 2).map(tag => (
+                              <Link
+                                key={tag}
+                                href={\`/blog/tag/\${encodeURIComponent(tag)}\`}
+                                onClick={e => e.stopPropagation()}
+                                className="text-xs px-2 py-0.5 rounded-full transition-opacity hover:opacity-80"
+                                style={{ background: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                              >
+                                #{tag}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between text-xs mt-auto pt-4"
                           style={{ borderTop: '1px solid var(--border)', color: 'var(--muted-foreground)' }}>
                           <span className="flex items-center gap-1">
@@ -337,7 +653,7 @@ export default async function BlogPage({
 }
 `;
 
-// ── 4. Blog slug page with all improvements ───────────────────────────────────
+// ── 7. Blog slug page with all improvements ───────────────────────────────────
 const blogSlugContent = `export const revalidate = 3600;
 
 import { notFound } from 'next/navigation';
@@ -347,7 +663,9 @@ import { getPostBySlug, getAllPosts, getRelatedPosts, extractHeadings } from '@/
 import { Nav } from '@/components/layout/Nav';
 import { Footer } from '@/components/layout/Footer';
 import { ShareButtons } from '@/components/blog/ShareButtons';
-import { Calendar, Clock, ChevronRight, ArrowLeft, BookOpen, Phone } from 'lucide-react';
+import { ReadingProgress } from '@/components/blog/ReadingProgress';
+import { AuthorBox } from '@/components/blog/AuthorBox';
+import { Calendar, Clock, ChevronRight, ArrowLeft, ArrowRight, BookOpen, Phone } from 'lucide-react';
 import { setRequestLocale } from 'next-intl/server';
 
 const BASE_URL = 'https://nuswalab.com';
@@ -399,6 +717,11 @@ export default async function BlogPostPage({ params }: Props) {
   setRequestLocale(locale);
   const post = getPostBySlug(slug);
   if (!post) notFound();
+
+  const allPostsList = getAllPosts();
+  const currentIdx   = allPostsList.findIndex(p => p.slug === slug);
+  const prevPost     = currentIdx < allPostsList.length - 1 ? allPostsList[currentIdx + 1] : null;
+  const nextPost     = currentIdx > 0 ? allPostsList[currentIdx - 1] : null;
 
   const related  = getRelatedPosts(post.slug, post.focusKeyword || post.category || '', 3);
   const headings = extractHeadings(post.content);
@@ -460,11 +783,29 @@ export default async function BlogPostPage({ params }: Props) {
     ],
   };
 
+  // HowTo schema — extract first <ol> steps if >= 3 items
+  const olMatch = post.content.match(/<ol[^>]*>([\\s\\S]*?)<\\/ol>/i);
+  const liMatches = olMatch ? [...olMatch[1].matchAll(/<li[^>]*>([\\s\\S]*?)<\\/li>/gi)] : [];
+  const howToSteps = liMatches.map((m: RegExpMatchArray, i: number) => ({
+    '@type': 'HowToStep',
+    position: i + 1,
+    text: m[1].replace(/<[^>]+>/g, '').trim(),
+  }));
+  const howToJsonLd = howToSteps.length >= 3 ? {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: post.title,
+    description: post.metaDescription,
+    step: howToSteps,
+  } : null;
+
   return (
     <>
+      <ReadingProgress />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
+      {howToJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }} />}
 
       <Nav />
       <main className="min-h-screen" style={{ background: 'var(--background)' }}>
@@ -493,22 +834,16 @@ export default async function BlogPostPage({ params }: Props) {
               <span className="line-clamp-1" style={{ color: 'var(--foreground)' }}>{post.title}</span>
             </nav>
 
-            {/* Category + Tags */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {post.category && (
+            {/* Category badge */}
+            {post.category && (
+              <div className="mb-5">
                 <Link href={\`/blog?cat=\${encodeURIComponent(post.category)}\`}
                   className="text-sm font-semibold px-3 py-1 rounded-full transition-opacity hover:opacity-80"
                   style={{ background: 'oklch(0.52 0.22 265 / 0.12)', color: 'oklch(0.52 0.22 265)' }}>
                   {post.category}
                 </Link>
-              )}
-              {post.tags?.slice(0, 3).map(tag => (
-                <span key={tag} className="text-sm px-3 py-1 rounded-full"
-                  style={{ background: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-                  {tag}
-                </span>
-              ))}
-            </div>
+              </div>
+            )}
 
             <h1 className="font-display text-3xl md:text-5xl font-bold mb-6 leading-tight"
               style={{ color: 'var(--foreground)' }}>
@@ -516,9 +851,25 @@ export default async function BlogPostPage({ params }: Props) {
             </h1>
 
             {post.metaDescription && (
-              <p className="text-lg md:text-xl mb-8 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+              <p className="text-lg md:text-xl mb-6 leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
                 {post.metaDescription}
               </p>
+            )}
+
+            {/* Tag pills */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {post.tags.map((tag: string) => (
+                  <Link
+                    key={tag}
+                    href={\`/blog/tag/\${encodeURIComponent(tag)}\`}
+                    className="text-xs px-3 py-1 rounded-full transition-opacity hover:opacity-80"
+                    style={{ background: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
             )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm pb-8"
@@ -577,6 +928,9 @@ export default async function BlogPostPage({ params }: Props) {
               {/* Share buttons */}
               <ShareButtons url={pageUrl} title={post.title} />
 
+              {/* Author box */}
+              <AuthorBox />
+
               {/* CTA */}
               <div className="mt-10 glass rounded-2xl p-8 text-center"
                 style={{ background: 'linear-gradient(135deg, oklch(0.52 0.22 265 / 0.08), oklch(0.52 0.25 300 / 0.08))' }}>
@@ -600,6 +954,40 @@ export default async function BlogPostPage({ params }: Props) {
                 </div>
               </div>
 
+              {/* Prev / Next navigation */}
+              {(prevPost || nextPost) && (
+                <div className="mt-10 grid sm:grid-cols-2 gap-4">
+                  {prevPost ? (
+                    <Link href={\`/blog/\${prevPost.slug}\`} className="group block">
+                      <div className="glass rounded-2xl p-5 h-full flex items-start gap-3 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-glow)]">
+                        <ArrowLeft className="w-5 h-5 mt-0.5 flex-shrink-0 transition-transform duration-200 group-hover:-translate-x-1"
+                          style={{ color: 'oklch(0.52 0.22 265)' }} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Artikel Sebelumnya</p>
+                          <p className="text-sm font-semibold line-clamp-2" style={{ color: 'var(--foreground)' }}>
+                            {prevPost.title}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : <div />}
+                  {nextPost ? (
+                    <Link href={\`/blog/\${nextPost.slug}\`} className="group block sm:text-right">
+                      <div className="glass rounded-2xl p-5 h-full flex items-start gap-3 justify-end transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-glow)]">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Artikel Berikutnya</p>
+                          <p className="text-sm font-semibold line-clamp-2" style={{ color: 'var(--foreground)' }}>
+                            {nextPost.title}
+                          </p>
+                        </div>
+                        <ArrowRight className="w-5 h-5 mt-0.5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+                          style={{ color: 'oklch(0.52 0.22 265)' }} />
+                      </div>
+                    </Link>
+                  ) : <div />}
+                </div>
+              )}
+
               {/* Back link */}
               <div className="mt-8">
                 <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
@@ -614,7 +1002,7 @@ export default async function BlogPostPage({ params }: Props) {
             <aside className="space-y-6">
               {/* TOC */}
               {headings.length > 0 && (
-                <div className="glass rounded-2xl p-6 sticky top-24">
+                <div className="glass rounded-2xl p-6" style={{ position: 'sticky', top: '100px' }}>
                   <h3 className="font-display font-bold text-sm uppercase tracking-widest mb-4"
                     style={{ color: 'var(--muted-foreground)' }}>
                     Daftar Isi
@@ -741,7 +1129,162 @@ export default async function BlogPostPage({ params }: Props) {
 }
 `;
 
-// ── 5. Write pages ────────────────────────────────────────────────────────────
+// ── 8. Tag page ───────────────────────────────────────────────────────────────
+const blogTagContent = `export const revalidate = 3600;
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { getAllPosts } from '@/lib/blog';
+import { Nav } from '@/components/layout/Nav';
+import { Footer } from '@/components/layout/Footer';
+import { Calendar, Clock, BookOpen, ArrowLeft, Tag } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'SEO':               'oklch(0.52 0.22 265)',
+  'Google Ads':        'oklch(0.55 0.20 30)',
+  'Social Media':      'oklch(0.52 0.22 300)',
+  'Website':           'oklch(0.48 0.18 200)',
+  'Digital Marketing': 'oklch(0.50 0.20 160)',
+};
+const getCatColor = (cat: string) => CATEGORY_COLORS[cat] || 'oklch(0.52 0.22 265)';
+
+interface Props {
+  params: Promise<{ tag: string; locale: string }>;
+}
+
+export async function generateStaticParams() {
+  const posts = getAllPosts();
+  const allTags = new Set<string>();
+  posts.forEach(p => (p.tags || []).forEach((t: string) => allTags.add(t)));
+  return ['id', 'en'].flatMap(locale =>
+    [...allTags].map(tag => ({ locale, tag: encodeURIComponent(tag) }))
+  );
+}
+
+export async function generateMetadata({ params }: Props) {
+  const { tag } = await params;
+  const decodedTag = decodeURIComponent(tag);
+  return {
+    title: \`Artikel Tag #\${decodedTag} | Blog Nuswalab\`,
+    description: \`Kumpulan artikel bertag #\${decodedTag} dari blog Nuswalab. Tips dan strategi digital marketing terpercaya.\`,
+  };
+}
+
+export default async function TagPage({ params }: Props) {
+  const { tag, locale } = await params;
+  setRequestLocale(locale);
+
+  const decodedTag = decodeURIComponent(tag);
+  const allPosts = getAllPosts();
+  const posts = allPosts.filter(p => (p.tags || []).includes(decodedTag));
+
+  return (
+    <>
+      <Nav />
+      <main className="min-h-screen" style={{ background: 'var(--background)' }}>
+
+        {/* Hero */}
+        <section className="relative overflow-hidden py-20 md:py-28">
+          <div className="bg-aurora" />
+          <div className="bg-grid" />
+          <div className="orb orb-primary animate-orb" style={{ width: 400, height: 400, top: -80, left: '60%', opacity: 0.5 }} />
+
+          <div className="container-custom relative z-10 text-center">
+            <div className="glass inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-medium"
+              style={{ color: 'oklch(0.52 0.22 265)' }}>
+              <Tag className="w-4 h-4" />
+              <span>Tag</span>
+            </div>
+            <h1 className="font-display text-3xl md:text-5xl font-bold mb-4">
+              <span className="text-gradient">Artikel Tag:</span>
+              <br />
+              <span style={{ color: 'var(--foreground)' }}>#{decodedTag}</span>
+            </h1>
+            <p className="text-base md:text-lg mb-6" style={{ color: 'var(--muted-foreground)' }}>
+              {posts.length} artikel ditemukan
+            </p>
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{ color: 'oklch(0.52 0.22 265)' }}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke Blog
+            </Link>
+          </div>
+        </section>
+
+        <div className="container-custom pb-24">
+          {posts.length === 0 ? (
+            <div className="text-center py-24">
+              <BookOpen className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--muted-foreground)' }} />
+              <h2 className="font-display text-2xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+                Belum ada artikel dengan tag ini
+              </h2>
+              <p className="mb-6" style={{ color: 'var(--muted-foreground)' }}>
+                Coba jelajahi kategori atau tag lainnya.
+              </p>
+              <Link href="/blog" className="btn-primary">Lihat Semua Artikel</Link>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {posts.map(post => (
+                <Link key={post.slug} href={\`/blog/\${post.slug}\`} className="group block">
+                  <article className="glass rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[var(--shadow-glow)]">
+                    <div className="relative aspect-video overflow-hidden"
+                      style={{ background: 'linear-gradient(135deg, oklch(0.52 0.22 265 / 0.1), oklch(0.52 0.25 300 / 0.1))' }}>
+                      {post.featuredImage ? (
+                        <Image src={post.featuredImage} alt={post.title} fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <BookOpen className="w-12 h-12" style={{ color: 'oklch(0.52 0.22 265 / 0.25)' }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-6 flex flex-col flex-1">
+                      {post.category && (
+                        <span className="inline-flex self-start text-xs font-semibold px-2.5 py-0.5 rounded-full mb-3"
+                          style={{ background: 'oklch(0.52 0.22 265 / 0.1)', color: getCatColor(post.category) }}>
+                          {post.category}
+                        </span>
+                      )}
+                      <h3 className="font-display font-bold text-lg mb-2 leading-snug line-clamp-2 flex-1"
+                        style={{ color: 'var(--foreground)' }}>
+                        {post.title}
+                      </h3>
+                      <p className="text-sm line-clamp-2 mb-4" style={{ color: 'var(--muted-foreground)' }}>
+                        {post.metaDescription || post.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between text-xs mt-auto pt-4"
+                        style={{ borderTop: '1px solid var(--border)', color: 'var(--muted-foreground)' }}>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(post.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        {post.wordCount > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {Math.ceil(post.wordCount / 200)} menit
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+`;
+
+// ── 9. Write all pages ────────────────────────────────────────────────────────
 fs.mkdirSync(path.dirname(BLOG_PAGE), { recursive: true });
 fs.writeFileSync(BLOG_PAGE, blogListingContent, 'utf8');
 console.log('[locale]/blog/page.tsx] Written');
@@ -750,7 +1293,11 @@ fs.mkdirSync(path.dirname(BLOG_SLUG_PAGE), { recursive: true });
 fs.writeFileSync(BLOG_SLUG_PAGE, blogSlugContent, 'utf8');
 console.log('[blog/[slug]/page.tsx] Written');
 
-// ── 6. Patch sitemap.ts to read from blog JSON files ─────────────────────────
+fs.mkdirSync(path.dirname(BLOG_TAG_PAGE), { recursive: true });
+fs.writeFileSync(BLOG_TAG_PAGE, blogTagContent, 'utf8');
+console.log('[blog/tag/[tag]/page.tsx] Written');
+
+// ── 10. Patch sitemap.ts to read from blog JSON files ────────────────────────
 let sitemap = fs.readFileSync(SITEMAP_FILE, 'utf8');
 const OLD_SITEMAP_BLOCK = `  // Dynamically add blog articles
   let articleRoutes: MetadataRoute.Sitemap = [];
