@@ -118,5 +118,40 @@
     "category": "Digital Marketing",
     "search_intent": "informational",
     "status": "pending"
+  },
+  {
+    "keyword": "cara membuat google ads yang efektif untuk bisnis kecil",
+    "category": "Google Ads",
+    "search_intent": "informational",
+    "status": "pending",
+    "priority": "high"
+  },
+  {
+    "keyword": "strategi SEO 2025 untuk website bisnis Indonesia",
+    "category": "SEO",
+    "search_intent": "informational",
+    "status": "pending",
+    "priority": "high"
+  },
+  {
+    "keyword": "cara meningkatkan penjualan dengan digital marketing",
+    "category": "Digital Marketing",
+    "search_intent": "informational",
+    "status": "pending",
+    "priority": "high"
+  },
+  {
+    "keyword": "facebook ads vs google ads mana yang lebih menguntungkan",
+    "category": "Google Ads",
+    "search_intent": "informational",
+    "status": "pending",
+    "priority": "high"
+  },
+  {
+    "keyword": "cara optimalkan instagram bisnis untuk jualan online",
+    "category": "Social Media Marketing",
+    "search_intent": "informational",
+    "status": "pending",
+    "priority": "high"
   }
 ]
