@@ -878,6 +878,20 @@ export default function AdminDashboard() {
   const [settingsMaxGen, setSettingsMaxGen] = useState(3);
   const [settingsDryRun, setSettingsDryRun] = useState(false);
 
+  // API Settings
+  const [cfgApiKey, setCfgApiKey]       = useState("");
+  const [cfgBaseUrl, setCfgBaseUrl]     = useState("https://openagentic.id/api/v1");
+  const [cfgModel, setCfgModel]         = useState("claude-sonnet-5");
+  const [cfgPexels, setCfgPexels]       = useState("");
+  const [cfgAnthropicKey, setCfgAnthropicKey] = useState("");
+  const [cfgShowKey, setCfgShowKey]     = useState(false);
+  const [cfgShowAnthKey, setCfgShowAnthKey] = useState(false);
+  const [cfgModels, setCfgModels]       = useState<string[]>([]);
+  const [cfgFetching, setCfgFetching]   = useState(false);
+  const [cfgSaving, setCfgSaving]       = useState(false);
+  const [cfgMsg, setCfgMsg]             = useState<{type:"ok"|"err"; text:string} | null>(null);
+  const [cfgLoaded, setCfgLoaded]       = useState(false);
+
   // Bulk import
   const [bulkKwText, setBulkKwText] = useState("");
   const [bulkImporting, setBulkImporting] = useState(false);
@@ -899,6 +913,63 @@ export default function AdminDashboard() {
   const [healthFilter, setHealthFilter] = useState<"all" | "low_seo" | "low_aeo" | "low_aio" | "no_image">("all");
 
   const headers = { "x-admin-token": token, "Content-Type": "application/json" };
+
+  const loadCfg = useCallback(async () => {
+    if (cfgLoaded) return;
+    const res = await fetch("/api/admin/settings", { headers });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.openai_api_key) setCfgApiKey(d.openai_api_key);
+      if (d.openai_base_url) setCfgBaseUrl(d.openai_base_url);
+      if (d.openai_model) setCfgModel(d.openai_model);
+      if (d.pexels_api_key) setCfgPexels(d.pexels_api_key);
+      if (d.anthropic_api_key) setCfgAnthropicKey(d.anthropic_api_key);
+      setCfgLoaded(true);
+    }
+  }, [cfgLoaded, token]);
+
+  const fetchModels = async () => {
+    if (!cfgApiKey || cfgApiKey.includes("•")) {
+      setCfgMsg({ type: "err", text: "Masukkan API key terlebih dahulu (bukan masked)" });
+      return;
+    }
+    setCfgFetching(true);
+    setCfgMsg(null);
+    const res = await fetch("/api/admin/settings", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "fetch_models", api_key: cfgApiKey, base_url: cfgBaseUrl }),
+    });
+    const d = await res.json();
+    if (d.models) {
+      setCfgModels(d.models);
+      setCfgMsg({ type: "ok", text: `${d.models.length} model berhasil dimuat` });
+    } else {
+      setCfgMsg({ type: "err", text: d.error || "Gagal fetch models" });
+    }
+    setCfgFetching(false);
+  };
+
+  const saveCfg = async () => {
+    setCfgSaving(true);
+    setCfgMsg(null);
+    const res = await fetch("/api/admin/settings", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        action: "save",
+        openai_api_key: cfgApiKey,
+        openai_base_url: cfgBaseUrl,
+        openai_model: cfgModel,
+        pexels_api_key: cfgPexels,
+        anthropic_api_key: cfgAnthropicKey,
+      }),
+    });
+    const d = await res.json();
+    if (d.ok) setCfgMsg({ type: "ok", text: `Tersimpan: ${d.updated?.join(", ") || "settings"}` });
+    else setCfgMsg({ type: "err", text: d.error || "Gagal simpan" });
+    setCfgSaving(false);
+  };
 
   const loadKeywords = useCallback(async () => {
     setKwLoading(true);
@@ -936,6 +1007,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!authed) return;
     if (page === "logs") loadLogs();
+    if (page === "settings") loadCfg();
   }, [page, authed]);
 
   useEffect(() => {
@@ -1880,54 +1952,208 @@ export default function AdminDashboard() {
 
           {/* ── SETTINGS ────────────────────────────────────────────────────────────────── */}
           {page === "settings" && (
-            <div className="space-y-4 max-w-lg">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Generation Settings</div>
-                <label className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-gray-800">Max Articles per Run</div>
-                    <div className="text-xs text-gray-400 mt-0.5">How many keywords to process in one run</div>
-                  </div>
-                  <input
-                    type="number" min={1} max={20} value={settingsMaxGen}
-                    onChange={e => { setSettingsMaxGen(Number(e.target.value)); setMaxGen(Number(e.target.value)); }}
-                    className="w-16 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 text-center focus:outline-none focus:border-indigo-400"
-                  />
-                </label>
-                <label className="flex items-center justify-between cursor-pointer">
-                  <div>
-                    <div className="text-sm text-gray-800">Dry Run Mode</div>
-                    <div className="text-xs text-gray-400 mt-0.5">Generate article but don't save to DB</div>
-                  </div>
-                  <div
-                    onClick={() => { setSettingsDryRun(d => !d); setDryRun(d => !d); }}
-                    className={`w-10 h-6 rounded-full transition-colors cursor-pointer flex items-center px-1 ${settingsDryRun ? "bg-indigo-600" : "bg-gray-200"}`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${settingsDryRun ? "translate-x-4" : "translate-x-0"}`} />
-                  </div>
-                </label>
-              </div>
+            <div className="space-y-4 max-w-2xl">
 
-              <div className="bg-white border border-gray-200 rounded-xl p-5">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">System Info</div>
-                <div className="space-y-2 text-xs text-gray-500">
-                  <div className="flex justify-between"><span>Cron Schedule</span><span className="text-gray-700 font-medium">Daily 19:00 WIB</span></div>
-                  <div className="flex justify-between"><span>Generator Script</span><span className="text-gray-700 font-mono">scripts/keyword-article-gen.js</span></div>
-                  <div className="flex justify-between"><span>Database</span><span className="text-gray-700 font-mono">data.db (SQLite)</span></div>
-                  <div className="flex justify-between"><span>Image Provider</span><span className="text-gray-700">Pexels API</span></div>
-                  <div className="flex justify-between"><span>AI Model</span><span className="text-gray-700">claude-opus-4-5</span></div>
-                  <div className="flex justify-between"><span>Admin URL</span><span className="text-gray-700">seo.nuswalab.com</span></div>
+              {/* API Configuration */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                  <span className="text-base">🔑</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-widest">API Configuration</span>
+                </div>
+                <div className="p-5 space-y-4">
+
+                  {/* Base URL */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">Base URL</label>
+                    <input
+                      type="url"
+                      value={cfgBaseUrl}
+                      onChange={e => setCfgBaseUrl(e.target.value)}
+                      placeholder="https://openagentic.id/api/v1"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Endpoint OpenAI-compatible (tanpa trailing slash)</p>
+                  </div>
+
+                  {/* OpenAI / OpenAgentic API Key */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">API Key (OpenAI-compatible)</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type={cfgShowKey ? "text" : "password"}
+                          value={cfgApiKey}
+                          onChange={e => setCfgApiKey(e.target.value)}
+                          placeholder="sk-..."
+                          className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 pr-10"
+                        />
+                        <button
+                          onClick={() => setCfgShowKey(v => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                          title={cfgShowKey ? "Hide" : "Show"}
+                        >
+                          {cfgShowKey ? "🙈" : "👁"}
+                        </button>
+                      </div>
+                      <button
+                        onClick={fetchModels}
+                        disabled={cfgFetching}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-xs font-medium rounded-lg transition whitespace-nowrap flex items-center gap-1.5"
+                      >
+                        {cfgFetching ? (
+                          <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" />Fetching...</>
+                        ) : "⚡ Fetch Models"}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Digunakan untuk generate artikel. Key tidak ditampilkan setelah disimpan.</p>
+                  </div>
+
+                  {/* Model selector */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      Model
+                      {cfgModels.length > 0 && (
+                        <span className="ml-2 text-indigo-500 font-normal">({cfgModels.length} tersedia)</span>
+                      )}
+                    </label>
+                    <div className="flex gap-2">
+                      {cfgModels.length > 0 ? (
+                        <select
+                          value={cfgModel}
+                          onChange={e => setCfgModel(e.target.value)}
+                          className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
+                        >
+                          {cfgModels.map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={cfgModel}
+                          onChange={e => setCfgModel(e.target.value)}
+                          placeholder="claude-sonnet-5"
+                          className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-900 focus:outline-none focus:border-indigo-400"
+                        />
+                      )}
+                    </div>
+                    {cfgModels.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-1">Klik "Fetch Models" untuk load daftar model dari API, atau ketik manual.</p>
+                    )}
+                  </div>
+
+                  {/* Anthropic API Key */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">Anthropic API Key <span className="text-gray-400 font-normal">(opsional, fallback)</span></label>
+                    <div className="relative">
+                      <input
+                        type={cfgShowAnthKey ? "text" : "password"}
+                        value={cfgAnthropicKey}
+                        onChange={e => setCfgAnthropicKey(e.target.value)}
+                        placeholder="sk-ant-..."
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-900 focus:outline-none focus:border-indigo-400 pr-10"
+                      />
+                      <button
+                        onClick={() => setCfgShowAnthKey(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                      >
+                        {cfgShowAnthKey ? "🙈" : "👁"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Pexels API Key */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">Pexels API Key <span className="text-gray-400 font-normal">(untuk featured image artikel)</span></label>
+                    <input
+                      type="password"
+                      value={cfgPexels}
+                      onChange={e => setCfgPexels(e.target.value)}
+                      placeholder="..."
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-900 focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
+
+                  {/* Status message */}
+                  {cfgMsg && (
+                    <div className={`text-xs rounded-lg px-3 py-2 ${cfgMsg.type === "ok" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
+                      {cfgMsg.type === "ok" ? "✓ " : "✗ "}{cfgMsg.text}
+                    </div>
+                  )}
+
+                  {/* Save button */}
+                  <button
+                    onClick={saveCfg}
+                    disabled={cfgSaving}
+                    className="w-full py-2.5 bg-gray-900 hover:bg-gray-700 disabled:bg-gray-300 text-white text-sm font-medium rounded-lg transition"
+                  >
+                    {cfgSaving ? "Menyimpan..." : "Simpan Settings"}
+                  </button>
                 </div>
               </div>
 
-              <div className="bg-white border border-red-100 rounded-xl p-5">
-                <div className="text-xs font-semibold text-red-400 uppercase tracking-widest mb-4">Danger Zone</div>
-                <button
-                  onClick={() => kwAction("reset_all", 0)}
-                  className="text-xs text-red-500 hover:text-red-700 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-50 transition"
-                >
-                  Reset All Keywords to Pending
-                </button>
+              {/* Generation Settings */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                  <span className="text-base">⚙️</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Generation Settings</span>
+                </div>
+                <div className="p-5 space-y-4">
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm text-gray-800">Max Articles per Run</div>
+                      <div className="text-xs text-gray-400 mt-0.5">Jumlah keyword yang diproses per satu kali run</div>
+                    </div>
+                    <input
+                      type="number" min={1} max={20} value={settingsMaxGen}
+                      onChange={e => { setSettingsMaxGen(Number(e.target.value)); setMaxGen(Number(e.target.value)); }}
+                      className="w-16 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 text-center focus:outline-none focus:border-indigo-400"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <div className="text-sm text-gray-800">Dry Run Mode</div>
+                      <div className="text-xs text-gray-400 mt-0.5">Generate artikel tanpa simpan ke database</div>
+                    </div>
+                    <div
+                      onClick={() => { setSettingsDryRun(d => !d); setDryRun(d => !d); }}
+                      className={`w-10 h-6 rounded-full transition-colors cursor-pointer flex items-center px-1 ${settingsDryRun ? "bg-indigo-600" : "bg-gray-200"}`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${settingsDryRun ? "translate-x-4" : "translate-x-0"}`} />
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* System Info */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                  <span className="text-base">ℹ️</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-widest">System Info</span>
+                </div>
+                <div className="p-5 space-y-2 text-xs text-gray-500">
+                  <div className="flex justify-between"><span>Active Model</span><span className="text-gray-700 font-mono font-medium">{cfgModel || "—"}</span></div>
+                  <div className="flex justify-between"><span>Base URL</span><span className="text-gray-700 font-mono truncate max-w-xs">{cfgBaseUrl || "—"}</span></div>
+                  <div className="flex justify-between"><span>Cron Schedule</span><span className="text-gray-700 font-medium">Daily 19:00 UTC</span></div>
+                  <div className="flex justify-between"><span>Generator Script</span><span className="text-gray-700 font-mono">scripts/keyword-article-gen.js</span></div>
+                  <div className="flex justify-between"><span>Database</span><span className="text-gray-700 font-mono">data.db (SQLite)</span></div>
+                  <div className="flex justify-between"><span>Image Provider</span><span className="text-gray-700">Pexels API</span></div>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="bg-white border border-red-100 rounded-xl overflow-hidden">
+                <div className="px-5 py-3 border-b border-red-50 bg-red-50 flex items-center gap-2">
+                  <span className="text-xs font-semibold text-red-400 uppercase tracking-widest">Danger Zone</span>
+                </div>
+                <div className="p-5">
+                  <button
+                    onClick={() => kwAction("reset_all", 0)}
+                    className="text-xs text-red-500 hover:text-red-700 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-50 transition"
+                  >
+                    Reset All Keywords to Pending
+                  </button>
+                </div>
               </div>
             </div>
           )}
