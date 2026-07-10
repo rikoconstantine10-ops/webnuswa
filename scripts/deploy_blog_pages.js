@@ -213,7 +213,7 @@ const blogSlugContent = `export const revalidate = 3600;
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getPostBySlug, getAllPosts, getRelatedPosts, extractHeadings } from '@/lib/blog';
+import { getPostBySlug, getRelatedPosts, extractHeadings } from '@/lib/blog';
 import { Nav } from '@/components/layout/Nav';
 import { Footer } from '@/components/layout/Footer';
 import { Calendar, Clock, ChevronRight, ArrowLeft, BookOpen } from 'lucide-react';
@@ -247,8 +247,7 @@ export default async function BlogPostPage({ params }: Props) {
   const post = getPostBySlug(params.slug);
   if (!post) notFound();
 
-  const allPosts = getAllPosts();
-  const related = getRelatedPosts ? getRelatedPosts(post, allPosts, 3) : allPosts.filter(p => p.slug !== post.slug).slice(0, 3);
+  const related = getRelatedPosts(post.slug, post.focusKeyword || post.category || '', 3);
   const headings = extractHeadings ? extractHeadings(post.content) : [];
   const readTime = post.readTime || (post.wordCount ? Math.ceil(post.wordCount / 200) : null);
 
