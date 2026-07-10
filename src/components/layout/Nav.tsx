@@ -359,6 +359,14 @@ export function Nav() {
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Lock body scroll when mobile menu is open
+  const toggleMobile = (next: boolean) => {
+    setMobileOpen(next);
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = next ? "hidden" : "";
+    }
+  };
+
   const scheduleClose = () => {
     closeTimer.current = setTimeout(() => setOpenMenu(null), 150);
   };
@@ -435,7 +443,7 @@ export function Nav() {
             </Link>
             <button
               className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition"
-              onClick={() => setMobileOpen((v) => !v)}
+              onClick={() => toggleMobile(!mobileOpen)}
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -446,14 +454,16 @@ export function Nav() {
         {/* Mobile menu */}
         {mobileOpen && (
           <div
-            className="lg:hidden mt-2 rounded-2xl shadow-2xl overflow-hidden"
+            className="lg:hidden mt-2 rounded-2xl shadow-2xl flex flex-col"
             style={{
               background: "oklch(1 0 0 / 0.98)",
               backdropFilter: "blur(32px)",
               border: "1px solid oklch(0.9 0.02 265 / 0.6)",
+              maxHeight: "calc(100dvh - 96px)",
             }}
           >
-            <div className="p-3">
+            {/* Scrollable body — only this part scrolls, not the page */}
+            <div className="overflow-y-auto overscroll-contain flex-1 p-3">
               {allMenuItems.map(({ key, label, items }) => (
                 <div key={key} className="mb-1">
                   <button
@@ -467,20 +477,24 @@ export function Nav() {
                     <div className="mt-1 ml-2 space-y-0.5">
                       {(items as ServiceItem[]).map((item) => {
                         const Icon = item.icon;
+                        const iName = (Icon as { displayName?: string }).displayName ?? Icon.name ?? "";
+                        const col = iconColors[iName] ?? { bg: "oklch(0.92 0.06 265)", fg: "oklch(0.38 0.16 265)" };
                         return (
                           <Link
                             key={item.href}
                             href={item.href}
-                            onClick={() => { close(); setMobileOpen(false); }}
+                            onClick={() => { close(); toggleMobile(false); }}
                             className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition"
                             style={{ color: "var(--color-foreground)" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "oklch(0.97 0.02 265)")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "")}
+                            onTouchStart={e => (e.currentTarget.style.background = col.bg + "88")}
+                            onTouchEnd={e => (e.currentTarget.style.background = "")}
                           >
-                            <span className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "oklch(0.94 0.04 265)" }}>
-                              <Icon className="w-3 h-3" style={{ color: "var(--color-primary)" }} />
+                            <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: col.bg }}>
+                              <Icon className="w-3.5 h-3.5" style={{ color: col.fg }} />
                             </span>
-                            {item.label}
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold leading-tight" style={{ color: "oklch(0.18 0.03 265)" }}>{item.label}</div>
+                            </div>
                           </Link>
                         );
                       })}
@@ -489,11 +503,12 @@ export function Nav() {
                 </div>
               ))}
             </div>
-            <div className="p-3 pt-0 border-t" style={{ borderColor: "oklch(0.92 0.02 265 / 0.4)" }}>
+            {/* Sticky CTA at bottom */}
+            <div className="p-3 flex-shrink-0 border-t" style={{ borderColor: "oklch(0.92 0.02 265 / 0.4)" }}>
               <Link
                 href="/contact"
-                className="btn-primary w-full justify-center gap-1.5 mt-3"
-                onClick={() => setMobileOpen(false)}
+                className="btn-primary w-full justify-center gap-1.5"
+                onClick={() => toggleMobile(false)}
               >
                 <Sparkles className="w-3.5 h-3.5" /> Konsultasi Gratis
               </Link>
