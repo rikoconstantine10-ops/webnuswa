@@ -102,7 +102,7 @@ Keyword utama harus muncul di SEO title (bukan post title). Target: keyword di d
 Keyword utama harus ada di meta description. Panjang ideal **120–160 karakter**. Keyword sebaiknya muncul di **120 karakter pertama** agar tidak terpotong di SERP.
 
 ### 8.3 Focus Keyword di URL/Slug
-Slug harus mengandung keyword utama. Gunakan format: `/panduan-google-ads` bukan `/post-123`. Hindari stopword (dan, atau, yang, di, ke).
+Slug harus mengandung keyword utama. Gunakan format: /panduan-google-ads bukan /post-123. Hindari stopword (dan, atau, yang, di, ke).
 
 ### 8.4 Focus Keyword di Awal Konten
 Keyword utama harus muncul di **10% pertama artikel**. Untuk artikel 2000 kata = 200 kata pertama. Jika artikel di bawah 300 kata, seluruh konten dicek.
@@ -137,7 +137,7 @@ Alt text gambar harus mengandung keyword primer. Baik singular maupun plural dit
 Densitas keyword ideal: **1%–1.5%**. Di bawah 1% = terlalu jarang (skor rendah). Di atas 2.5% = keyword stuffing (peringatan merah). RankMath cek keyword primer dan sekunder.
 
 ### 10.4 URL Length (≤75 karakter)
-Total URL termasuk domain harus ≤75 karakter. Jika domain panjang, tes ini bisa diabaikan. Contoh: `https://nuswalab.com/panduan-google-ads` = 40 karakter ✅
+Total URL termasuk domain harus ≤75 karakter. Jika domain panjang, tes ini bisa diabaikan. Contoh: https://nuswalab.com/panduan-google-ads = 40 karakter ✅
 
 ### 10.5 & 10.6 External Links (Followed)
 Artikel harus punya minimal 1 link keluar ke sumber terpercaya (Google, HubSpot, Semrush, etc.). Link harus berstatus **dofollow** (bukan nofollow). Ini sinyal natural content ke Google.
@@ -722,7 +722,7 @@ Agar artikel mencapai skor SEO/AEO/AIO maksimal, prompt harus meminta:
 | Max tokens | 8000 |
 | Format | OpenAI-compatible chat completions |
 
-Set di `/home/ubuntu/nuswalab/.env.local`:
+Set di /home/ubuntu/nuswalab/.env.local:
 \`\`\`
 OPENAI_API_KEY=sk-xxx
 OPENAI_BASE_URL=https://openagentic.id/api/v1
@@ -829,7 +829,7 @@ Homepage
 ## Crawl Efficiency
 
 - Submit updated sitemap ke Google Search Console setelah setiap batch publish
-- Pastikan semua artikel muncul di `/sitemap.xml`
+- Pastikan semua artikel muncul di /sitemap.xml
 - Fix broken internal links setiap bulan (crawl dengan Screaming Frog free tier)
 
 ---
