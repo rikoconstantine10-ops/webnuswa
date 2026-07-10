@@ -6,9 +6,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// ── Blog listing page ─────────────────────────────────────────────────────────
-const BLOG_PAGE = "/home/ubuntu/nuswalab/src/app/blog/page.tsx";
-const BLOG_SLUG_PAGE = "/home/ubuntu/nuswalab/src/app/blog/[slug]/page.tsx";
+// ── Blog listing page — inside [locale] so next-intl routes correctly ────────
+const BLOG_PAGE = "/home/ubuntu/nuswalab/src/app/[locale]/blog/page.tsx";
+const BLOG_SLUG_PAGE = "/home/ubuntu/nuswalab/src/app/[locale]/blog/[slug]/page.tsx";
 
 const blogListingContent = `export const revalidate = 3600;
 
@@ -17,15 +17,17 @@ import Image from 'next/image';
 import { getAllPosts } from '@/lib/blog';
 import { Nav } from '@/components/layout/Nav';
 import { Footer } from '@/components/layout/Footer';
-import { Calendar, Clock, Tag, ArrowRight, BookOpen, Sparkles } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, BookOpen, Sparkles } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 export const metadata = {
   title: 'Blog | Nuswalab',
   description: 'Artikel terbaru seputar digital marketing, SEO, content marketing, dan strategi bisnis online dari Nuswalab.',
 };
 
-export default async function BlogPage() {
-  const posts = await getAllPosts();
+export default async function BlogPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
+  const posts = getAllPosts();
   const featured = posts[0];
   const rest = posts.slice(1);
 
@@ -214,19 +216,20 @@ import Image from 'next/image';
 import { getPostBySlug, getAllPosts, getRelatedPosts, extractHeadings } from '@/lib/blog';
 import { Nav } from '@/components/layout/Nav';
 import { Footer } from '@/components/layout/Footer';
-import { Calendar, Clock, Tag, ChevronRight, ArrowLeft, BookOpen, Share2 } from 'lucide-react';
+import { Calendar, Clock, ChevronRight, ArrowLeft, BookOpen } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 interface Props {
-  params: { slug: string };
+  params: { slug: string; locale: string };
 }
 
 export async function generateStaticParams() {
-  const posts = await getAllPosts();
+  const posts = getAllPosts();
   return posts.map(p => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: Props) {
-  const post = await getPostBySlug(params.slug);
+  const post = getPostBySlug(params.slug);
   if (!post) return { title: 'Artikel Tidak Ditemukan' };
   return {
     title: \`\${post.title} | Blog Nuswalab\`,
@@ -240,10 +243,11 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const post = await getPostBySlug(params.slug);
+  setRequestLocale(params.locale);
+  const post = getPostBySlug(params.slug);
   if (!post) notFound();
 
-  const allPosts = await getAllPosts();
+  const allPosts = getAllPosts();
   const related = getRelatedPosts ? getRelatedPosts(post, allPosts, 3) : allPosts.filter(p => p.slug !== post.slug).slice(0, 3);
   const headings = extractHeadings ? extractHeadings(post.content) : [];
   const readTime = post.readTime || (post.wordCount ? Math.ceil(post.wordCount / 200) : null);
