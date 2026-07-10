@@ -76,124 +76,298 @@ const NAV_ITEMS: { section: string; items: { id: SidebarPage; label: string; ico
 
 const KNOWLEDGE_ARTICLES = [
   {
-    title: "SEO Strategy & Scoring",
+    title: "RankMath SEO Score: Panduan Lengkap",
     icon: "📊",
-    content: `## SEO Score Calculation
+    content: `## Sistem Scoring RankMath (0–100)
 
-SEO score (0–100) is based on heuristic checks applied to generated articles:
+![RankMath SEO Score Dashboard](https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=280&fit=crop&auto=format)
 
-| Check | Points |
-|---|---|
-| Word count ≥ 1500 | +25 |
-| Word count ≥ 800 | +15 |
-| Has H1 heading | +10 |
-| Has ≥3 H2 headings | +15 |
-| Keyword in title | +15 |
-| Keyword in first 100 chars | +10 |
-| Has numbered/bullet lists | +10 |
-| Has external links | +5 |
-| Images present | +10 |
+RankMath mengukur kualitas SEO artikel melalui **4 kategori pengujian**. Skor hijau (81+) berarti artikel siap ranking. Kuning (51–80) perlu optimasi lanjutan. Merah (<50) butuh revisi mendasar.
 
-**Target: 70+ for strong ranking potential.**
+| Kategori | Jumlah Tes | Bobot |
+|---|---|---|
+| Basic SEO | 7 tes | Terpenting — fondasi ranking |
+| Additional SEO | 9 tes | Pelengkap — meningkatkan edge |
+| Title Readability | 4 tes | CTR — klik lebih banyak |
+| Content Readability | 3 tes | UX — user betah di halaman |
 
 ---
 
-## Modern SEO Strategy 2024–2025
+## Basic SEO Tests (Wajib Lulus Semua)
 
-### 1. E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness)
-Google's quality rater guidelines heavily weight E-E-A-T — especially for YMYL (Your Money Your Life) topics like finance, health, and marketing.
+### 8.1 Focus Keyword di SEO Title
+Keyword utama harus muncul di SEO title (bukan post title). Target: keyword di dalam **50 karakter pertama** title. Contoh baik: "Panduan Google Ads untuk Pemula — Nuswalab".
 
-- **Experience**: Add first-person case studies, real data ("our agency tested X and saw Y% improvement")
-- **Expertise**: Include author credentials, cite research papers or industry studies (HubSpot, Semrush, Google)
-- **Authoritativeness**: Earn backlinks from .edu, .gov, or high-DA industry sites
-- **Trustworthiness**: Include accurate statistics with source dates (avoid outdated stats)
+### 8.2 Focus Keyword di Meta Description
+Keyword utama harus ada di meta description. Panjang ideal **120–160 karakter**. Keyword sebaiknya muncul di **120 karakter pertama** agar tidak terpotong di SERP.
 
-### 2. Semantic SEO & Topical Authority
-Google understands topics, not just keywords. Build topic clusters:
-- **Pillar page**: Comprehensive guide on a broad topic (e.g., "Panduan Google Ads Lengkap")
-- **Cluster pages**: Deep-dives on subtopics linked back to pillar (e.g., "Cara Setting Google Ads untuk UMKM")
-- **Entity coverage**: Mention related entities (brands, tools, concepts) naturally in content
+### 8.3 Focus Keyword di URL/Slug
+Slug harus mengandung keyword utama. Gunakan format: `/panduan-google-ads` bukan `/post-123`. Hindari stopword (dan, atau, yang, di, ke).
 
-### 3. Search Intent Alignment
-Mismatching intent is the #1 reason content doesn't rank:
+### 8.4 Focus Keyword di Awal Konten
+Keyword utama harus muncul di **10% pertama artikel**. Untuk artikel 2000 kata = 200 kata pertama. Jika artikel di bawah 300 kata, seluruh konten dicek.
 
-| Intent | Content Format | Example |
+### 8.5 Focus Keyword di Body Konten
+Semua focus keyword (primer & sekunder) harus muncul dalam body artikel secara natural. Test ini berjalan untuk semua keyword yang didaftarkan.
+
+### 8.6 Panjang Konten (Content Length)
+
+| Panjang Artikel | Skor Test |
+|---|---|
+| 2500+ kata | 100% ✅ |
+| 2000–2500 kata | 70% 🟡 |
+| 1500–2000 kata | 60% 🟡 |
+| 1000–1500 kata | 40% 🔴 |
+| 600–1000 kata | 20% 🔴 |
+| Di bawah 600 kata | 0% ❌ |
+
+**Target minimum artikel: 2500 kata** untuk skor sempurna di tes ini.
+
+---
+
+## Additional SEO Tests
+
+### 10.1 Keyword di Subheading (H2/H3)
+Keyword primer DAN sekunder harus muncul di setidaknya satu H2 atau H3. Ini juga membantu Google membuat sitelinks (jump links) di SERP yang meningkatkan CTR.
+
+### 10.2 Keyword di Alt Text Gambar
+Alt text gambar harus mengandung keyword primer. Baik singular maupun plural diterima. Contoh: alt="panduan google ads indonesia".
+
+### 10.3 Keyword Density (1%–1.5%)
+Densitas keyword ideal: **1%–1.5%**. Di bawah 1% = terlalu jarang (skor rendah). Di atas 2.5% = keyword stuffing (peringatan merah). RankMath cek keyword primer dan sekunder.
+
+### 10.4 URL Length (≤75 karakter)
+Total URL termasuk domain harus ≤75 karakter. Jika domain panjang, tes ini bisa diabaikan. Contoh: `https://nuswalab.com/panduan-google-ads` = 40 karakter ✅
+
+### 10.5 & 10.6 External Links (Followed)
+Artikel harus punya minimal 1 link keluar ke sumber terpercaya (Google, HubSpot, Semrush, etc.). Link harus berstatus **dofollow** (bukan nofollow). Ini sinyal natural content ke Google.
+
+### 10.7 Internal Links
+Artikel harus punya minimal 1 internal link ke artikel lain di website. Ideal: 2–3 internal link per artikel untuk distribusi PageRank.
+
+### 10.8 Focus Keyword Uniqueness
+Jangan gunakan keyword yang sama di lebih dari 1 artikel. Duplikasi keyword = keyword cannibalization. RankMath akan memberi peringatan jika keyword sudah dipakai di artikel lain.
+
+---
+
+## Title Readability Tests
+
+### 12.1 Keyword di Awal Title (50% Pertama)
+Keyword primer harus ada di **50% pertama** SEO title. Jika title 60 karakter, keyword harus muncul di 30 karakter pertama. Contoh: "Google Ads untuk Pemula: Panduan Lengkap 2025".
+
+### 12.2 Sentimen di Title
+Title harus membangkitkan emosi kuat (positif atau negatif). Hindari clickbait. Contoh: "7 Kesalahan Fatal Google Ads yang Membakar Budget Anda" → emosi kuat ✅
+
+### 12.3 Power Word di Title
+Gunakan kata-kata yang memaksa orang klik: **Terbukti, Rahasia, Lengkap, Gratis, Cepat, Mudah, Ampuh, Terbaru**. RankMath punya daftar power words internal yang terus diperbarui.
+
+### 12.4 Angka di Title
+Title dengan angka mendapat lebih banyak klik. Contoh: "10 Strategi Google Ads Terbukti 2025" vs "Strategi Google Ads". Yang pertama selalu menang CTR.
+
+---
+
+## Content Readability Tests
+
+### 14.1 Table of Contents
+Artikel panjang harus punya daftar isi. Google mungkin menampilkan "Jump to" links di SERP yang meningkatkan CTR drastis. Gunakan plugin TOC atau buat manual.
+
+### 14.2 Paragraf Pendek (Maks 120 Kata)
+**Tidak ada paragraf yang boleh melebihi 120 kata.** Paragraf panjang = wall of text = pembaca kabur. RankMath akan highlight paragraf yang terlalu panjang.
+
+### 14.3 Media (Gambar/Video)
+
+| Jumlah Media | Skor |
+|---|---|
+| 0 gambar/video | Gagal ❌ |
+| 1 gambar/video | Lulus (skor partial) |
+| 4+ gambar/video | Skor 100% ✅ |
+
+---
+
+## Quick Wins untuk Skor 100/100
+
+- ✅ Tulis minimal 2500 kata per artikel
+- ✅ Keyword di title, meta, URL, 200 kata pertama
+- ✅ Keyword density 1%–1.5%
+- ✅ Minimal 4 gambar dengan alt text keyword
+- ✅ Title pakai angka + power word + keyword di awal
+- ✅ Paragraf maks 120 kata, ada TOC
+- ✅ 2–3 internal link + 1 external dofollow link`,
+  },
+  {
+    title: "SEO Modern 2025: E-E-A-T & Topical Authority",
+    icon: "🏆",
+    content: `## Strategi SEO Modern 2025
+
+![Modern SEO Strategy 2025](https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=800&h=280&fit=crop&auto=format)
+
+SEO di 2025 bukan lagi soal keyword stuffing. Google mengevaluasi konten berdasarkan **E-E-A-T** dan **Topical Authority** — dua pilar yang menentukan apakah situs Anda layak ranking di halaman 1.
+
+---
+
+## 1. E-E-A-T Framework Google
+
+**E-E-A-T** = Experience, Expertise, Authoritativeness, Trustworthiness. Digunakan Google Search Quality Raters untuk menilai konten, terutama untuk topik YMYL (finance, health, marketing).
+
+### Experience (Pengalaman Langsung)
+Konten yang ditulis berdasarkan pengalaman nyata mendapat nilai lebih tinggi.
+- Gunakan contoh riil: "Ketika kami mengelola kampanye klien e-commerce dengan budget Rp 10 juta..."
+- Sertakan data sebelum-sesudah: "CTR naik dari 1.2% ke 3.8% setelah optimasi"
+- Pakai sudut pandang orang pertama: "Berdasarkan pengalaman kami mengelola 50+ akun Google Ads..."
+
+### Expertise (Keahlian Mendalam)
+- Gunakan terminologi industri yang benar: CPC, ROAS, Quality Score, Ad Rank, CTR
+- Jelaskan nuansa: "Google Ads menggunakan second-price auction, artinya Anda tidak selalu bayar bid maksimal"
+- Referensikan Google's official documentation atau blog resmi Google
+- Hindari oversimplifikasi — akui edge cases dan pengecualian
+
+### Authoritativeness (Otoritas Brand)
+- **Backlink strategy**: Guest post di Glints, IDN Times, Detik Finance, Kompas Tekno
+- **Social proof**: Sebut jumlah klien, tahun berpengalaman, penghargaan
+- **Content depth**: Terbitkan panduan paling komprehensif di setiap topik
+
+### Trustworthiness (Kepercayaan)
+- Cite sumber: "Menurut laporan Think with Google 2024..."
+- Akui keterbatasan: "Google Ads tidak cocok untuk semua jenis bisnis"
+- Update konten: Tambahkan "Terakhir diperbarui: [bulan tahun]"
+- Sertakan statistik dengan sumber dan tahun yang jelas
+
+---
+
+## 2. Topical Authority & Pillar-Cluster Strategy
+
+Google memahami topik secara semantik, bukan sekadar keyword. Bangun topical authority dengan struktur pillar-cluster:
+
+### Arsitektur Konten yang Benar
+
+**Pillar Page** (Panduan Induk — 4000+ kata):
+- "Panduan Lengkap Google Ads untuk Bisnis Indonesia"
+- Mencakup semua subtopik secara overview
+- Berisi link ke semua cluster pages
+
+**Cluster Pages** (Artikel Detail — 2000+ kata):
+- "Cara Setting Google Ads untuk UMKM"
+- "Panduan Bidding Google Ads Terbaru"
+- "Google Ads vs Meta Ads: Mana Lebih Efektif?"
+- Semua link balik ke pillar page
+
+### Manfaat Topical Authority
+- Google menganggap situs Anda sebagai "expert" di niche tersebut
+- Artikel baru lebih cepat ranking karena trust domain sudah tinggi
+- Meningkatkan impressi untuk semua keyword terkait, bukan hanya yang ditarget
+
+---
+
+## 3. Search Intent Alignment
+
+Penyebab utama konten tidak ranking: **mismatch search intent**.
+
+| Intent | Format Konten | Contoh Query |
 |---|---|---|
-| Informational | Long-form guide, how-to, definitions | "apa itu google ads" |
-| Commercial | Comparison, review, pros/cons | "google ads vs facebook ads" |
+| Informational | Long-form guide, how-to | "apa itu google ads" |
+| Commercial | Comparison, review | "google ads vs facebook ads" |
 | Transactional | Landing page, CTA-focused | "jasa google ads jakarta" |
-| Navigational | Brand page, service page | "nuswalab digital marketing" |
+| Navigational | Brand/service page | "nuswalab digital marketing" |
 
-### 4. Content Structure for Ranking
-- **Title tag**: Include keyword + power word (e.g., "Panduan Lengkap", "Terbaru 2025", "Terbukti")
-- **Meta description**: 150–160 chars, keyword + clear benefit + CTA
-- **H1**: Exact-match or close variant of target keyword
-- **H2s**: Use question format (Who, What, Why, How, When) — matches "People Also Ask"
-- **First 100 words**: State the keyword and promise what the article delivers
-- **Conclusion**: Summarize key points + CTA (internal link to service page)
+**Cara identifikasi intent**: Lihat 5 hasil teratas Google untuk keyword target. Jika semua adalah artikel panduan, buat artikel panduan. Jika semua adalah halaman produk, buat landing page.
 
-### 5. Core Web Vitals (Technical SEO)
-Google's ranking signals since 2021:
-- **LCP (Largest Contentful Paint)**: < 2.5s — optimize images (WebP, lazy load)
-- **FID/INP (Interaction to Next Paint)**: < 200ms — minimize JS blocking
-- **CLS (Cumulative Layout Shift)**: < 0.1 — set width/height on images, avoid ads shifting layout
+---
 
-### 6. Indonesian Local SEO Tips
-- Use Bahasa Indonesia keyword variants: "cara", "panduan", "tips", "terbaik", "murah"
-- Target "[service] + [kota]" for local intent (e.g., "jasa SEO Surabaya")
-- Register Google Business Profile for local pack ranking
-- Get citations from Indonesian directories (Tokopedia seller page, Yellow Pages ID)
+## 4. Struktur Konten untuk Ranking
 
-### Quick Wins for Article Generator
-- ✅ Aim for 2000–2500 words per article
-- ✅ Include keyword in H1, first paragraph, at least 2 H2s
-- ✅ Add 1 external link to authoritative source (Google, HubSpot, Semrush blog)
-- ✅ Include 1 data table or comparison
-- ✅ End with FAQ section (helps with "People Also Ask" boxes)`,
+- **SEO Title**: Keyword + power word + tahun. Maks 60 karakter. Keyword di 30 karakter pertama
+- **Meta Description**: 150–160 karakter. Keyword + benefit jelas + CTA
+- **H1**: Exact-match atau close variant keyword target
+- **H2s**: Pakai format pertanyaan (siapa, apa, mengapa, bagaimana, kapan) — cocok dengan "People Also Ask"
+- **200 kata pertama**: Sebutkan keyword dan janjikan apa yang akan dipelajari pembaca
+- **Konklusi**: Ringkasan + CTA + internal link ke halaman layanan
+
+---
+
+## 5. Core Web Vitals (Technical SEO)
+
+Sinyal ranking Google sejak 2021:
+
+| Metrik | Target | Cara Optimasi |
+|---|---|---|
+| LCP (Largest Contentful Paint) | < 2.5 detik | Optimize gambar (WebP, lazy load) |
+| INP (Interaction to Next Paint) | < 200ms | Minimasi blocking JavaScript |
+| CLS (Cumulative Layout Shift) | < 0.1 | Set width/height gambar, hindari ads dinamis |
+
+---
+
+## 6. Local SEO untuk Pasar Indonesia
+
+- Gunakan variasi keyword Bahasa Indonesia: "cara", "panduan", "tips", "terbaik", "murah"
+- Target "[layanan] + [kota]": "jasa SEO Surabaya", "digital marketing Bandung"
+- Daftarkan Google Business Profile untuk ranking local pack
+- Dapatkan citation dari direktori Indonesia (Tokopedia, Yellow Pages ID, Kaskus bisnis)
+
+---
+
+## Checklist Artikel SEO-Optimized
+
+- [ ] SEO title: keyword di 30 karakter pertama, ada power word dan tahun
+- [ ] Meta description 150–160 karakter dengan keyword dan CTA
+- [ ] Slug pendek berisi keyword (≤75 karakter total URL)
+- [ ] Keyword di 200 kata pertama artikel
+- [ ] Minimal 2500 kata
+- [ ] Keyword density 1%–1.5%
+- [ ] Minimal 4 gambar dengan alt text keyword
+- [ ] 2–3 internal link + 1 external dofollow link
+- [ ] FAQ section untuk "People Also Ask"
+- [ ] Tidak ada paragraf > 120 kata`,
   },
   {
     title: "AEO Strategy & Scoring",
     icon: "🤖",
     content: `## AEO Score Calculation
 
-AEO (Answer Engine Optimization) score targets voice search, featured snippets, and AI assistant citations:
+![Answer Engine Optimization - Featured Snippets](https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&h=280&fit=crop&auto=format)
 
-| Check | Points |
+AEO (Answer Engine Optimization) menargetkan voice search, featured snippets, dan kutipan asisten AI:
+
+| Cek Konten | Poin |
 |---|---|
-| Has FAQ section | +30 |
-| Has definition paragraph | +20 |
-| Has step-by-step list | +20 |
-| Answers "what is" / "how to" | +15 |
-| Short direct sentences | +15 |
+| Ada FAQ section (5+ Q&A) | +30 |
+| Ada paragraf definisi di awal | +20 |
+| Ada daftar langkah bernomor | +20 |
+| Menjawab "apa itu" / "cara" | +15 |
+| Kalimat pendek dan langsung | +15 |
 
-**Target: 60+ for AI assistant citation and featured snippet inclusion.**
+**Target: 60+ untuk dikutip asisten AI dan masuk featured snippet.**
 
 ---
 
-## Modern AEO Strategy 2024–2025
+## Apa itu AEO?
 
-### What is AEO?
-Answer Engine Optimization is the practice of structuring content so that AI assistants (Siri, Alexa, Google Assistant), voice search, and Google's featured snippet boxes can extract and present your answer directly — without the user clicking through.
+Answer Engine Optimization adalah praktik menyusun konten agar asisten AI (Siri, Alexa, Google Assistant), voice search, dan featured snippet Google dapat mengekstrak dan menampilkan jawaban Anda **langsung tanpa perlu diklik**.
 
-### 1. Featured Snippet Optimization
-Google's featured snippets (position zero) are the primary AEO target:
+---
 
-**Paragraph snippets** (most common):
-- Answer the question in the **first 40–60 words** of a section
-- Start with "X adalah..." or "X merupakan..." for definition queries
-- Follow immediately with 2–3 supporting sentences
+## 1. Featured Snippet Optimization
 
-**List snippets**:
-- Use \`<ol>\` or \`<ul>\` for "cara", "langkah", "tips" queries
-- Keep each item under 10 words
-- 5–8 items is the sweet spot
+Featured snippet (posisi zero) adalah target utama AEO. Ada tiga tipe snippet:
 
-**Table snippets**:
-- Use for comparison queries ("X vs Y", "perbedaan A dan B")
-- Keep tables simple: 2–4 columns, clear headers
+### Paragraph Snippets (Paling Umum)
+- Jawab pertanyaan di **40–60 kata pertama** sebuah seksi
+- Mulai dengan: "X adalah..." atau "X merupakan..." untuk query definisi
+- Ikuti langsung dengan 2–3 kalimat pendukung
 
-### 2. FAQ Schema Markup
-FAQ schema is critical for AEO — it gets your Q&A directly into Google SERPs:
+### List Snippets
+- Gunakan daftar bernomor untuk query "cara", "langkah", "tips"
+- Setiap poin maksimal 10 kata
+- Ideal: 5–8 poin per daftar
+
+### Table Snippets
+- Gunakan untuk query perbandingan ("X vs Y", "perbedaan A dan B")
+- Tabel sederhana: 2–4 kolom, header jelas
+
+---
+
+## 2. FAQ Schema Markup
+
+FAQ schema adalah kunci AEO — Q&A Anda muncul langsung di Google SERP:
 
 \`\`\`json
 {
@@ -204,210 +378,300 @@ FAQ schema is critical for AEO — it gets your Q&A directly into Google SERPs:
     "name": "Apa itu Google Ads?",
     "acceptedAnswer": {
       "@type": "Answer",
-      "text": "Google Ads adalah platform periklanan berbayar dari Google..."
+      "text": "Google Ads adalah platform periklanan berbayar dari Google yang memungkinkan bisnis menampilkan iklan di hasil pencarian Google dan jaringan mitranya."
     }
   }]
 }
 \`\`\`
 
-- Minimum **5 Q&A pairs** per article
-- Questions should match actual search queries (check "People Also Ask" boxes)
-- Answers: 40–300 words, direct and factual
+- Minimum **5 Q&A per artikel**
+- Pertanyaan harus sesuai dengan query nyata di Google (cek "People Also Ask")
+- Jawaban: 40–300 kata, langsung dan faktual
 
-### 3. Voice Search Optimization
-Voice search queries are **conversational** and **longer** than typed queries:
-- Target natural language: "bagaimana cara setting Google Ads untuk pemula"
-- Use question-format H2 headings: "Berapa Biaya Google Ads per Bulan?"
-- Answer immediately after the question heading (no preamble)
-- Local queries: optimize for "dekat saya" and "[layanan] di [kota]"
+---
 
-### 4. "People Also Ask" (PAA) Optimization
-PAA boxes appear in 40%+ of Google searches and drive significant AEO visibility:
-- Research PAA boxes for your target keyword
-- Create a dedicated H2 section answering each PAA question
-- Format: question as H3, concise 2–3 sentence answer immediately after
+## 3. Optimasi Voice Search
 
-### 5. Conversational Content Structure
-AI assistants prefer content that sounds like it's answering a person directly:
+Query voice search lebih **conversational** dan lebih panjang dari typing:
 
-**DO:**
+- Target bahasa natural: "bagaimana cara setting Google Ads untuk pemula"
+- Gunakan H2 format pertanyaan: "Berapa Biaya Google Ads per Bulan?"
+- Jawab LANGSUNG setelah heading pertanyaan (tanpa preamble panjang)
+- Local queries: optimalkan untuk "[layanan] di [kota]"
+
+---
+
+## 4. "People Also Ask" (PAA) Optimization
+
+PAA box muncul di 40%+ pencarian Google dan mendorong visibilitas AEO signifikan:
+
+- Research PAA boxes untuk keyword target Anda
+- Buat seksi H2 khusus menjawab setiap PAA question
+- Format: pertanyaan sebagai H3, jawaban 2–3 kalimat langsung setelahnya
+
+---
+
+## 5. Struktur Konten Conversational
+
+Asisten AI lebih suka konten yang terdengar seperti menjawab langsung ke seseorang:
+
+**LAKUKAN:**
 - "Google Ads bekerja dengan cara..."
 - "Untuk memulai, Anda perlu..."
 - "Langkah pertama adalah..."
 
-**DON'T:**
-- Long introductory paragraphs before the answer
-- Passive voice constructions
-- Vague language ("mungkin", "bisa jadi")
+**HINDARI:**
+- Paragraf intro panjang sebelum jawaban
+- Kalimat pasif yang berbelit
+- Bahasa ambigu ("mungkin", "bisa jadi", "tergantung")
 
-### Quick Wins for Article Generator
-- ✅ Always include a ## FAQ section with 5+ Q&As
-- ✅ Open with a crisp 2-sentence definition of the topic
-- ✅ Use numbered lists for any "how to" content
-- ✅ Add FAQ JSON-LD schema in article \`<head>\`
-- ✅ Match H2 headings to question-format PAA queries`,
+---
+
+## 6. Struktur Jawaban Ideal (PAS Framework)
+
+**P = Problem**: Sebutkan masalah yang dihadapi pembaca
+**A = Answer**: Berikan jawaban langsung dan jelas
+**S = Support**: Dukung dengan data, contoh, atau langkah-langkah
+
+Contoh untuk query "cara meningkatkan CTR Google Ads":
+
+> **P**: CTR Google Ads yang rendah berarti Anda membuang budget tanpa hasil.
+> **A**: Cara paling efektif meningkatkan CTR adalah dengan menulis headline yang spesifik, relevan, dan mengandung angka atau manfaat jelas.
+> **S**: Dalam pengujian kami terhadap 50 akun, headline yang menyebut benefit spesifik ("Hemat 30% Biaya Iklan") mendapat CTR 2.4x lebih tinggi dari headline generik.
+
+---
+
+## Quick Wins untuk Skor AEO Tinggi
+
+- ✅ Selalu sertakan seksi ## FAQ dengan 5+ Q&A
+- ✅ Buka artikel dengan definisi 2 kalimat yang jelas tentang topik
+- ✅ Gunakan daftar bernomor untuk semua konten "how to"
+- ✅ Tambahkan FAQ JSON-LD schema di article head
+- ✅ Samakan H2 headings dengan format pertanyaan PAA Google
+- ✅ Jawab setiap pertanyaan dalam 40–60 kata pertama seksi`,
   },
   {
     title: "AIO / GEO Strategy & Scoring",
     icon: "✨",
     content: `## AIO Score Calculation
 
-AIO (AI Overview / GEO — Generative Engine Optimization) score targets Google's AI Overviews and LLM citation:
+![AI Overview and GEO Strategy](https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&h=280&fit=crop&auto=format)
 
-| Check | Points |
+AIO (AI Overview / GEO — Generative Engine Optimization) menargetkan Google AI Overviews dan kutipan LLM:
+
+| Cek Konten | Poin |
 |---|---|
-| Cites statistics/numbers | +25 |
-| Mentions authoritative sources | +20 |
-| Has comparison/table | +20 |
-| Structured data present | +15 |
-| Expert perspective mentioned | +20 |
+| Menyebut statistik dengan sumber | +25 |
+| Menyebut sumber otoritatif | +20 |
+| Ada tabel perbandingan | +20 |
+| Ada structured data | +15 |
+| Sudut pandang expert disebut | +20 |
 
-**Target: 60+ for AI Overview inclusion and LLM citation.**
+**Target: 60+ untuk masuk AI Overview dan dikutip LLM.**
 
 ---
 
-## Modern GEO / AIO Strategy 2024–2025
+## Apa yang Berubah: Google AI Overviews
 
-### What Changed: Google AI Overviews
-Google AI Overviews (formerly Search Generative Experience / SGE) launched globally in 2024. Instead of showing 10 blue links, Google now synthesizes an answer from multiple web sources at the top of the SERP. Being cited = massive exposure without requiring a click.
+Google AI Overviews (sebelumnya SGE) diluncurkan global 2024. Alih-alih 10 link biru, Google kini mensintesis jawaban dari berbagai sumber web di bagian atas SERP. **Dikutip = eksposur masif tanpa perlu diklik.**
 
-### 1. The GEO Content Framework
-Research from Princeton/Georgia Tech (2024) identified what content AI systems prefer to cite:
+---
 
-| Signal | Impact | How to Implement |
+## 1. GEO Content Framework
+
+Riset Princeton/Georgia Tech (2024) mengidentifikasi sinyal yang disukai AI untuk dikutip:
+
+| Sinyal | Impact | Cara Implementasi |
 |---|---|---|
-| Statistics with sources | Very High | "Menurut laporan HubSpot 2024, 72% marketer..." |
-| Quotations from experts | High | Include named expert quotes |
-| Research citations | High | Reference Google, Semrush, McKinsey reports |
-| Fluency & clarity | Medium | Short paragraphs, active voice |
-| Unique insights | High | First-person data, original analysis |
+| Statistik dengan sumber | Sangat Tinggi | "Menurut laporan HubSpot 2024, 72% marketer..." |
+| Kutipan dari expert | Tinggi | Sertakan nama expert yang dikutip |
+| Referensi riset | Tinggi | Rujuk Google, Semrush, McKinsey reports |
+| Kelancaran & kejelasan | Sedang | Paragraf pendek, kalimat aktif |
+| Insight unik | Tinggi | Data first-person, analisis original |
 
-### 2. Cite-worthy Content Patterns
-LLMs (GPT, Claude, Gemini) and Google AI Overviews prefer to cite content that:
+---
 
-**Has verifiable claims:**
-- ✅ "CTR iklan display rata-rata 0.1% (Google, 2024)"
+## 2. Pola Konten yang Layak Dikutip AI
+
+LLM (GPT, Claude, Gemini) dan Google AI Overviews lebih suka mengutip konten yang:
+
+### Punya Klaim Terverifikasi
+- ✅ "CTR rata-rata iklan display adalah 0.1% (Google, 2024)"
 - ❌ "CTR iklan display sangat rendah"
 
-**Presents structured comparisons:**
-| Tool | Kelebihan | Kekurangan | Harga |
-|---|---|---|---|
-| Google Ads | Reach terluas, intent tinggi | Mahal, kurva belajar curam | Rp 5.000/klik |
-| Meta Ads | Visual, targeting demografi | Intent lebih rendah | Rp 2.000/klik |
+### Menyajikan Perbandingan Terstruktur
 
-**Contains expert perspectives:**
+| Tool | Kelebihan | Kekurangan | Biaya |
+|---|---|---|---|
+| Google Ads | Reach terluas, intent tinggi | Mahal, kurva belajar curam | Rp 3.000–50.000/klik |
+| Meta Ads | Visual, targeting demografi | Intent lebih rendah | Rp 500–5.000/klik |
+| TikTok Ads | Viral potential, Gen Z | Brand awareness mainly | Rp 300–3.000/klik |
+
+### Menyebut Perspektif Expert
 - "Neil Patel merekomendasikan..."
 - "Menurut Rand Fishkin dari SparkToro..."
-- "Pakar SEO setuju bahwa..."
+- "Pakar SEO Indonesia setuju bahwa..."
 
-### 3. Structured Data Beyond FAQ
-Structured data helps AI understand your content's entities:
+---
 
-**Article schema**: Author, datePublished, organization
-**HowTo schema**: For step-by-step guides
-**BreadcrumbList**: For hierarchy signal
-**Organization schema**: For brand E-E-A-T
+## 3. Structured Data untuk AI
 
-### 4. Content Depth & Comprehensiveness
-AI systems prefer content that covers a topic completely:
-- **Primary topic**: 60% of content
-- **Subtopics**: Cover all related angles (why, how, when, who, cost, examples)
-- **Counter-arguments**: Acknowledge limitations ("Google Ads tidak cocok untuk bisnis X karena...")
-- **Next steps**: Always recommend actionable follow-up
+Structured data membantu AI memahami entitas dalam konten Anda:
 
-### 5. Freshness Signals
-AI Overviews strongly prefer fresh content:
-- Include the current year in the title: "Panduan Google Ads 2025"
-- Mention recent updates: "Setelah pembaruan Google Helpful Content 2024..."
-- Update existing articles with new stats (re-publish date matters)
-- Add "Terakhir diperbarui: [bulan tahun]" near the top
+**Article schema**: Author, datePublished, organization, image
+**HowTo schema**: Untuk panduan langkah-demi-langkah
+**FAQPage schema**: Untuk seksi FAQ
+**BreadcrumbList**: Untuk sinyal hierarki konten
+**Organization schema**: Untuk E-E-A-T brand
 
-### 6. Multi-Modal Signals
-- **Images with descriptive alt text**: "infografis cara kerja google ads bidding"
-- **Video embeds**: Articles with embedded video get 3x more AI Overview citations
-- **Data visualizations**: Charts and graphs described in text
+---
 
-### Quick Wins for Article Generator
-- ✅ Include 3+ statistics with source and year in parentheses
-- ✅ Add at least 1 comparison table per article
-- ✅ Mention 1–2 industry experts or research firms by name
-- ✅ Add Article + FAQ JSON-LD schema
-- ✅ Include "updated [year]" in title or meta
-- ✅ Cover topic comprehensively — avoid thin content`,
+## 4. Kedalaman & Komprehensivitas Konten
+
+Sistem AI lebih suka konten yang membahas topik secara **menyeluruh**:
+
+- **Topik utama**: 60% konten fokus pada topik inti
+- **Subtopik**: Bahas semua angle terkait (mengapa, bagaimana, kapan, siapa, biaya, contoh)
+- **Counter-argument**: Akui keterbatasan ("Google Ads tidak cocok untuk bisnis X karena...")
+- **Next steps**: Selalu rekomendasikan tindak lanjut yang bisa diambil
+
+---
+
+## 5. Freshness Signals
+
+AI Overviews sangat menyukai konten segar:
+
+- Sertakan tahun di title: "Panduan Google Ads 2025"
+- Sebut update terbaru: "Setelah pembaruan Google Helpful Content 2024..."
+- Update artikel lama dengan statistik baru (re-publish date penting)
+- Tambahkan "Terakhir diperbarui: [bulan tahun]" dekat bagian atas
+
+---
+
+## 6. Multi-Modal Signals
+
+- **Gambar dengan alt text deskriptif**: "infografis cara kerja google ads bidding 2025"
+- **Embed video**: Artikel dengan video mendapat 3x lebih banyak kutipan AI Overview
+- **Data visualisasi**: Grafik dan chart yang dijelaskan dalam teks
+
+---
+
+## Quick Wins untuk Skor AIO Tinggi
+
+- ✅ Sertakan 3+ statistik dengan sumber dan tahun dalam tanda kurung
+- ✅ Tambahkan minimal 1 tabel perbandingan per artikel
+- ✅ Sebutkan 1–2 nama expert atau lembaga riset industri
+- ✅ Tambahkan Article + FAQ JSON-LD schema
+- ✅ Tulis konten yang komprehensif — hindari thin content
+- ✅ Sertakan "updated [tahun]" di title atau meta description`,
   },
   {
     title: "Keyword Strategy Guide",
     icon: "🎯",
-    content: `## Keyword Selection Strategy
+    content: `## Strategi Pemilihan Keyword
 
-### By Search Intent
+![Keyword Research Strategy](https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=280&fit=crop&auto=format)
 
-| Intent | Goal | Content Type | Example |
+---
+
+## Berdasarkan Search Intent
+
+| Intent | Tujuan | Format Konten | Contoh |
 |---|---|---|---|
-| Informational | Education / top of funnel | Long-form guide, how-to | "apa itu google ads" |
-| Commercial | Research before buy | Comparison, review | "google ads vs facebook ads" |
-| Transactional | Drive conversions | Landing page, CTA | "jasa google ads terpercaya" |
-| Navigational | Brand searches | Service/brand page | "nuswalab digital marketing" |
+| Informational | Edukasi / top of funnel | Panduan panjang, how-to | "apa itu google ads" |
+| Commercial | Riset sebelum beli | Perbandingan, review | "google ads vs facebook ads" |
+| Transactional | Drive konversi | Landing page, CTA | "jasa google ads terpercaya" |
+| Navigational | Brand searches | Halaman layanan/brand | "nuswalab digital marketing" |
 
-### Keyword Difficulty vs. Opportunity Matrix
+---
 
-| Zone | KD | Volume | Strategy |
+## Keyword Difficulty vs. Opportunity Matrix
+
+| Zona | KD | Volume | Strategi |
 |---|---|---|---|
-| Quick Wins | Low (0–30) | Medium | Publish fast, rank in 1–3 months |
-| Long-term | High (60+) | High | Build authority slowly |
-| Niche Gold | Low (0–30) | Low | Low effort, high conversion |
-| Avoid | High (60+) | Low | Not worth the effort |
+| Quick Wins | Rendah (0–30) | Sedang | Publish cepat, ranking 1–3 bulan |
+| Long-term | Tinggi (60+) | Tinggi | Bangun authority perlahan |
+| Niche Gold | Rendah (0–30) | Rendah | Effort rendah, konversi tinggi |
+| Hindari | Tinggi (60+) | Rendah | Tidak sebanding usahanya |
 
-### Category Priority for Nuswalab
-1. **Google Ads** — High commercial intent, direct service match
-2. **SEO** — Long-tail, high volume informational
-3. **Social Media Marketing** — Broad audience, shareable
+---
+
+## Prioritas Kategori untuk Nuswalab
+
+1. **Google Ads** — Intent komersial tinggi, langsung sesuai layanan
+2. **SEO** — Long-tail, volume tinggi informational
+3. **Social Media Marketing** — Audiens luas, konten shareable
 4. **Digital Marketing** — Umbrella terms, brand awareness
-5. **Content Marketing** — Thought leadership, E-E-A-T signals
-6. **Email Marketing** — Niche but high conversion intent
+5. **Content Marketing** — Thought leadership, sinyal E-E-A-T
+6. **Email Marketing** — Niche tapi conversion intent tinggi
 
-### Long-tail Keyword Formula
-Long-tail keywords (3–5 words) account for 70% of all searches:
+---
+
+## Formula Keyword Long-tail
+
+Long-tail keywords (3–5 kata) menyumbang 70% dari semua pencarian:
 
 \`\`\`
-[modifier] + [main keyword] + [qualifier]
+[modifier] + [keyword utama] + [qualifier]
 
 "cara" + "setting google ads" + "untuk pemula"
 "tips" + "seo" + "terbaru 2025"
 "strategi" + "email marketing" + "meningkatkan konversi"
 \`\`\`
 
-### Keyword Mix Strategy
-- **60% Informational** — "apa itu", "cara", "panduan", "tips" → drives organic traffic
-- **30% Commercial** — "terbaik", "rekomendasi", "vs", "perbandingan" → drives leads
-- **10% Transactional** — "jasa", "harga", "biaya", "hire" → drives conversions
+---
 
-### Indonesian Language Variants
-Always generate Bahasa Indonesia variants:
-- Formal: "strategi pemasaran digital"
-- Informal: "cara belajar digital marketing"
-- Slang/colloquial: "tips iklan fb biar laris"
-- Local: "[keyword] + [kota]" for local intent
+## Keyword Mix Strategy
 
-### Keyword Research Process
-1. Seed keyword → expand with "apa itu", "cara", "tips", "terbaik", "2025"
-2. Check Google autocomplete + PAA boxes for related questions
-3. Validate with free tools: Ubersuggest, Google Keyword Planner, Ahrefs free
-4. Group by intent before adding to queue`,
+- **60% Informational** — "apa itu", "cara", "panduan", "tips" → mendorong organic traffic
+- **30% Commercial** — "terbaik", "rekomendasi", "vs", "perbandingan" → mendorong leads
+- **10% Transactional** — "jasa", "harga", "biaya", "hire" → mendorong konversi
+
+---
+
+## Varian Bahasa Indonesia
+
+Selalu generate varian Bahasa Indonesia:
+- **Formal**: "strategi pemasaran digital"
+- **Informal**: "cara belajar digital marketing"
+- **Gaul/kolokial**: "tips iklan fb biar laris"
+- **Lokal**: "[keyword] + [kota]" untuk local intent
+
+---
+
+## Proses Keyword Research
+
+1. Seed keyword → expand dengan "apa itu", "cara", "tips", "terbaik", "2025"
+2. Cek Google Autocomplete + PAA boxes untuk pertanyaan terkait
+3. Validasi dengan tools gratis: Ubersuggest, Google Keyword Planner, Ahrefs free
+4. Kelompokkan berdasarkan intent sebelum masuk ke queue
+
+---
+
+## Keyword Cannibalization: Bahaya Duplikasi
+
+Satu keyword hanya boleh ditarget oleh **satu artikel**. Jika dua artikel targeting keyword sama:
+- Google bingung mana yang harus diranking
+- Kedua artikel saling kanibalisasi
+- Solusi: merge artikel atau ubah focus keyword salah satunya
+
+**RankMath akan memberi peringatan** (test 10.8: Focus Keyword Uniqueness) jika keyword sudah dipakai di artikel lain.`,
   },
   {
     title: "Article Generation Workflow",
     icon: "🔄",
-    content: `## How the Generator Works
+    content: `## Alur Kerja Generator Artikel
+
+![Article Generation Workflow](https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&h=280&fit=crop&auto=format)
 
 \`\`\`
-keywords.json (pending)
+keywords.json (status: pending)
     ↓
-Claude API → 2000+ word article
-    ↓
+OpenAI-compatible API (claude-sonnet-5)
+    ↓ 2500+ kata artikel Bahasa Indonesia
 Pexels API → Featured image
     ↓
-SEO / AEO / AIO scoring
+Scoring: SEO / AEO / AIO
     ↓
 SQLite insert (status = published)
     ↓
@@ -416,178 +680,175 @@ Mark keyword as done
 npm build + pm2 restart
 \`\`\`
 
-### Running the Generator
-1. Go to **Keyword Queue** and add pending keywords
-2. Click **▶ Run Generator** in the header
-3. Check **Run Logs** for progress
-4. Articles appear in **All Articles** when done
+---
 
-### Cron Schedule
-Generator runs automatically at **7 PM (19:00) WIB** daily.
+## Menjalankan Generator
+
+1. Buka **Keyword Queue** dan tambah keyword dengan status pending
+2. Klik **▶ Run Generator** di header admin
+3. Cek **Run Logs** untuk progress real-time
+4. Artikel muncul di **All Articles** setelah selesai
+
+### Jadwal Cron
+Generator berjalan otomatis setiap hari pukul **19:00 WIB**:
 
 \`\`\`
 0 19 * * * cd /home/ubuntu/nuswalab && node scripts/keyword-article-gen.js >> logs/article-gen.log 2>&1
 \`\`\`
 
-### Optimal Prompt Structure for Claude
-For best SEO/AEO/AIO scores, prompts should request:
-1. **Definition paragraph** in first 100 words (AEO)
-2. **Word count ≥ 2000** (SEO)
-3. **Numbered steps** for "how to" content (AEO)
-4. **3+ statistics** with source in parentheses (AIO)
-5. **1 comparison table** (AIO)
-6. **5+ FAQ pairs** at the end (AEO + AIO)
-7. **Keyword** in H1 and first 2 H2 headings (SEO)
+---
 
-### Rate Limits
-- Max 3 articles per run by default (configurable)
-- Anthropic API: up to 5 req/min on standard tier
-- Pexels: 200 req/hour, 20,000 req/month
+## Struktur Prompt Optimal untuk Skor Tinggi
 
-### Quality Checklist (Post-Generation)
-- [ ] SEO score ≥ 70?
+Agar artikel mencapai skor SEO/AEO/AIO maksimal, prompt harus meminta:
+
+1. **Paragraf definisi** di 100 kata pertama — keyword sebagai subjek kalimat (AEO)
+2. **Minimal 2500 kata** — untuk skor 100% di RankMath content length test (SEO)
+3. **Daftar bernomor** untuk semua konten "how to" (AEO)
+4. **3+ statistik** dengan sumber dalam tanda kurung (AIO)
+5. **1 tabel perbandingan** (AIO)
+6. **5+ Q&A FAQ** di akhir artikel (AEO + AIO)
+7. **Keyword** di H1 dan 2 H2 pertama (SEO — Basic test 8.4 & Additional test 10.1)
+8. **Alt text keyword** di deskripsi gambar (SEO — Additional test 10.2)
+
+---
+
+## Konfigurasi API (openagentic.id)
+
+| Setting | Value |
+|---|---|
+| Base URL | https://openagentic.id/api/v1 |
+| Model | claude-sonnet-5 |
+| Max tokens | 8000 |
+| Format | OpenAI-compatible chat completions |
+
+Set di `/home/ubuntu/nuswalab/.env.local`:
+\`\`\`
+OPENAI_API_KEY=sk-xxx
+OPENAI_BASE_URL=https://openagentic.id/api/v1
+OPENAI_MODEL=claude-sonnet-5
+\`\`\`
+
+---
+
+## Rate Limits & Batasan
+
+- Maks **3 artikel per run** (configurable di script)
+- openagentic.id: sesuai tier akun
+- Pexels: 200 req/jam, 20.000 req/bulan
+
+---
+
+## Quality Checklist (Post-Generation)
+
+- [ ] SEO score ≥ 70? (idealnya 81+ untuk hijau)
 - [ ] AEO score ≥ 60?
 - [ ] AIO score ≥ 60?
-- [ ] Featured image loaded?
-- [ ] No hallucinated statistics?
-- [ ] FAQ section present with ≥5 Q&As?`,
-  },
-  {
-    title: "E-E-A-T & Content Quality",
-    icon: "⭐",
-    content: `## E-E-A-T: Google's Quality Framework
-
-E-E-A-T stands for **Experience, Expertise, Authoritativeness, Trustworthiness** — Google's framework for evaluating content quality, especially important since the Helpful Content Updates (2022–2024).
-
-### Why E-E-A-T Matters
-Google's Search Quality Rater Guidelines use E-E-A-T to train ranking algorithms. Low E-E-A-T content gets demoted; high E-E-A-T content ranks even with fewer backlinks.
-
----
-
-### 1. Experience (Pengalaman)
-**What it means**: Content written by someone with first-hand experience with the topic.
-
-**How to signal it in articles:**
-- Include real examples: "Ketika kami mengelola kampanye Google Ads untuk klien e-commerce..."
-- Add specific data from real projects: "Dengan budget Rp 5 juta/bulan, kami berhasil mencapai ROAS 4x"
-- Use "kami", "tim kami", "berdasarkan pengalaman kami" naturally
-- Show before/after: "Sebelum optimasi CTR 1.2%, setelah optimasi 3.8%"
-
-### 2. Expertise (Keahlian)
-**What it means**: Content demonstrates deep knowledge of the subject.
-
-**How to signal it:**
-- Use correct industry terminology (CPC, ROAS, CTR, Quality Score, Ad Rank)
-- Explain nuances: "Google Ads menggunakan second-price auction, artinya..."
-- Reference official Google documentation or Google's own guidelines
-- Avoid oversimplification — acknowledge edge cases and exceptions
-
-### 3. Authoritativeness (Otoritas)
-**What it means**: Your site/brand is recognized as a go-to source in your niche.
-
-**How to build it:**
-- **Backlink strategy**: Guest post on Glints, IDN Times, Detik Finance, Kompas Tekno
-- **Citation**: Get mentioned in Indonesian marketing forums (Kaskus bisnis, Facebook groups)
-- **Social proof**: Mention client count, years in business, awards
-- **Content depth**: Publish the most comprehensive guide on each topic
-
-### 4. Trustworthiness (Kepercayaan)
-**What it means**: Users and Google can trust your content is accurate and honest.
-
-**How to signal it:**
-- Cite sources: "Menurut laporan Think with Google 2024..."
-- Acknowledge limitations: "Google Ads tidak selalu cocok untuk semua bisnis"
-- Update content: Add "Terakhir diperbarui: [bulan tahun]"
-- Include accurate contact info and about page
-
----
-
-### Helpful Content Signals (2024)
-Since the Helpful Content Update, Google penalizes "content for search engines":
-
-**Content Google REWARDS:**
-- Written for actual humans with real questions
-- Provides insight or analysis beyond what's obvious
-- Satisfies the user's query without making them search again
-- Has a clear purpose and audience
-
-**Content Google PENALIZES:**
-- Thin content that rephrases other articles
-- Keyword stuffing or forced keyword insertion
-- Content that doesn't add new value
-- Clickbait titles that don't match content
-
-### E-E-A-T Checklist for Generated Articles
-- [ ] Has at least 1 first-person experience statement
-- [ ] Uses correct technical terminology
-- [ ] Cites at least 1 authoritative source
-- [ ] Acknowledges limitations or exceptions
-- [ ] Statistics have source and year
-- [ ] Content fully satisfies the search query`,
+- [ ] Featured image loaded dari Pexels?
+- [ ] Tidak ada statistik yang dikarang AI (halusinasi)?
+- [ ] FAQ section ada dengan ≥ 5 Q&A?
+- [ ] Panjang artikel ≥ 2500 kata?
+- [ ] Tidak ada keyword cannibalization (keyword unik per artikel)?`,
   },
   {
     title: "Internal Linking & Site Architecture",
     icon: "🔗",
-    content: `## Internal Linking Strategy
+    content: `## Strategi Internal Linking
 
-Internal links distribute PageRank (link equity), improve crawlability, and keep users on-site longer — all positive ranking signals.
+![Internal Linking and Site Architecture](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=280&fit=crop&auto=format)
 
-### Site Architecture Principle: Flat vs. Deep
+Internal link mendistribusikan PageRank (link equity), meningkatkan crawlability, dan membuat user lebih lama di site — semua sinyal ranking positif.
 
-**Flat architecture (recommended for SEO):**
+RankMath akan **gagalkan test 10.7** jika tidak ada internal link sama sekali dalam artikel.
+
+---
+
+## Arsitektur Site: Flat vs. Deep
+
+**Flat architecture (direkomendasikan untuk SEO):**
+
 \`\`\`
 Homepage
 ├── /blog/panduan-google-ads (Pillar)
-│   └── /blog/cara-setting-google-ads (Cluster)
+│   ├── /blog/cara-setting-google-ads (Cluster)
 │   └── /blog/google-ads-untuk-umkm (Cluster)
 └── /blog/panduan-seo (Pillar)
-    └── /blog/teknik-seo-onpage (Cluster)
+    ├── /blog/teknik-seo-onpage (Cluster)
+    └── /blog/cara-riset-keyword (Cluster)
 \`\`\`
-- No article should be more than **3 clicks from homepage**
-- Pillar pages link to all cluster pages
-- Cluster pages link back to pillar + to related clusters
 
-### Internal Link Placement
-**High-value placements (pass most PageRank):**
-1. First 200 words of the article (editorial context = high value)
-2. Within the body text using descriptive anchor text
-3. "Related Articles" section at the end
+- Tidak ada artikel yang lebih dari **3 klik dari homepage**
+- Pillar pages link ke semua cluster pages
+- Cluster pages link balik ke pillar + ke cluster terkait
 
-**Avoid:**
-- Footer or sidebar "related posts" widgets (low value)
-- Too many links in a single paragraph (dilutes value)
-- Navigation menus only (technical crawl links, less editorial value)
+---
 
-### Anchor Text Best Practices
+## Penempatan Internal Link
 
-| Type | Example | Usage |
+**High-value placements (PageRank terbesar):**
+1. Dalam 200 kata pertama artikel (editorial context = nilai tertinggi)
+2. Di dalam body text dengan anchor text deskriptif
+3. Seksi "Artikel Terkait" di akhir konten
+
+**Hindari:**
+- Widget "related posts" di sidebar/footer (nilai rendah)
+- Terlalu banyak link dalam satu paragraf (dilute value)
+- Link di menu navigasi saja (crawl links, bukan editorial)
+
+---
+
+## Anchor Text Best Practices
+
+| Tipe | Contoh | Frekuensi |
 |---|---|---|
-| Exact match | "panduan google ads" | Use sparingly (1–2x per site) |
-| Partial match | "strategi google ads terbaik" | Most common, natural |
-| Branded | "layanan Nuswalab" | For service pages |
-| Generic | "klik di sini" | AVOID — no keyword signal |
-| Naked URL | "nuswalab.com/blog/..." | Occasionally OK |
+| Exact match | "panduan google ads" | Jarang (1–2x per site) |
+| Partial match | "strategi google ads terbaik" | Paling umum, natural |
+| Branded | "layanan Nuswalab" | Untuk service pages |
+| Generic | "klik di sini" | HINDARI — tidak ada sinyal keyword |
+| Naked URL | "nuswalab.com/blog/..." | Sesekali OK |
 
-### Minimum Internal Link Requirements
-- **Every article**: 2–3 internal links to related articles
-- **Pillar articles**: 5–8 links to cluster articles
-- **Category pages**: Link to all articles in that category
-- **Homepage**: Link to top 5 pillar articles
+---
 
-### PageRank Flow Strategy
-1. Identify your **top-traffic articles** (check Google Search Console)
-2. Add internal links FROM high-traffic articles TO newer/lower-traffic articles
-3. This "passes" authority to help new content rank faster
+## Minimum Internal Link per Artikel
 
-### Crawl Efficiency
-- Submit updated sitemap to Google Search Console after each batch publish
-- Ensure all articles appear in \`/sitemap.xml\`
-- Fix broken internal links monthly (crawl with Screaming Frog free tier)
+- **Setiap artikel**: 2–3 internal link ke artikel terkait
+- **Pillar articles**: 5–8 link ke cluster articles
+- **Category pages**: Link ke semua artikel dalam kategori itu
+- **Homepage**: Link ke 5 pillar article teratas
 
-### Implementation in Article Generator
-Add to Claude prompt: "End the article with a 'Artikel Terkait' section suggesting 2-3 related topics from this list: [inject category keywords]"`,
+---
+
+## PageRank Flow Strategy
+
+1. Identifikasi **artikel dengan traffic tertinggi** (cek Google Search Console)
+2. Tambahkan internal link DARI artikel high-traffic KE artikel baru atau lower-traffic
+3. Ini "meneruskan" authority untuk membantu konten baru ranking lebih cepat
+
+---
+
+## Crawl Efficiency
+
+- Submit updated sitemap ke Google Search Console setelah setiap batch publish
+- Pastikan semua artikel muncul di `/sitemap.xml`
+- Fix broken internal links setiap bulan (crawl dengan Screaming Frog free tier)
+
+---
+
+## Implementasi di Article Generator
+
+Tambahkan ke Claude prompt: "Akhiri artikel dengan seksi 'Artikel Terkait' yang menyarankan 2–3 topik terkait dari kategori [nama kategori]. Gunakan anchor text deskriptif yang mengandung keyword target."
+
+---
+
+## Internal Linking & RankMath Score
+
+RankMath test 10.7 mensyaratkan minimal 1 internal link per artikel. Untuk skor sempurna:
+- ✅ 2–3 internal link ke artikel berbeda
+- ✅ Anchor text mengandung keyword natural
+- ✅ Link ke halaman dengan topik relevan (bukan asal link)`,
   },
 ];
+
 
 export default function AdminDashboard() {
   const [token, setToken] = useState("");
@@ -1738,6 +1999,13 @@ function MarkdownContent({ content }: { content: string }) {
           <span dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\. /, "").replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-800">$1</strong>').replace(/`(.*?)`/g, '<code class="bg-gray-100 text-indigo-700 px-1 rounded text-[10px]">$1</code>') }} />
         </div>
       );
+    } else if (line.match(/^!\[(.*)]\((.*)\)$/)) {
+      const m = line.match(/^!\[(.*?)]\((.*?)\)$/);
+      if (m) {
+        elements.push(
+          <img key={i} src={m[2]} alt={m[1]} className="w-full rounded-lg my-3 object-cover max-h-48" loading="lazy" />
+        );
+      }
     } else if (line.trim() !== "") {
       elements.push(
         <p key={i} className="text-xs text-gray-600 my-1.5 leading-relaxed"
