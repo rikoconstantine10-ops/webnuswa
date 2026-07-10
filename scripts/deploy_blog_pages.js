@@ -1366,8 +1366,8 @@ fs.mkdirSync(path.dirname(PORTFOLIO_AI_PAGE), { recursive: true });
 fs.writeFileSync(PORTFOLIO_AI_PAGE, `import { setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
 import Image from 'next/image';
-import Nav from '@/components/Nav';
-import Footer from '@/components/Footer';
+import { Nav } from '@/components/layout/Nav';
+import { Footer } from '@/components/layout/Footer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
