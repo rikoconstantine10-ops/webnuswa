@@ -241,6 +241,68 @@ async function fetchAndSaveImage(keyword, slug) {
   }
 }
 
+async function fetchInlineImages(keyword, slug) {
+  if (!PEXELS_KEY) return [];
+
+  // Use broader query for variety in inline images
+  const queries = [
+    keyword + " team work",
+    keyword + " strategy",
+  ];
+
+  if (!fs.existsSync(IMAGE_DIR)) {
+    fs.mkdirSync(IMAGE_DIR, { recursive: true });
+  }
+
+  const results = [];
+  for (let i = 0; i < queries.length; i++) {
+    try {
+      const query = encodeURIComponent(queries[i]);
+      // page=2 gives different results from the featured image (which uses page=1)
+      const apiUrl = `https://api.pexels.com/v1/search?query=${query}&orientation=landscape&per_page=5&page=2`;
+      const data = await fetchJson(apiUrl, { Authorization: PEXELS_KEY });
+      if (!data.photos || data.photos.length === 0) continue;
+
+      const photo = data.photos[i % data.photos.length];
+      const filename = `${slug}-inline-${i + 1}.jpg`;
+      const dest = path.join(IMAGE_DIR, filename);
+      await downloadFile(photo.src.large, dest);
+
+      results.push({
+        src: `/images/blog/${filename}`,
+        alt: `${keyword} — ilustrasi ${i + 1}`,
+        photographer: photo.photographer,
+      });
+      log(`  ✓ Inline image ${i + 1} saved: ${filename}`);
+    } catch (err) {
+      log(`  ⚠ Inline image ${i + 1} fetch failed: ${err.message}`);
+    }
+  }
+  return results;
+}
+
+function injectInlineImages(html, images) {
+  if (images.length === 0) return html;
+
+  // Find all <h2> tags and insert an image after the 2nd and 4th <h2> sections
+  const insertAfterH2 = [1, 3]; // 0-indexed: after 2nd and 4th h2
+  let h2count = 0;
+  let imageIndex = 0;
+  let result = html.replace(/<\/h2>/gi, (match) => {
+    const current = h2count++;
+    if (insertAfterH2.includes(current) && imageIndex < images.length) {
+      const img = images[imageIndex++];
+      return `</h2>\n<figure style="margin:1.5rem 0;text-align:center;">
+  <img src="${img.src}" alt="${img.alt}" style="width:100%;max-width:800px;height:auto;border-radius:12px;object-fit:cover;" loading="lazy" />
+  <figcaption style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Foto oleh ${img.photographer} via Pexels</figcaption>
+</figure>`;
+    }
+    return match;
+  });
+
+  return result;
+}
+
 // ─── Claude Article Generation ────────────────────────────────────────────────
 
 async function generateArticle(kw, client) {
@@ -390,9 +452,6 @@ async function main() {
 
     const contentHtml = processHtml(rawHtml);
     const plain       = stripHtml(contentHtml);
-    const scores      = scoreArticle(contentHtml, kw.keyword);
-
-    log(`  → ${scores.word_count} words | SEO: ${scores.seo_score} | AEO: ${scores.aeo_score} | AIO: ${scores.aio_score}`);
 
     // Extract title from <h1>
     const titleMatch = contentHtml.match(/<h1[^>]*>(.*?)<\/h1>/i);
@@ -411,18 +470,27 @@ async function main() {
       "digital marketing", "indonesia diaspora", kw.category.toLowerCase(),
     ]);
 
-    // 2. Fetch image
+    // 2. Fetch images (featured + inline)
     let featuredImage = null;
+    let finalHtml = contentHtml;
     if (!DRY_RUN) {
-      featuredImage = await fetchAndSaveImage(kw.keyword, slug);
+      [featuredImage] = await Promise.all([fetchAndSaveImage(kw.keyword, slug)]);
+      const inlineImages = await fetchInlineImages(kw.keyword, slug);
+      if (inlineImages.length > 0) {
+        finalHtml = injectInlineImages(contentHtml, inlineImages);
+        log(`  ✓ Injected ${inlineImages.length} inline images`);
+      }
     } else {
-      log(`  [DRY RUN] Would fetch Unsplash image for: ${kw.keyword}`);
+      log(`  [DRY RUN] Would fetch Pexels images for: ${kw.keyword}`);
     }
+
+    const scores = scoreArticle(finalHtml, kw.keyword);
+    log(`  → ${scores.word_count} words | SEO: ${scores.seo_score} | AEO: ${scores.aeo_score} | AIO: ${scores.aio_score}`);
 
     // 3. Save to DB
     if (DRY_RUN) {
       log(`  [DRY RUN] Would insert: ${slug}`);
-      log(`  HTML preview: ${contentHtml.slice(0, 200)}...`);
+      log(`  HTML preview: ${finalHtml.slice(0, 200)}...`);
     } else {
       db.prepare(`
         INSERT INTO articles (
@@ -439,7 +507,7 @@ async function main() {
           datetime('now'), datetime('now'), ?
         )
       `).run(
-        title, slug, kw.keyword, metaDesc, contentHtml,
+        title, slug, kw.keyword, metaDesc, finalHtml,
         scores.word_count, kw.keyword, secondaryKw,
         kw.category, tags, `Ilustrasi artikel tentang ${kw.keyword}`, featuredImage,
         scores.seo_score, scores.aeo_score, scores.aio_score,
