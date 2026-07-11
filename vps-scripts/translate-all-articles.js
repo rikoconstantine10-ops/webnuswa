@@ -13,7 +13,7 @@ const Database = require("better-sqlite3");
 const DB_PATH  = "/home/ubuntu/articel generator/data.db";
 const API_KEY  = process.env.AI_API_KEY || process.env.ANTHROPIC_API_KEY;
 const BASE_URL = process.env.AI_BASE_URL || "https://openagentic.id/api/v1";
-const MODEL    = process.env.AI_MODEL    || "claude-haiku-4-5-20251001";
+const MODEL    = process.env.AI_MODEL    || "claude-sonnet-4-6";
 const DELAY_MS = 2000;
 
 if (!API_KEY) { console.error("✗ AI_API_KEY not set"); process.exit(1); }
