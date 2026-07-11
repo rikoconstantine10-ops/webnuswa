@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Nav } from "@/components/layout/Nav";
 
 const DB_PATH = "/home/ubuntu/articel generator/data.db";
 
@@ -158,9 +159,11 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="min-h-screen bg-white">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
+      <Nav />
+
+      <div className="min-h-screen bg-white pt-24">
+        {/* Breadcrumb */}
+        <div className="bg-white border-b border-gray-100">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
             <a href="/" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Nuswa Lab</a>
             <span className="text-gray-300">/</span>
