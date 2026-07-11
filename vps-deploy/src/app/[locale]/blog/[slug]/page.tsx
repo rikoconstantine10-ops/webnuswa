@@ -19,6 +19,9 @@ interface Article {
   geo_score: number;
   published_date: string;
   status: string;
+  title_en: string | null;
+  meta_description_en: string | null;
+  content_html_en: string | null;
 }
 
 function getDb() {
@@ -27,13 +30,20 @@ function getDb() {
   return new Database(DB_PATH, { readonly: true });
 }
 
+function getDbRw() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Database = require("better-sqlite3");
+  return new Database(DB_PATH);
+}
+
 async function getArticle(slug: string): Promise<Article | null> {
   try {
     const db = getDb();
     const article = db.prepare(`
       SELECT id, title, slug, keyword, meta_description, content_html,
              word_count, category, featured_image,
-             seo_score, aeo_score, geo_score, published_date, status
+             seo_score, aeo_score, geo_score, published_date, status,
+             title_en, meta_description_en, content_html_en
       FROM articles WHERE slug = ? AND status = 'published'
     `).get(slug) as Article | undefined;
     db.close();
@@ -43,12 +53,100 @@ async function getArticle(slug: string): Promise<Article | null> {
   }
 }
 
+async function translateArticle(article: Article): Promise<{ title: string; meta_description: string; content_html: string } | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Anthropic = require("@anthropic-ai/sdk");
+    const client = new Anthropic({
+      apiKey,
+      baseURL: process.env.ANTHROPIC_BASE_URL || "https://ai.sumopod.com",
+    });
+
+    const [metaRes, contentRes] = await Promise.all([
+      client.messages.create({
+        model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
+        max_tokens: 512,
+        messages: [{
+          role: "user",
+          content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".
+
+TITLE: ${article.title}
+META_DESCRIPTION: ${article.meta_description}`,
+        }],
+      }),
+      client.messages.create({
+        model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
+        max_tokens: 8000,
+        messages: [{
+          role: "user",
+          content: `Translate this Indonesian HTML article to English. Rules:
+- Keep ALL HTML tags exactly as-is
+- Keep brand names (Nuswa Lab, Google Ads, WhatsApp, Meta Ads, SEO) unchanged
+- Keep URLs and href values unchanged
+- Translate only visible text content
+- Return ONLY the translated HTML, nothing else
+
+${article.content_html}`,
+        }],
+      }),
+    ]);
+
+    const metaText = metaRes.content[0].text.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
+    const metaJson = JSON.parse(metaText);
+    const contentHtml = contentRes.content[0].text.trim();
+
+    return {
+      title: metaJson.title,
+      meta_description: metaJson.meta_description,
+      content_html: contentHtml,
+    };
+  } catch (err) {
+    console.error("[translate] error:", err);
+    return null;
+  }
+}
+
+async function getOrTranslateEn(article: Article): Promise<{ title: string; meta_description: string; content_html: string }> {
+  if (article.title_en && article.content_html_en) {
+    return {
+      title: article.title_en,
+      meta_description: article.meta_description_en ?? article.meta_description,
+      content_html: article.content_html_en,
+    };
+  }
+
+  const translated = await translateArticle(article);
+  if (translated) {
+    try {
+      const db = getDbRw();
+      db.prepare(`
+        UPDATE articles SET title_en = ?, meta_description_en = ?, content_html_en = ?
+        WHERE id = ?
+      `).run(translated.title, translated.meta_description, translated.content_html, article.id);
+      db.close();
+    } catch {
+      // non-fatal
+    }
+    return translated;
+  }
+
+  return {
+    title: article.title,
+    meta_description: article.meta_description,
+    content_html: article.content_html,
+  };
+}
+
 async function getRelatedArticles(category: string, currentSlug: string): Promise<Article[]> {
   try {
     const db = getDb();
     const articles = db.prepare(`
       SELECT id, title, slug, keyword, meta_description, category,
-             featured_image, word_count, published_date
+             featured_image, word_count, published_date,
+             title_en, meta_description_en, content_html_en
       FROM articles
       WHERE status = 'published' AND category = ? AND slug != ?
       ORDER BY published_date DESC
@@ -79,15 +177,19 @@ function getFeaturedImage(article: Article): string {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; locale: string }> }) {
-  const { slug } = await params;
+  const { slug, locale } = await params;
   const article = await getArticle(slug);
-  if (!article) return { title: "Artikel tidak ditemukan" };
+  if (!article) return { title: locale === "en" ? "Article not found" : "Artikel tidak ditemukan" };
+
+  const isEn = locale === "en";
+  const title = (isEn && article.title_en) ? article.title_en : article.title;
+  const description = (isEn && article.meta_description_en) ? article.meta_description_en : article.meta_description;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: article.title,
-    description: article.meta_description,
+    headline: title,
+    description,
     image: article.featured_image ? [`https://nuswalab.com${article.featured_image}`] : [],
     datePublished: article.published_date,
     dateModified: article.published_date,
@@ -98,27 +200,27 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       url: "https://nuswalab.com",
       logo: { "@type": "ImageObject", url: "https://nuswalab.com/logo.png" },
     },
-    mainEntityOfPage: { "@type": "WebPage", "@id": `https://nuswalab.com/blog/${article.slug}` },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `https://nuswalab.com/${locale}/blog/${article.slug}` },
     keywords: article.keyword,
     wordCount: article.word_count,
-    inLanguage: "id-ID",
+    inLanguage: isEn ? "en-US" : "id-ID",
     articleSection: article.category,
   };
 
   return {
-    title: article.title,
-    description: article.meta_description,
+    title,
+    description,
     openGraph: {
-      title: article.title,
-      description: article.meta_description,
+      title,
+      description,
       type: "article",
       publishedTime: article.published_date,
       images: article.featured_image ? [{ url: `https://nuswalab.com${article.featured_image}` }] : [],
     },
     twitter: {
       card: "summary_large_image",
-      title: article.title,
-      description: article.meta_description,
+      title,
+      description,
       images: article.featured_image ? [`https://nuswalab.com${article.featured_image}`] : [],
     },
     other: {
@@ -128,27 +230,36 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function BlogArticlePage({ params }: { params: Promise<{ slug: string; locale: string }> }) {
-  const { slug } = await params;
-  const [article, related] = await Promise.all([
-    getArticle(slug),
-    getArticle(slug).then(a => a ? getRelatedArticles(a.category, slug) : []),
-  ]);
+  const { slug, locale } = await params;
+  const isEn = locale === "en";
+
+  const article = await getArticle(slug);
   if (!article) notFound();
 
-  const publishedDate = new Date(article.published_date).toLocaleDateString("id-ID", {
+  const [enContent, related] = await Promise.all([
+    isEn ? getOrTranslateEn(article) : Promise.resolve({
+      title: article.title,
+      meta_description: article.meta_description,
+      content_html: article.content_html,
+    }),
+    getRelatedArticles(article.category, slug),
+  ]);
+
+  const dateLocale = isEn ? "en-US" : "id-ID";
+  const publishedDate = new Date(article.published_date).toLocaleDateString(dateLocale, {
     day: "numeric", month: "long", year: "numeric",
   });
 
   const minutes = readingTime(article.word_count);
-  const waText = encodeURIComponent(`Baca artikel ini: ${article.title} — https://nuswalab.com/blog/${article.slug}`);
+  const articleUrl = `https://nuswalab.com/${locale}/blog/${article.slug}`;
+  const waText = encodeURIComponent(`${isEn ? "Read this article" : "Baca artikel ini"}: ${enContent.title} — ${articleUrl}`);
   const waShareUrl = `https://wa.me/?text=${waText}`;
-  const articleUrl = `https://nuswalab.com/blog/${article.slug}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: article.title,
-    description: article.meta_description,
+    headline: enContent.title,
+    description: enContent.meta_description,
     image: article.featured_image ? [`https://nuswalab.com${article.featured_image}`] : [],
     datePublished: article.published_date,
     dateModified: article.published_date,
@@ -162,8 +273,20 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
     mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
     keywords: article.keyword,
     wordCount: article.word_count,
-    inLanguage: "id-ID",
+    inLanguage: isEn ? "en-US" : "id-ID",
     articleSection: article.category,
+  };
+
+  const t = {
+    blog: "Blog",
+    readingTime: isEn ? `${minutes} min read` : `${minutes} menit baca`,
+    wordCount: isEn
+      ? `${article.word_count?.toLocaleString()} words`
+      : `${article.word_count?.toLocaleString()} kata`,
+    share: isEn ? "Share this article:" : "Bagikan artikel ini:",
+    related: isEn ? "Related Articles" : "Artikel Terkait",
+    allArticles: isEn ? "← All Articles" : "← Semua Artikel",
+    minRead: isEn ? "min read" : "menit baca",
   };
 
   return (
@@ -179,9 +302,9 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
         {/* Breadcrumb */}
         <div className="bg-white border-b border-gray-100">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-            <a href="/" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Nuswa Lab</a>
+            <a href={`/${locale}`} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">← Nuswa Lab</a>
             <span className="text-gray-300">/</span>
-            <a href="/blog" className="text-sm text-gray-500 hover:text-gray-700">Blog</a>
+            <a href={`/${locale}/blog`} className="text-sm text-gray-500 hover:text-gray-700">{t.blog}</a>
             <span className="text-gray-300">/</span>
             <span className="text-sm text-gray-400 truncate max-w-xs">{article.category}</span>
           </div>
@@ -197,14 +320,14 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
 
           {/* Title */}
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-4">
-            {article.title}
+            {enContent.title}
           </h1>
 
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6 pb-6 border-b border-gray-100">
             <span>📅 {publishedDate}</span>
-            <span>📖 {minutes} menit baca</span>
-            <span>✍️ {article.word_count?.toLocaleString()} kata</span>
+            <span>📖 {t.readingTime}</span>
+            <span>✍️ {t.wordCount}</span>
             <span>🏷️ {article.keyword}</span>
           </div>
 
@@ -212,7 +335,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
           <div className="mb-8 rounded-2xl overflow-hidden">
             <img
               src={getFeaturedImage(article)}
-              alt={article.title}
+              alt={enContent.title}
               className="w-full h-64 md:h-96 object-cover"
             />
           </div>
@@ -231,12 +354,12 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
               prose-blockquote:border-l-indigo-400 prose-blockquote:bg-indigo-50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg prose-blockquote:text-gray-700
               prose-table:text-sm prose-th:bg-gray-50 prose-th:text-gray-700
               prose-code:bg-gray-100 prose-code:text-indigo-700 prose-code:px-1 prose-code:rounded"
-            dangerouslySetInnerHTML={{ __html: article.content_html }}
+            dangerouslySetInnerHTML={{ __html: enContent.content_html }}
           />
 
           {/* Share buttons */}
           <div className="mt-10 pt-6 border-t border-gray-100">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Bagikan artikel ini:</p>
+            <p className="text-sm font-semibold text-gray-700 mb-3">{t.share}</p>
             <div className="flex flex-wrap gap-3">
               <a
                 href={waShareUrl}
@@ -250,7 +373,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
                 WhatsApp
               </a>
               <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(articleUrl)}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(enContent.title)}&url=${encodeURIComponent(articleUrl)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-black hover:bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -267,32 +390,35 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
           {/* Related articles */}
           {related.length > 0 && (
             <div className="mt-12 pt-8 border-t border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-5">Artikel Terkait</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-5">{t.related}</h2>
               <div className="grid md:grid-cols-3 gap-4">
-                {related.map(rel => (
-                  <a
-                    key={rel.id}
-                    href={`/blog/${rel.slug}`}
-                    className="group block bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl overflow-hidden transition-all"
-                  >
-                    {rel.featured_image && (
-                      <div className="h-32 overflow-hidden">
-                        <img
-                          src={rel.featured_image}
-                          alt={rel.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                {related.map(rel => {
+                  const relTitle = (isEn && rel.title_en) ? rel.title_en : rel.title;
+                  return (
+                    <a
+                      key={rel.id}
+                      href={`/${locale}/blog/${rel.slug}`}
+                      className="group block bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl overflow-hidden transition-all"
+                    >
+                      {rel.featured_image && (
+                        <div className="h-32 overflow-hidden">
+                          <img
+                            src={rel.featured_image}
+                            alt={relTitle}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">{rel.category}</span>
+                        <p className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700 mt-1 line-clamp-2 leading-snug">
+                          {relTitle}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2">{readingTime(rel.word_count)} {t.minRead}</p>
                       </div>
-                    )}
-                    <div className="p-3">
-                      <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">{rel.category}</span>
-                      <p className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700 mt-1 line-clamp-2 leading-snug">
-                        {rel.title}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-2">{readingTime(rel.word_count)} menit baca</p>
-                    </div>
-                  </a>
-                ))}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -305,7 +431,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
                 <span className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded font-medium">AEO {article.aeo_score}</span>
                 <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2 py-1 rounded font-medium">AIO {article.geo_score}</span>
               </div>
-              <a href="/blog" className="text-indigo-600 hover:text-indigo-800 font-medium text-sm">← Semua Artikel</a>
+              <a href={`/${locale}/blog`} className="text-indigo-600 hover:text-indigo-800 font-medium text-sm">{t.allArticles}</a>
             </div>
           </div>
         </div>

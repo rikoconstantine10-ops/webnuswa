@@ -487,7 +487,41 @@ async function main() {
     const scores = scoreArticle(finalHtml, kw.keyword);
     log(`  → ${scores.word_count} words | SEO: ${scores.seo_score} | AEO: ${scores.aeo_score} | AIO: ${scores.aio_score}`);
 
-    // 3. Save to DB
+    // 3. Translate to English
+    let titleEn = null, metaDescEn = null, contentHtmlEn = null;
+    if (!DRY_RUN) {
+      log("  → Translating to English...");
+      try {
+        const [metaRes, contentRes] = await Promise.all([
+          client.messages.create({
+            model: MODEL,
+            max_tokens: 512,
+            messages: [{
+              role: "user",
+              content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".\n\nTITLE: ${title}\nMETA_DESCRIPTION: ${metaDesc}`,
+            }],
+          }),
+          client.messages.create({
+            model: MODEL,
+            max_tokens: 8000,
+            messages: [{
+              role: "user",
+              content: `Translate this Indonesian HTML article to English. Keep ALL HTML tags exactly as-is. Keep brand names (Nuswa Lab, Google Ads, WhatsApp, Meta Ads, SEO) unchanged. Keep URLs unchanged. Return ONLY the translated HTML.\n\n${finalHtml}`,
+            }],
+          }),
+        ]);
+        const metaText = metaRes.content[0].text.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
+        const metaJson = JSON.parse(metaText);
+        titleEn = metaJson.title;
+        metaDescEn = metaJson.meta_description;
+        contentHtmlEn = contentRes.content[0].text.trim();
+        log(`  ✓ EN translation done: "${titleEn}"`);
+      } catch (err) {
+        log(`  ⚠ EN translation failed: ${err.message}`);
+      }
+    }
+
+    // 4. Save to DB
     if (DRY_RUN) {
       log(`  [DRY RUN] Would insert: ${slug}`);
       log(`  HTML preview: ${finalHtml.slice(0, 200)}...`);
@@ -498,11 +532,13 @@ async function main() {
           word_count, focus_keyword, secondary_keywords,
           category, tags, image_alt_text, featured_image,
           seo_score, aeo_score, geo_score,
+          title_en, meta_description_en, content_html_en,
           created_at, published_date, status
         ) VALUES (
           ?, ?, ?, ?, ?,
           ?, ?, ?,
           ?, ?, ?, ?,
+          ?, ?, ?,
           ?, ?, ?,
           datetime('now'), datetime('now'), ?
         )
@@ -511,6 +547,7 @@ async function main() {
         scores.word_count, kw.keyword, secondaryKw,
         kw.category, tags, `Ilustrasi artikel tentang ${kw.keyword}`, featuredImage,
         scores.seo_score, scores.aeo_score, scores.aio_score,
+        titleEn, metaDescEn, contentHtmlEn,
         ARTICLE_STATUS,
       );
       log(`  ✓ Inserted [${ARTICLE_STATUS}]: ${slug}`);
