@@ -39,7 +39,7 @@ function chatCompletion(messages, maxTokens) {
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(body),
       },
-      timeout: 120000,
+      timeout: 300000,
     };
     const req = https.request(options, (res) => {
       let data = "";
