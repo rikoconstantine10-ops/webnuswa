@@ -19,6 +19,7 @@ const https      = require("https");
 const http       = require("http");
 const fs         = require("fs");
 const path       = require("path");
+const { spawn }  = require("child_process");
 const Anthropic  = require("@anthropic-ai/sdk");
 const Database   = require("better-sqlite3");
 
@@ -32,6 +33,9 @@ const API_KEY         = process.env.ANTHROPIC_API_KEY;
 const PEXELS_KEY      = process.env.PEXELS_API_KEY;
 const BASE_URL        = process.env.ANTHROPIC_BASE_URL || "https://ai.sumopod.com";
 const MODEL           = process.env.ANTHROPIC_MODEL    || "claude-opus-4-8";
+const AI_API_KEY      = process.env.AI_API_KEY         || API_KEY;
+const AI_BASE_URL     = process.env.AI_BASE_URL        || "https://openagentic.id/api/v1";
+const AI_MODEL        = process.env.AI_MODEL           || "claude-sonnet-4-6";
 const DRY_RUN         = process.env.DRY_RUN === "1";
 const MAX_DAILY       = parseInt(process.env.MAX_DAILY || "3");
 const ARTICLE_STATUS  = process.env.ARTICLE_STATUS || "draft";
@@ -303,6 +307,39 @@ function injectInlineImages(html, images) {
   return result;
 }
 
+// ─── OpenAI-compatible chat (openagentic.id) for translations ─────────────────
+
+function chatCompletion(messages, maxTokens) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ model: AI_MODEL, max_tokens: maxTokens, messages });
+    const url  = new URL(`${AI_BASE_URL}/chat/completions`);
+    const options = {
+      hostname: url.hostname,
+      path:     url.pathname,
+      method:   "POST",
+      headers: {
+        "Authorization": `Bearer ${AI_API_KEY}`,
+        "Content-Type":  "application/json",
+        "Content-Length": Buffer.byteLength(body),
+      },
+      timeout: 300000,
+    };
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", chunk => data += chunk);
+      res.on("end", () => {
+        if (res.statusCode >= 400) { reject(new Error(`${res.statusCode} ${data.substring(0, 200)}`)); return; }
+        try { resolve(JSON.parse(data).choices?.[0]?.message?.content || ""); }
+        catch (e) { reject(new Error(`JSON parse: ${e.message}`)); }
+      });
+    });
+    req.on("error", reject);
+    req.on("timeout", () => { req.destroy(); reject(new Error("Request timeout")); });
+    req.write(body);
+    req.end();
+  });
+}
+
 // ─── Claude Article Generation ────────────────────────────────────────────────
 
 async function generateArticle(kw, client) {
@@ -487,37 +524,23 @@ async function main() {
     const scores = scoreArticle(finalHtml, kw.keyword);
     log(`  → ${scores.word_count} words | SEO: ${scores.seo_score} | AEO: ${scores.aeo_score} | AIO: ${scores.aio_score}`);
 
-    // 3. Translate to English
+    // 3. Translate to English (via openagentic.id)
     let titleEn = null, metaDescEn = null, contentHtmlEn = null;
-    if (!DRY_RUN) {
+    if (!DRY_RUN && AI_API_KEY) {
       log("  → Translating to English...");
       try {
-        const [metaRes, contentRes] = await Promise.all([
-          client.messages.create({
-            model: MODEL,
-            max_tokens: 512,
-            messages: [{
-              role: "user",
-              content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".\n\nTITLE: ${title}\nMETA_DESCRIPTION: ${metaDesc}`,
-            }],
-          }),
-          client.messages.create({
-            model: MODEL,
-            max_tokens: 8000,
-            messages: [{
-              role: "user",
-              content: `Translate this Indonesian HTML article to English. Keep ALL HTML tags exactly as-is. Keep brand names (Nuswa Lab, Google Ads, WhatsApp, Meta Ads, SEO) unchanged. Keep URLs unchanged. Return ONLY the translated HTML.\n\n${finalHtml}`,
-            }],
-          }),
+        const [metaText, contentText] = await Promise.all([
+          chatCompletion([{ role: "user", content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".\n\nTITLE: ${title}\nMETA_DESCRIPTION: ${metaDesc}` }], 512),
+          chatCompletion([{ role: "user", content: `Translate this Indonesian HTML article to English. Keep ALL HTML tags exactly as-is. Keep brand names (Nuswa Lab, Google Ads, WhatsApp, Meta Ads, SEO) unchanged. Keep URLs unchanged. Return ONLY the translated HTML.\n\n${finalHtml}` }], 8000),
         ]);
-        const metaText = metaRes.content[0].text.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-        const metaJson = JSON.parse(metaText);
-        titleEn = metaJson.title;
-        metaDescEn = metaJson.meta_description;
-        contentHtmlEn = contentRes.content[0].text.trim();
+        const cleanMeta = metaText.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
+        const metaJson  = JSON.parse(cleanMeta);
+        titleEn       = metaJson.title;
+        metaDescEn    = metaJson.meta_description;
+        contentHtmlEn = contentText.trim();
         log(`  ✓ EN translation done: "${titleEn}"`);
       } catch (err) {
-        log(`  ⚠ EN translation failed: ${err.message}`);
+        log(`  ⚠ EN translation failed: ${err.message} (will retry via background translate script)`);
       }
     }
 
@@ -579,6 +602,23 @@ async function main() {
         stdio: "inherit",
       });
       log("✓ Build & restart complete");
+
+      // Spawn translate-all-articles.js in background for any untranslated articles
+      try {
+        const fs = require("fs");
+        const translateScript = require("path").join(VPS_ROOT, "scripts/translate-all-articles.js");
+        const translateLog    = `/tmp/translate-bg-${Date.now()}.log`;
+        const tp = spawn("node", [translateScript], {
+          cwd:      VPS_ROOT,
+          detached: true,
+          stdio:    ["ignore", fs.openSync(translateLog, "w"), fs.openSync(translateLog, "a")],
+          env:      { ...process.env, AI_API_KEY, AI_BASE_URL, AI_MODEL },
+        });
+        tp.unref();
+        log(`✓ Background translate started (PID ${tp.pid}), log: ${translateLog}`);
+      } catch (spawnErr) {
+        log(`⚠ Could not start background translate: ${spawnErr.message}`);
+      }
     } catch (err) {
       log(`✗ Build failed: ${err.message}`);
       process.exit(1);

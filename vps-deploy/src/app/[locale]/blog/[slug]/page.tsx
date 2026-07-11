@@ -30,12 +30,6 @@ function getDb() {
   return new Database(DB_PATH, { readonly: true });
 }
 
-function getDbRw() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Database = require("better-sqlite3");
-  return new Database(DB_PATH);
-}
-
 async function getArticle(slug: string): Promise<Article | null> {
   try {
     const db = getDb();
@@ -53,90 +47,18 @@ async function getArticle(slug: string): Promise<Article | null> {
   }
 }
 
-async function translateArticle(article: Article): Promise<{ title: string; meta_description: string; content_html: string } | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Anthropic = require("@anthropic-ai/sdk");
-    const client = new Anthropic({
-      apiKey,
-      baseURL: process.env.ANTHROPIC_BASE_URL || "https://ai.sumopod.com",
-    });
-
-    const [metaRes, contentRes] = await Promise.all([
-      client.messages.create({
-        model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
-        max_tokens: 512,
-        messages: [{
-          role: "user",
-          content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".
-
-TITLE: ${article.title}
-META_DESCRIPTION: ${article.meta_description}`,
-        }],
-      }),
-      client.messages.create({
-        model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
-        max_tokens: 8000,
-        messages: [{
-          role: "user",
-          content: `Translate this Indonesian HTML article to English. Rules:
-- Keep ALL HTML tags exactly as-is
-- Keep brand names (Nuswa Lab, Google Ads, WhatsApp, Meta Ads, SEO) unchanged
-- Keep URLs and href values unchanged
-- Translate only visible text content
-- Return ONLY the translated HTML, nothing else
-
-${article.content_html}`,
-        }],
-      }),
-    ]);
-
-    const metaText = metaRes.content[0].text.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-    const metaJson = JSON.parse(metaText);
-    const contentHtml = contentRes.content[0].text.trim();
-
+function getEnContent(article: Article, isEn: boolean): { title: string; meta_description: string; content_html: string } {
+  if (isEn && article.title_en && article.content_html_en) {
     return {
-      title: metaJson.title,
-      meta_description: metaJson.meta_description,
-      content_html: contentHtml,
-    };
-  } catch (err) {
-    console.error("[translate] error:", err);
-    return null;
-  }
-}
-
-async function getOrTranslateEn(article: Article): Promise<{ title: string; meta_description: string; content_html: string }> {
-  if (article.title_en && article.content_html_en) {
-    return {
-      title: article.title_en,
+      title:            article.title_en,
       meta_description: article.meta_description_en ?? article.meta_description,
-      content_html: article.content_html_en,
+      content_html:     article.content_html_en,
     };
   }
-
-  const translated = await translateArticle(article);
-  if (translated) {
-    try {
-      const db = getDbRw();
-      db.prepare(`
-        UPDATE articles SET title_en = ?, meta_description_en = ?, content_html_en = ?
-        WHERE id = ?
-      `).run(translated.title, translated.meta_description, translated.content_html, article.id);
-      db.close();
-    } catch {
-      // non-fatal
-    }
-    return translated;
-  }
-
   return {
-    title: article.title,
+    title:            article.title,
     meta_description: article.meta_description,
-    content_html: article.content_html,
+    content_html:     article.content_html,
   };
 }
 
@@ -237,11 +159,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
   if (!article) notFound();
 
   const [enContent, related] = await Promise.all([
-    isEn ? getOrTranslateEn(article) : Promise.resolve({
-      title: article.title,
-      meta_description: article.meta_description,
-      content_html: article.content_html,
-    }),
+    Promise.resolve(getEnContent(article, isEn)),
     getRelatedArticles(article.category, slug),
   ]);
 
