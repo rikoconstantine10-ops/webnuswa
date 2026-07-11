@@ -65,6 +65,19 @@ function readingTime(wordCount: number): number {
   return Math.max(1, Math.round(wordCount / 200));
 }
 
+const FALLBACK_IMAGES = [
+  "/images/blog/blog-1.png",
+  "/images/blog/blog-2.png",
+  "/images/blog/blog-3.png",
+  "/images/blog/blog-4.png",
+  "/images/blog/blog-5.png",
+];
+
+function getFeaturedImage(article: Article): string {
+  if (article.featured_image) return article.featured_image;
+  return FALLBACK_IMAGES[article.id % FALLBACK_IMAGES.length];
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; locale: string }> }) {
   const { slug } = await params;
   const article = await getArticle(slug);
@@ -196,15 +209,13 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
           </div>
 
           {/* Featured image */}
-          {article.featured_image && (
-            <div className="mb-8 rounded-2xl overflow-hidden">
-              <img
-                src={article.featured_image}
-                alt={article.title}
-                className="w-full h-64 md:h-96 object-cover"
-              />
-            </div>
-          )}
+          <div className="mb-8 rounded-2xl overflow-hidden">
+            <img
+              src={getFeaturedImage(article)}
+              alt={article.title}
+              className="w-full h-64 md:h-96 object-cover"
+            />
+          </div>
 
           {/* Article content */}
           <div
