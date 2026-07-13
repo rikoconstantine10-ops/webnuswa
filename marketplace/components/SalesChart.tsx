@@ -26,7 +26,7 @@ export default function SalesChart({ data, title }: { data: Point[]; title: stri
   const gridVals = [niceMax / 2, niceMax];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 overflow-x-auto">
+    <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-5 overflow-x-auto">
       <h2 className="font-bold text-sm mb-3">{title}</h2>
       {data.every((d) => d.value === 0) ? (
         <p className="text-sm text-slate-400 py-8 text-center">Belum ada penjualan pada periode ini.</p>

@@ -3,14 +3,15 @@ import { db } from "@/lib/db";
 import { storeBalance } from "@/lib/ledger";
 import { formatRupiah } from "@/lib/money";
 import WithdrawalForm from "@/components/WithdrawalForm";
+import { Card, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
-const WD_STATUS: Record<string, { label: string; cls: string }> = {
-  PENDING: { label: "Menunggu", cls: "bg-amber-100 text-amber-700" },
-  APPROVED: { label: "Disetujui", cls: "bg-blue-100 text-blue-700" },
-  PAID: { label: "Ditransfer", cls: "bg-emerald-100 text-emerald-700" },
-  REJECTED: { label: "Ditolak", cls: "bg-red-100 text-red-700" },
+const WD_STATUS: Record<string, { label: string; tone: "amber" | "blue" | "emerald" | "red" }> = {
+  PENDING: { label: "Menunggu", tone: "amber" },
+  APPROVED: { label: "Disetujui", tone: "blue" },
+  PAID: { label: "Ditransfer", tone: "emerald" },
+  REJECTED: { label: "Ditolak", tone: "red" },
 };
 
 export default async function WithdrawalsPage() {
@@ -23,12 +24,12 @@ export default async function WithdrawalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-2xl p-6">
+      <div className="bg-gradient-to-br from-teal-600 to-teal-800 text-white rounded-2xl p-6 shadow-sm">
         <p className="text-sm text-teal-100 mb-1">Saldo Tersedia</p>
         <p className="text-4xl font-extrabold">{formatRupiah(balance)}</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
+      <Card>
         <h2 className="font-bold mb-3">Request Penarikan</h2>
         {store.bankName ? (
           <>
@@ -42,40 +43,40 @@ export default async function WithdrawalsPage() {
             Lengkapi rekening bank di <b>Pengaturan Toko</b> dulu sebelum menarik dana.
           </p>
         )}
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
+      <Card>
         <h2 className="font-bold mb-3">Riwayat Penarikan</h2>
         {withdrawals.length === 0 ? (
           <p className="text-sm text-slate-500">Belum ada penarikan.</p>
         ) : (
           <div className="space-y-2">
             {withdrawals.map((w) => {
-              const st = WD_STATUS[w.status] ?? { label: w.status, cls: "bg-slate-100" };
+              const st = WD_STATUS[w.status] ?? { label: w.status, tone: "slate" as const };
               return (
-                <div key={w.id} className="flex items-center justify-between text-sm border-b border-slate-50 pb-2">
+                <div key={w.id} className="flex items-center justify-between text-sm border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                   <div>
                     <p className="font-bold">{formatRupiah(w.amount)}</p>
                     <p className="text-xs text-slate-500">
                       {new Date(w.createdAt).toLocaleString("id-ID")}
                     </p>
                   </div>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${st.cls}`}>{st.label}</span>
+                  <Badge tone={st.tone}>{st.label}</Badge>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
+      <Card>
         <h2 className="font-bold mb-3">Mutasi Saldo</h2>
         {ledger.length === 0 ? (
           <p className="text-sm text-slate-500">Belum ada transaksi.</p>
         ) : (
           <div className="space-y-2">
             {ledger.map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between text-sm border-b border-slate-50 pb-2">
+              <div key={entry.id} className="flex items-center justify-between text-sm border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                 <div>
                   <p className="text-slate-700">{entry.note ?? entry.type}</p>
                   <p className="text-xs text-slate-400">
@@ -90,7 +91,7 @@ export default async function WithdrawalsPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

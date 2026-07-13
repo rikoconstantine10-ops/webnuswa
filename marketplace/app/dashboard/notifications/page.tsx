@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/app/actions/notifications";
+import { PageHeader, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -26,28 +27,28 @@ export default async function NotificationsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold">Notifikasi</h1>
-        {unreadCount > 0 && (
-          <form action={markAllNotificationsReadAction}>
-            <button className="text-teal-600 text-sm font-bold hover:underline cursor-pointer">
-              Tandai semua dibaca
-            </button>
-          </form>
-        )}
-      </div>
+      <PageHeader
+        title="Notifikasi"
+        action={
+          unreadCount > 0 ? (
+            <form action={markAllNotificationsReadAction}>
+              <button className="text-teal-600 text-sm font-bold hover:underline cursor-pointer">
+                Tandai semua dibaca
+              </button>
+            </form>
+          ) : undefined
+        }
+      />
 
       {notifications.length === 0 ? (
-        <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-          Belum ada notifikasi.
-        </p>
+        <EmptyState icon="🔔" title="Belum ada notifikasi" />
       ) : (
         <div className="space-y-2">
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`flex items-start gap-3 rounded-2xl border p-4 ${
-                n.readAt ? "bg-white border-slate-200" : "bg-teal-50/50 border-teal-200"
+              className={`flex items-start gap-3 rounded-2xl p-4 shadow-sm ring-1 ${
+                n.readAt ? "bg-white ring-slate-900/5" : "bg-teal-50/50 ring-teal-200"
               }`}
             >
               <span className="text-xl shrink-0">{TYPE_ICON[n.type] ?? "🔔"}</span>

@@ -10,6 +10,7 @@ import {
   bulkUpdatePriceAction,
 } from "@/app/actions/products";
 import BoostButton from "@/components/BoostButton";
+import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -32,53 +33,59 @@ export default async function ProductsPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold">Produk</h1>
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/products/import"
-            className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-50"
-          >
-            ⬆ Impor CSV
-          </Link>
-          <Link
-            href="/dashboard/products/new"
-            className="bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700"
-          >
-            + Tambah Produk
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Produk"
+        action={
+          <div className="flex gap-2">
+            <Link
+              href="/dashboard/products/import"
+              className="border border-slate-300 bg-white text-slate-700 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-50"
+            >
+              ⬆ Impor CSV
+            </Link>
+            <Link
+              href="/dashboard/products/new"
+              className="bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700"
+            >
+              + Tambah Produk
+            </Link>
+          </div>
+        }
+      />
 
-      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Cari nama produk..."
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
-        />
-        <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Semua status</option>
-          <option value="active">Aktif</option>
-          <option value="inactive">Nonaktif</option>
-        </select>
-        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
-          Cari
-        </button>
-        {(q || status) && (
-          <Link href="/dashboard/products" className="text-sm text-slate-500 hover:underline">Reset</Link>
-        )}
-      </form>
+      <Card className="mb-4">
+        <form method="get" className="flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Cari nama produk..."
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+          />
+          <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Semua status</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Nonaktif</option>
+          </select>
+          <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+            Cari
+          </button>
+          {(q || status) && (
+            <Link href="/dashboard/products" className="text-sm text-slate-500 hover:underline">Reset</Link>
+          )}
+        </form>
+      </Card>
 
       {products.length === 0 ? (
-        <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-          {q || status ? "Tidak ada produk yang cocok." : "Belum ada produk. Tambahkan produk pertamamu!"}
-        </p>
+        <EmptyState
+          icon="📦"
+          title={q || status ? "Tidak ada produk yang cocok" : "Belum ada produk"}
+          description={q || status ? undefined : "Tambahkan produk pertamamu untuk mulai jualan!"}
+        />
       ) : (
         <div className="space-y-3">
           <form id="bulk-products" />
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center gap-2 text-sm">
+          <Card className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-xs text-slate-500 mr-1">Aksi massal (centang produk lalu pilih):</span>
             <button form="bulk-products" formAction={bulkActivateAction} className="border border-emerald-300 text-emerald-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-50">
               Aktifkan
@@ -103,8 +110,8 @@ export default async function ProductsPage({
               Terapkan Harga
             </button>
             <span className="text-xs text-slate-400 w-full">Harga dasar saja — tidak mengubah harga varian/grosir.</span>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+          </Card>
+          <Card className="!p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
@@ -128,11 +135,7 @@ export default async function ProductsPage({
                   <td className="px-4 py-3">{formatRupiah(p.price)}</td>
                   <td className="px-4 py-3">{p.type === "DIGITAL" ? "∞" : (p.stock ?? 0)}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}
-                    >
-                      {p.active ? "Aktif" : "Nonaktif"}
-                    </span>
+                    <Badge tone={p.active ? "emerald" : "slate"}>{p.active ? "Aktif" : "Nonaktif"}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Link
@@ -167,7 +170,7 @@ export default async function ProductsPage({
               ))}
             </tbody>
           </table>
-          </div>
+          </Card>
         </div>
       )}
     </div>

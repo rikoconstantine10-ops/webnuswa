@@ -3,6 +3,7 @@ import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { markProcessingAction, shipOrderAction } from "@/app/actions/seller";
+import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,17 @@ const STATUS_LABEL: Record<string, string> = {
   EXPIRED: "Kedaluwarsa",
   DISPUTED: "Sengketa",
   REFUNDED: "Refund",
+};
+
+const STATUS_TONE: Record<string, "amber" | "emerald" | "slate" | "red" | "blue" | "sky"> = {
+  PAID: "amber",
+  PROCESSING: "blue",
+  SHIPPED: "sky",
+  COMPLETED: "emerald",
+  CANCELLED: "red",
+  EXPIRED: "slate",
+  DISPUTED: "red",
+  REFUNDED: "slate",
 };
 
 const STATUS_OPTIONS = ["PAID", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED", "EXPIRED", "DISPUTED", "REFUNDED"];
@@ -49,46 +61,48 @@ export default async function OrdersPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-        <h1 className="text-2xl font-extrabold">Pesanan</h1>
-        <a
-          href="/api/dashboard/orders/export"
-          className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
-        >
-          ⬇ Export CSV
-        </a>
-      </div>
+      <PageHeader
+        title="Pesanan"
+        action={
+          <a
+            href="/api/dashboard/orders/export"
+            className="border border-slate-300 bg-white text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
+          >
+            ⬇ Export CSV
+          </a>
+        }
+      />
 
-      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Cari kode, nama, atau email pembeli..."
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
-        />
-        <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Semua status</option>
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
-          ))}
-        </select>
-        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
-          Cari
-        </button>
-        {(q || status) && (
-          <Link href="/dashboard/orders" className="text-sm text-slate-500 hover:underline">Reset</Link>
-        )}
-      </form>
+      <Card className="mb-4">
+        <form method="get" className="flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Cari kode, nama, atau email pembeli..."
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+          />
+          <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Semua status</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>
+            ))}
+          </select>
+          <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+            Cari
+          </button>
+          {(q || status) && (
+            <Link href="/dashboard/orders" className="text-sm text-slate-500 hover:underline">Reset</Link>
+          )}
+        </form>
+      </Card>
 
       {orders.length === 0 ? (
-        <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-          {q || status ? "Tidak ada pesanan yang cocok." : "Belum ada pesanan masuk."}
-        </p>
+        <EmptyState icon="🧾" title={q || status ? "Tidak ada pesanan yang cocok" : "Belum ada pesanan masuk"} />
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <div key={order.id} className="bg-white rounded-2xl border border-slate-200 p-5">
+            <Card key={order.id}>
               <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                 <div>
                   <p className="font-mono font-bold">{order.code}</p>
@@ -97,17 +111,9 @@ export default async function OrdersPage({
                     {new Date(order.createdAt).toLocaleString("id-ID")}
                   </p>
                 </div>
-                <span
-                  className={`text-xs font-bold px-3 py-1 rounded-full ${
-                    order.status === "PAID"
-                      ? "bg-amber-100 text-amber-700"
-                      : order.status === "COMPLETED"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-600"
-                  }`}
-                >
+                <Badge tone={STATUS_TONE[order.status] ?? "slate"}>
                   {STATUS_LABEL[order.status] ?? order.status}
-                </span>
+                </Badge>
               </div>
 
               <div className="text-sm text-slate-700 mb-2">
@@ -161,7 +167,7 @@ export default async function OrdersPage({
                   <span className="font-mono font-bold">{order.trackingNumber}</span>
                 </p>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}

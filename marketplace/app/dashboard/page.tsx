@@ -6,6 +6,7 @@ import { formatRupiah } from "@/lib/money";
 import { waStatus } from "@/lib/wa";
 import SalesChart from "@/components/SalesChart";
 import { markProcessingAction } from "@/app/actions/seller";
+import { Card, PageHeader, StatCard } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -64,11 +65,21 @@ export default async function DashboardHome() {
   }
 
   const stats = [
-    { label: "Saldo Tersedia", value: formatRupiah(balance), accent: "text-teal-600" },
-    { label: "Saldo Tertahan (Escrow)", value: formatRupiah(heldBalance), accent: heldBalance > 0 ? "text-amber-600" : undefined },
-    { label: "Total Penjualan", value: formatRupiah(totalSales._sum.amount ?? 0) },
-    { label: "Produk Aktif", value: String(productCount) },
-    { label: "Pesanan Perlu Diproses", value: String(pendingOrders), accent: pendingOrders > 0 ? "text-amber-600" : undefined },
+    { icon: "💰", label: "Saldo Tersedia", value: formatRupiah(balance), tone: "teal" as const },
+    {
+      icon: "🔒",
+      label: "Saldo Tertahan (Escrow)",
+      value: formatRupiah(heldBalance),
+      tone: (heldBalance > 0 ? "amber" : "slate") as const,
+    },
+    { icon: "📈", label: "Total Penjualan", value: formatRupiah(totalSales._sum.amount ?? 0), tone: "slate" as const },
+    { icon: "📦", label: "Produk Aktif", value: String(productCount), tone: "slate" as const },
+    {
+      icon: "🧾",
+      label: "Pesanan Perlu Diproses",
+      value: String(pendingOrders),
+      tone: (pendingOrders > 0 ? "amber" : "slate") as const,
+    },
   ];
 
   return (
@@ -79,21 +90,21 @@ export default async function DashboardHome() {
         </p>
       ))}
 
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-extrabold">Ringkasan Toko</h1>
-        <Link
-          href="/dashboard/withdrawals"
-          className="bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700"
-        >
-          💸 Tarik Dana
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <PageHeader
+        title="Ringkasan Toko"
+        action={
+          <Link
+            href="/dashboard/withdrawals"
+            className="bg-teal-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-teal-700"
+          >
+            💸 Tarik Dana
+          </Link>
+        }
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-            <p className={`text-xl font-extrabold ${s.accent ?? ""}`}>{s.value}</p>
-          </div>
+          <StatCard key={s.label} icon={s.icon} label={s.label} value={s.value} tone={s.tone} />
         ))}
       </div>
 
@@ -104,12 +115,20 @@ export default async function DashboardHome() {
       )}
 
       {checklistDone < checklist.length && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <Card>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-sm">Lengkapi Setup Toko</h2>
-            <span className="text-xs text-slate-400">{checklistDone}/{checklist.length} selesai</span>
+            <span className="text-xs text-slate-400">
+              {checklistDone}/{checklist.length} selesai
+            </span>
           </div>
-          <div className="space-y-2">
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
+            <div
+              className="h-full bg-teal-500 rounded-full transition-all"
+              style={{ width: `${(checklistDone / checklist.length) * 100}%` }}
+            />
+          </div>
+          <div className="space-y-1">
             {checklist.map((c) => (
               <Link
                 key={c.label}
@@ -123,11 +142,11 @@ export default async function DashboardHome() {
               </Link>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {actionableOrders.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <Card>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-sm">Perlu Diproses</h2>
             <Link href="/dashboard/orders" className="text-teal-600 text-xs font-bold hover:underline">
@@ -136,10 +155,12 @@ export default async function DashboardHome() {
           </div>
           <div className="space-y-2">
             {actionableOrders.map((o) => (
-              <div key={o.id} className="flex items-center justify-between gap-2 text-sm border-b border-slate-50 pb-2">
+              <div key={o.id} className="flex items-center justify-between gap-2 text-sm border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                 <div className="min-w-0">
                   <p className="font-mono font-bold">{o.code}</p>
-                  <p className="text-xs text-slate-500 truncate">{o.buyerName} · {formatRupiah(o.total)}</p>
+                  <p className="text-xs text-slate-500 truncate">
+                    {o.buyerName} · {formatRupiah(o.total)}
+                  </p>
                 </div>
                 {o.status === "PAID" ? (
                   <form action={markProcessingAction}>
@@ -159,12 +180,12 @@ export default async function DashboardHome() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       <SalesChart data={days} title="Penjualan 30 Hari Terakhir (Rp)" />
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
+      <Card>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-sm">Produk Terlaris</h2>
           <Link href="/dashboard/analytics" className="text-teal-600 text-xs font-bold hover:underline">
@@ -176,7 +197,7 @@ export default async function DashboardHome() {
         ) : (
           <div className="space-y-2">
             {topItems.map((t, i) => (
-              <div key={t.productId} className="flex items-center justify-between text-sm border-b border-slate-50 pb-2">
+              <div key={t.productId} className="flex items-center justify-between text-sm border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                 <span>
                   <span className="text-slate-400 font-mono mr-2">#{i + 1}</span>
                   {t.name}
@@ -186,7 +207,7 @@ export default async function DashboardHome() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
