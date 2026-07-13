@@ -45,8 +45,19 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+// Beberapa href saling bertumpuk (mis. /dashboard/store adalah prefix dari
+// /dashboard/store/builder). Supaya cuma satu item yang aktif, pilih href
+// yang paling spesifik (terpanjang) di antara yang cocok dengan pathname.
+function matches(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export default function SidebarNav({ unreadCount }: { unreadCount: number }) {
   const pathname = usePathname();
+  const allHrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
+  const activeHref = allHrefs
+    .filter((href) => matches(pathname, href))
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
     <nav className="space-y-4">
@@ -55,7 +66,7 @@ export default function SidebarNav({ unreadCount }: { unreadCount: number }) {
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 px-3 mb-1">{group.title}</p>
           <div className="space-y-0.5">
             {group.items.map((item) => {
-              const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+              const active = item.href === activeHref;
               return (
                 <Link
                   key={item.href}
