@@ -28,6 +28,7 @@ function chatCompletion(messages, maxTokens) {
       model: MODEL,
       max_tokens: maxTokens,
       messages,
+      stream: false,
     });
     const url = new URL(`${BASE_URL}/chat/completions`);
     const options = {
