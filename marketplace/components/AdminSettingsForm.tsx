@@ -7,7 +7,7 @@ export default function AdminSettingsForm({ currentFee, kieApiKeySet }: { curren
   const [state, formAction, pending] = useActionState(updateSettingsAction, {});
 
   return (
-    <form action={formAction} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 max-w-md">
+    <form action={formAction} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-4 max-w-md">
       <div>
         <label className="text-sm font-medium block mb-1">Platform fee (%)</label>
         <input

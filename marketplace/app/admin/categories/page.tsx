@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createCategoryAction, deleteCategoryAction } from "@/app/actions/admin";
+import { Card, PageHeader } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function AdminCategoriesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-6">Kategori</h1>
+      <PageHeader title="Kategori" />
 
       <form action={createCategoryAction} className="flex gap-2 mb-6">
         <input
@@ -28,7 +29,7 @@ export default async function AdminCategoriesPage() {
         </button>
       </form>
 
-      <div className="bg-white rounded-2xl border border-slate-200">
+      <Card className="!p-0">
         {categories.map((c) => (
           <div key={c.id} className="flex items-center justify-between px-5 py-3 border-b border-slate-50 last:border-0">
             <div>
@@ -48,7 +49,7 @@ export default async function AdminCategoriesPage() {
         {categories.length === 0 && (
           <p className="text-sm text-slate-400 text-center py-8">Belum ada kategori.</p>
         )}
-      </div>
+      </Card>
       <p className="text-xs text-slate-400 mt-3">
         Menghapus kategori tidak menghapus produknya — produk hanya menjadi &quot;tanpa kategori&quot;.
       </p>

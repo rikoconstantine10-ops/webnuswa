@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getPlatformFeePercent } from "@/lib/ledger";
 import { kieAiEnabled } from "@/lib/kieai";
 import AdminSettingsForm from "@/components/AdminSettingsForm";
+import { PageHeader } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-6">Pengaturan Platform</h1>
+      <PageHeader title="Pengaturan Platform" />
       <AdminSettingsForm currentFee={fee} kieApiKeySet={kieApiKeySet} />
     </div>
   );

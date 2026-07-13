@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { markAffiliatePaidAction } from "@/app/actions/admin";
+import { Card, PageHeader, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +23,11 @@ export default async function AdminAffiliatesPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold">Komisi Afiliasi</h1>
+      <PageHeader title="Komisi Afiliasi" />
       {grouped.length === 0 ? (
-        <p className="text-sm text-slate-400">Tidak ada komisi yang perlu dibayar.</p>
+        <EmptyState icon="🤝" title="Tidak ada komisi yang perlu dibayar" />
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <Card className="!p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs">
               <tr>
@@ -55,7 +56,7 @@ export default async function AdminAffiliatesPage() {
               })}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
     </div>
   );

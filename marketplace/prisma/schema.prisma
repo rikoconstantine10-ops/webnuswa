@@ -95,6 +95,9 @@ model Store {
   // Langganan
   plan              String        @default("FREE") // FREE | PRO
   planUntil         DateTime?
+  // Akses fitur ✨ AI Studio (generate foto/caption) — diaktifkan per-seller oleh admin,
+  // terpisah dari kie_api_key platform (key harus ada DAN toko ini di-approve admin).
+  aiGenerationEnabled Boolean     @default(false)
   createdAt         DateTime      @default(now())
   products          Product[]
   orders            Order[]

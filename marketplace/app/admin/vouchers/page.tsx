@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import PlatformVoucherManager from "@/components/PlatformVoucherManager";
 import { toggleAdminVoucherAction, deleteAdminVoucherAction } from "@/app/actions/admin";
+import { Card, PageHeader, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,10 @@ export default async function AdminVouchersPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-extrabold">Voucher Platform</h1>
+      <PageHeader title="Voucher Platform" />
       <PlatformVoucherManager />
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <Card className="!p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-xs">
             <tr>
@@ -38,9 +39,7 @@ export default async function AdminVouchersPage() {
                   <td className="px-4 py-2">{v.minSpend ? formatRupiah(v.minSpend) : "-"}</td>
                   <td className="px-4 py-2">{v.used}{v.quota ? ` / ${v.quota}` : ""}</td>
                   <td className="px-4 py-2">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${v.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"}`}>
-                      {v.active ? "Aktif" : "Nonaktif"}
-                    </span>
+                    <Badge tone={v.active ? "emerald" : "slate"}>{v.active ? "Aktif" : "Nonaktif"}</Badge>
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">
                     <form action={toggleAdminVoucherAction} className="inline">
@@ -57,7 +56,7 @@ export default async function AdminVouchersPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

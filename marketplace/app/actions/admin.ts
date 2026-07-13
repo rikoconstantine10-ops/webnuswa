@@ -251,6 +251,19 @@ export async function setStoreVerifiedAction(formData: FormData) {
   revalidatePath("/admin/sellers");
 }
 
+export async function toggleStoreAiAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const storeId = String(formData.get("storeId"));
+  const enabled = String(formData.get("enabled")) === "true";
+  const store = await db.store.update({
+    where: { id: storeId },
+    data: { aiGenerationEnabled: enabled },
+  });
+  await audit(admin.email, enabled ? "STORE_AI_ENABLED" : "STORE_AI_DISABLED", `Toko: ${store.name}`);
+  revalidatePath(`/admin/sellers/${storeId}`);
+  revalidatePath("/admin/sellers");
+}
+
 // ===== Laporan produk =====
 
 // Tinjau laporan: "dismiss" (abaikan) atau "takedown" (nonaktifkan produk + tandai ditindak).

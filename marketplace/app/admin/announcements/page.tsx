@@ -5,6 +5,7 @@ import {
   toggleAnnouncementAction,
   deleteAnnouncementAction,
 } from "@/app/actions/admin";
+import { Card, PageHeader, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,7 @@ export default async function AdminAnnouncementsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-2">Pengumuman ke Seller</h1>
-      <p className="text-sm text-slate-500 mb-6">
-        Pengumuman aktif tampil sebagai banner di dashboard semua seller.
-      </p>
+      <PageHeader title="Pengumuman ke Seller" description="Pengumuman aktif tampil sebagai banner di dashboard semua seller." />
 
       <form action={createAnnouncementAction} className="flex gap-2 mb-6">
         <input
@@ -33,35 +31,34 @@ export default async function AdminAnnouncementsPage() {
         </button>
       </form>
 
-      <div className="space-y-3">
-        {announcements.map((a) => (
-          <div key={a.id} className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-3">
-            <div>
-              <p className={`text-sm ${a.active ? "" : "text-slate-400 line-through"}`}>📢 {a.message}</p>
-              <p className="text-xs text-slate-400">{new Date(a.createdAt).toLocaleString("id-ID")}</p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <form action={toggleAnnouncementAction}>
-                <input type="hidden" name="id" value={a.id} />
-                <button className={`text-xs font-bold px-3 py-1.5 rounded-lg ${a.active ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}`}>
-                  {a.active ? "Nonaktifkan" : "Aktifkan"}
-                </button>
-              </form>
-              <form action={deleteAnnouncementAction}>
-                <input type="hidden" name="id" value={a.id} />
-                <button className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 text-red-600">
-                  Hapus
-                </button>
-              </form>
-            </div>
-          </div>
-        ))}
-        {announcements.length === 0 && (
-          <p className="text-slate-400 text-sm text-center py-8 bg-white rounded-2xl border border-slate-200">
-            Belum ada pengumuman.
-          </p>
-        )}
-      </div>
+      {announcements.length === 0 ? (
+        <EmptyState icon="📢" title="Belum ada pengumuman" />
+      ) : (
+        <div className="space-y-3">
+          {announcements.map((a) => (
+            <Card key={a.id} className="flex items-center justify-between gap-3">
+              <div>
+                <p className={`text-sm ${a.active ? "" : "text-slate-400 line-through"}`}>📢 {a.message}</p>
+                <p className="text-xs text-slate-400">{new Date(a.createdAt).toLocaleString("id-ID")}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <form action={toggleAnnouncementAction}>
+                  <input type="hidden" name="id" value={a.id} />
+                  <button className={`text-xs font-bold px-3 py-1.5 rounded-lg ${a.active ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-700"}`}>
+                    {a.active ? "Nonaktifkan" : "Aktifkan"}
+                  </button>
+                </form>
+                <form action={deleteAnnouncementAction}>
+                  <input type="hidden" name="id" value={a.id} />
+                  <button className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 text-red-600">
+                    Hapus
+                  </button>
+                </form>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

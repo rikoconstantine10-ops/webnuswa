@@ -4,7 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { storeBalance } from "@/lib/ledger";
 import { formatRupiah } from "@/lib/money";
-import { setStoreStatusAction, takedownProductAction, setStoreVerifiedAction } from "@/app/actions/admin";
+import { setStoreStatusAction, takedownProductAction, setStoreVerifiedAction, toggleStoreAiAction } from "@/app/actions/admin";
+import { Card, StatCard, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,7 @@ export default async function AdminSellerDetailPage({
             <Link href={`/s/${store.slug}`} className="text-teal-600 hover:underline">/s/{store.slug}</Link>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {store.status !== "ACTIVE" && (
             <form action={setStoreStatusAction}>
               <input type="hidden" name="storeId" value={store.id} />
@@ -77,27 +78,35 @@ export default async function AdminSellerDetailPage({
               {store.verified ? "Cabut Verifikasi" : "✓ Verifikasi Toko"}
             </button>
           </form>
+          <form action={toggleStoreAiAction}>
+            <input type="hidden" name="storeId" value={store.id} />
+            <input type="hidden" name="enabled" value={String(!store.aiGenerationEnabled)} />
+            <button className={`text-sm font-bold px-4 py-2 rounded-lg ${store.aiGenerationEnabled ? "bg-indigo-100 text-indigo-700" : "bg-indigo-600 text-white"}`}>
+              {store.aiGenerationEnabled ? "✨ Nonaktifkan AI Studio" : "✨ Aktifkan AI Studio"}
+            </button>
+          </form>
         </div>
       </div>
 
+      {store.aiGenerationEnabled && (
+        <p className="text-xs bg-indigo-50 text-indigo-700 rounded-xl px-4 py-2.5">
+          ✨ Toko ini punya akses ke fitur AI Studio (generate foto &amp; caption produk).
+        </p>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Saldo", value: formatRupiah(balance) },
-          { label: "Omzet (order dibayar)", value: formatRupiah(totalRevenue) },
-          { label: "Order Dibayar", value: String(store.orders.length) },
-          {
-            label: "Rata-rata Kirim",
-            value: avgShipHours !== null ? `${avgShipHours.toFixed(0)} jam` : "—",
-          },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-            <p className="text-lg font-extrabold">{s.value}</p>
-          </div>
-        ))}
+        <StatCard icon="💰" label="Saldo" value={formatRupiah(balance)} tone="teal" />
+        <StatCard icon="📈" label="Omzet (order dibayar)" value={formatRupiah(totalRevenue)} tone="slate" />
+        <StatCard icon="🧾" label="Order Dibayar" value={String(store.orders.length)} tone="slate" />
+        <StatCard
+          icon="🚚"
+          label="Rata-rata Kirim"
+          value={avgShipHours !== null ? `${avgShipHours.toFixed(0)} jam` : "—"}
+          tone="slate"
+        />
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+      <Card className="!p-0 overflow-x-auto">
         <h2 className="font-bold text-sm px-5 pt-4 pb-2">Produk ({store.products.length})</h2>
         <table className="w-full text-sm">
           <tbody>
@@ -109,9 +118,7 @@ export default async function AdminSellerDetailPage({
                 <td className="px-3 py-2.5">{p.type === "DIGITAL" ? "💾" : "📦"}</td>
                 <td className="px-3 py-2.5">{formatRupiah(p.price)}</td>
                 <td className="px-3 py-2.5">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"}`}>
-                    {p.active ? "Aktif" : "Nonaktif"}
-                  </span>
+                  <Badge tone={p.active ? "emerald" : "slate"}>{p.active ? "Aktif" : "Nonaktif"}</Badge>
                 </td>
                 <td className="px-5 py-2.5 text-right">
                   {p.active && (
@@ -130,9 +137,9 @@ export default async function AdminSellerDetailPage({
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+      <Card className="!p-0 overflow-x-auto">
         <h2 className="font-bold text-sm px-5 pt-4 pb-2">Order Terakhir</h2>
         <table className="w-full text-sm">
           <tbody>
@@ -142,7 +149,7 @@ export default async function AdminSellerDetailPage({
                 <td className="px-3 py-2.5">{o.buyerName}</td>
                 <td className="px-3 py-2.5 font-bold">{formatRupiah(o.total)}</td>
                 <td className="px-3 py-2.5">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100">{o.status}</span>
+                  <Badge>{o.status}</Badge>
                 </td>
                 <td className="px-5 py-2.5 text-xs text-slate-400">
                   {new Date(o.createdAt).toLocaleDateString("id-ID")}
@@ -154,7 +161,7 @@ export default async function AdminSellerDetailPage({
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

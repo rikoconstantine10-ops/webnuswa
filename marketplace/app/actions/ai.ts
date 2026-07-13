@@ -3,14 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { generateProductImage, generateCaptions, checkAiQuota, kieAiEnabled } from "@/lib/kieai";
+import { generateProductImage, generateCaptions, checkAiQuota, storeAiEnabled } from "@/lib/kieai";
 
 export async function generateProductImagesAction(
   _prev: { urls?: string[]; error?: string },
   formData: FormData
 ): Promise<{ urls?: string[]; error?: string }> {
   const { store } = await requireSeller();
-  if (!(await kieAiEnabled())) return { error: "Fitur AI belum diaktifkan admin" };
+  if (!(await storeAiEnabled(store.id))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
 
   const quota = await checkAiQuota(store.id);
   if (!quota.ok) {
@@ -43,7 +43,7 @@ export async function generateCaptionsAction(
   formData: FormData
 ): Promise<{ captions?: string[]; error?: string }> {
   const { store } = await requireSeller();
-  if (!(await kieAiEnabled())) return { error: "Fitur AI belum diaktifkan admin" };
+  if (!(await storeAiEnabled(store.id))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
 
   const quota = await checkAiQuota(store.id);
   if (!quota.ok) {

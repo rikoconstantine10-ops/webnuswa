@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { Card, PageHeader, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -9,12 +10,12 @@ export default async function AdminAuditPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-2">Log Aktivitas</h1>
-      <p className="text-sm text-slate-500 mb-6">
-        Jejak semua aksi penting: persetujuan toko, penarikan dana, perubahan pengaturan.
-      </p>
+      <PageHeader
+        title="Log Aktivitas"
+        description="Jejak semua aksi penting: persetujuan toko, penarikan dana, perubahan pengaturan."
+      />
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+      <Card className="!p-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
@@ -32,9 +33,7 @@ export default async function AdminAuditPage() {
                 </td>
                 <td className="px-4 py-2.5 text-slate-600">{l.actor}</td>
                 <td className="px-4 py-2.5">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 font-mono">
-                    {l.action}
-                  </span>
+                  <Badge>{l.action}</Badge>
                 </td>
                 <td className="px-4 py-2.5 text-slate-600">{l.detail}</td>
               </tr>
@@ -46,7 +45,7 @@ export default async function AdminAuditPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

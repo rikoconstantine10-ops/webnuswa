@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { resolveDisputeAction, addDisputeMessageAction } from "@/app/actions/disputes";
+import { Card, PageHeader, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -42,27 +43,29 @@ export default async function AdminDisputesPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-extrabold">Sengketa / Komplain</h1>
+      <PageHeader title="Sengketa / Komplain" />
 
-      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Cari kode order atau nama toko..."
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
-        />
-        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
-          Cari
-        </button>
-        {q && <Link href="/admin/disputes" className="text-sm text-slate-500 hover:underline">Reset</Link>}
-      </form>
+      <Card>
+        <form method="get" className="flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Cari kode order atau nama toko..."
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+          />
+          <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+            Cari
+          </button>
+          {q && <Link href="/admin/disputes" className="text-sm text-slate-500 hover:underline">Reset</Link>}
+        </form>
+      </Card>
 
       <section className="space-y-4">
         <h2 className="font-bold text-sm text-orange-700">Perlu Ditinjau ({open.length})</h2>
         {open.length === 0 && <p className="text-sm text-slate-400">Tidak ada sengketa terbuka. 🎉</p>}
         {open.map((d) => (
-          <div key={d.id} className="bg-white rounded-2xl border border-orange-200 p-5 space-y-3">
+          <Card key={d.id} className="border-l-4 border-orange-400 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold">
@@ -121,19 +124,19 @@ export default async function AdminDisputesPage({
               Refund: dana escrow dibatalkan (tidak masuk saldo penjual) & order ditandai REFUNDED. Pengembalian uang ke
               pembeli diproses admin via gateway/manual.
             </p>
-          </div>
+          </Card>
         ))}
       </section>
 
       <section className="space-y-3">
         <h2 className="font-bold text-sm text-slate-600">Riwayat ({resolved.length})</h2>
         {resolved.map((d) => (
-          <div key={d.id} className="bg-white rounded-xl border border-slate-200 p-4 text-sm flex items-center justify-between">
+          <Card key={d.id} className="!p-4 text-sm flex items-center justify-between">
             <span>
               Order {d.order.code} · {d.order.store.name} · {formatRupiah(d.order.total)}
             </span>
-            <span className="text-xs font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600">{STATUS[d.status]}</span>
-          </div>
+            <Badge>{STATUS[d.status]}</Badge>
+          </Card>
         ))}
       </section>
     </div>

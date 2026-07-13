@@ -15,6 +15,16 @@ export async function kieAiEnabled(): Promise<boolean> {
   return Boolean(await getKieApiKey());
 }
 
+// Fitur aktif untuk toko ini bila: platform sudah punya API key DAN admin sudah
+// mengizinkan toko ini secara spesifik (Store.aiGenerationEnabled).
+export async function storeAiEnabled(storeId: string): Promise<boolean> {
+  const [platformEnabled, store] = await Promise.all([
+    kieAiEnabled(),
+    db.store.findUnique({ where: { id: storeId }, select: { aiGenerationEnabled: true } }),
+  ]);
+  return platformEnabled && Boolean(store?.aiGenerationEnabled);
+}
+
 // Kuota generate AI per toko per bulan kalender. Seller PRO dapat kuota lebih besar.
 export async function checkAiQuota(storeId: string): Promise<{ ok: boolean; used: number; limit: number }> {
   const store = await db.store.findUnique({ where: { id: storeId }, select: { plan: true, planUntil: true } });

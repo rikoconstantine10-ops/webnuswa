@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { resolveReportAction } from "@/app/actions/admin";
+import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -35,49 +36,38 @@ export default async function AdminReportsPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-1">Laporan Produk</h1>
-      <p className="text-slate-500 text-sm mb-4">Tinjau laporan penyalahgunaan & produk auto-flag kata terlarang.</p>
+      <PageHeader title="Laporan Produk" description="Tinjau laporan penyalahgunaan & produk auto-flag kata terlarang." />
 
-      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Cari nama produk..."
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
-        />
-        <select name="status" defaultValue={activeStatus} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
-          Cari
-        </button>
-      </form>
+      <Card className="mb-4">
+        <form method="get" className="flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Cari nama produk..."
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+          />
+          <select name="status" defaultValue={activeStatus} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+            Cari
+          </button>
+        </form>
+      </Card>
 
       {reports.length === 0 ? (
-        <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-          Tidak ada laporan dengan status ini. 🎉
-        </p>
+        <EmptyState icon="🚩" title="Tidak ada laporan dengan status ini" description="🎉" />
       ) : (
         <div className="space-y-3">
           {reports.map((r) => (
-            <div key={r.id} className="bg-white rounded-2xl border border-slate-200 p-4">
+            <Card key={r.id}>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-[10px] font-bold uppercase bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-                  {REASON_LABEL[r.reason] ?? r.reason}
-                </span>
-                {r.product.moderation === "PENDING" && (
-                  <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                    Menunggu tinjauan
-                  </span>
-                )}
-                {!r.product.active && (
-                  <span className="text-[10px] font-bold uppercase bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
-                    Nonaktif
-                  </span>
-                )}
+                <Badge tone="red">{REASON_LABEL[r.reason] ?? r.reason}</Badge>
+                {r.product.moderation === "PENDING" && <Badge tone="amber">Menunggu tinjauan</Badge>}
+                {!r.product.active && <Badge>Nonaktif</Badge>}
                 <span className="text-xs text-slate-400">
                   {r.createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
                 </span>
@@ -114,7 +104,7 @@ export default async function AdminReportsPage({
                   </button>
                 </form>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

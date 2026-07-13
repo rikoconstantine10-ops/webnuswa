@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { setStoreStatusAction } from "@/app/actions/admin";
+import { setStoreStatusAction, toggleStoreAiAction } from "@/app/actions/admin";
+import { Card, PageHeader, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -37,31 +38,33 @@ export default async function AdminSellersPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold mb-6">Seller / Toko</h1>
+      <PageHeader title="Seller / Toko" />
 
-      <form method="get" className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-center mb-4">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Cari nama toko, slug, atau email pemilik..."
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
-        />
-        <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Semua status</option>
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
-          Cari
-        </button>
-        {(q || status) && (
-          <Link href="/admin/sellers" className="text-sm text-slate-500 hover:underline">Reset</Link>
-        )}
-      </form>
+      <Card className="mb-4">
+        <form method="get" className="flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Cari nama toko, slug, atau email pemilik..."
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+          />
+          <select name="status" defaultValue={status ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Semua status</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+            Cari
+          </button>
+          {(q || status) && (
+            <Link href="/admin/sellers" className="text-sm text-slate-500 hover:underline">Reset</Link>
+          )}
+        </form>
+      </Card>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+      <Card className="!p-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
@@ -70,6 +73,7 @@ export default async function AdminSellersPage({
               <th className="px-4 py-3">Produk</th>
               <th className="px-4 py-3">Order</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">✨ AI</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -86,17 +90,22 @@ export default async function AdminSellersPage({
                 <td className="px-4 py-3">{s._count.products}</td>
                 <td className="px-4 py-3">{s._count.orders}</td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      s.status === "ACTIVE"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : s.status === "PENDING"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-red-100 text-red-700"
-                    }`}
-                  >
+                  <Badge tone={s.status === "ACTIVE" ? "emerald" : s.status === "PENDING" ? "amber" : "red"}>
                     {s.status}
-                  </span>
+                  </Badge>
+                </td>
+                <td className="px-4 py-3">
+                  <form action={toggleStoreAiAction}>
+                    <input type="hidden" name="storeId" value={s.id} />
+                    <input type="hidden" name="enabled" value={String(!s.aiGenerationEnabled)} />
+                    <button
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full cursor-pointer ${
+                        s.aiGenerationEnabled ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {s.aiGenerationEnabled ? "Aktif" : "Nonaktif"}
+                    </button>
+                  </form>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {s.status !== "ACTIVE" && (
@@ -122,7 +131,7 @@ export default async function AdminSellersPage({
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

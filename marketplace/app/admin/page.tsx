@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import SalesChart from "@/components/SalesChart";
+import { PageHeader, StatCard } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -27,13 +28,13 @@ export default async function AdminHome() {
       }),
     ]);
 
-  const stats = [
-    { label: "Pendapatan Platform (Fee)", value: formatRupiah(-(feeSum._sum.amount ?? 0)), accent: "text-teal-600" },
-    { label: "Total Transaksi (GMV)", value: formatRupiah(gmv._sum.total ?? 0) },
-    { label: "Order Berbayar", value: String(orderCount) },
-    { label: "Total Toko", value: String(storeCount) },
-    { label: "Toko Baru (7 Hari)", value: String(newStores7d), accent: newStores7d > 0 ? "text-teal-600" : undefined },
-    { label: "Penarikan Menunggu", value: String(pendingWithdrawals), accent: pendingWithdrawals > 0 ? "text-amber-600" : undefined },
+  const stats: { icon: string; label: string; value: string; tone: "teal" | "amber" | "emerald" | "slate" }[] = [
+    { icon: "💰", label: "Pendapatan Platform (Fee)", value: formatRupiah(-(feeSum._sum.amount ?? 0)), tone: "teal" },
+    { icon: "📊", label: "Total Transaksi (GMV)", value: formatRupiah(gmv._sum.total ?? 0), tone: "slate" },
+    { icon: "🧾", label: "Order Berbayar", value: String(orderCount), tone: "slate" },
+    { icon: "🏪", label: "Total Toko", value: String(storeCount), tone: "slate" },
+    { icon: "🆕", label: "Toko Baru (7 Hari)", value: String(newStores7d), tone: newStores7d > 0 ? "teal" : "slate" },
+    { icon: "💸", label: "Penarikan Menunggu", value: String(pendingWithdrawals), tone: pendingWithdrawals > 0 ? "amber" : "slate" },
   ];
 
   // Agregasi fee platform per hari, 30 hari terakhir.
@@ -50,13 +51,10 @@ export default async function AdminHome() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-extrabold">Ringkasan Platform</h1>
+      <PageHeader title="Ringkasan Platform" />
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs text-slate-500 mb-1">{s.label}</p>
-            <p className={`text-xl font-extrabold ${s.accent ?? ""}`}>{s.value}</p>
-          </div>
+          <StatCard key={s.label} icon={s.icon} label={s.label} value={s.value} tone={s.tone} />
         ))}
       </div>
 

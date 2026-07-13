@@ -3,10 +3,18 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { processWithdrawalAction } from "@/app/actions/admin";
+import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_OPTIONS = ["PENDING", "APPROVED", "PROCESSING", "PAID", "REJECTED"];
+const STATUS_TONE: Record<string, "amber" | "emerald" | "blue" | "sky" | "red"> = {
+  PENDING: "amber",
+  PAID: "emerald",
+  APPROVED: "blue",
+  PROCESSING: "sky",
+  REJECTED: "red",
+};
 
 export default async function AdminWithdrawalsPage({
   searchParams,
@@ -24,20 +32,18 @@ export default async function AdminWithdrawalsPage({
 
   return (
     <div>
-      <div className="flex items-start justify-between flex-wrap gap-3 mb-2">
-        <h1 className="text-2xl font-extrabold">Penarikan Dana Seller</h1>
-        <a
-          href="/api/admin/withdrawals/export"
-          className="border border-slate-300 text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
-        >
-          ⬇ Export CSV
-        </a>
-      </div>
-      <p className="text-sm text-slate-500 mb-4">
-        Dana di-hold dari saldo seller saat request. Bila auto-payout (disbursement) aktif, pencairan
-        diproses otomatis; status <b>PROCESSING</b> menunggu callback provider. Untuk mode manual:
-        transfer ke rekening tujuan lalu tandai <b>Ditransfer</b>. Menolak/gagal mengembalikan dana ke saldo seller.
-      </p>
+      <PageHeader
+        title="Penarikan Dana Seller"
+        description="Dana di-hold dari saldo seller saat request. Bila auto-payout aktif, pencairan diproses otomatis (status PROCESSING menunggu callback provider). Mode manual: transfer ke rekening tujuan lalu tandai Ditransfer. Menolak/gagal mengembalikan dana ke saldo seller."
+        action={
+          <a
+            href="/api/admin/withdrawals/export"
+            className="border border-slate-300 bg-white text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
+          >
+            ⬇ Export CSV
+          </a>
+        }
+      />
 
       <div className="flex gap-2 flex-wrap mb-4">
         <Link
@@ -57,70 +63,55 @@ export default async function AdminWithdrawalsPage({
         ))}
       </div>
 
-      <div className="space-y-3">
-        {withdrawals.length === 0 && (
-          <p className="text-slate-500 text-center py-16 bg-white rounded-2xl border border-slate-200">
-            Belum ada request penarikan.
-          </p>
-        )}
-        {withdrawals.map((w) => (
-          <div key={w.id} className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-extrabold text-lg">{formatRupiah(w.amount)}</p>
-              <p className="text-sm text-slate-600">{w.store.name}</p>
-              <p className="text-xs text-slate-500">
-                {w.bankName} · {w.bankAccountNumber} a.n. {w.bankAccountName}
-              </p>
-              <p className="text-xs text-slate-400">
-                {new Date(w.createdAt).toLocaleString("id-ID")}
-              </p>
-              {(w.autoProcessed || w.provider) && (
-                <p className="text-xs text-sky-600 mt-0.5">
-                  ⚙️ Auto-payout{w.provider ? ` via ${w.provider}` : ""}{w.providerRef ? ` · ref ${w.providerRef}` : ""}
+      {withdrawals.length === 0 ? (
+        <EmptyState icon="💰" title="Belum ada request penarikan" />
+      ) : (
+        <div className="space-y-3">
+          {withdrawals.map((w) => (
+            <Card key={w.id} className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-extrabold text-lg">{formatRupiah(w.amount)}</p>
+                <p className="text-sm text-slate-600">{w.store.name}</p>
+                <p className="text-xs text-slate-500">
+                  {w.bankName} · {w.bankAccountNumber} a.n. {w.bankAccountName}
                 </p>
-              )}
-              {w.failureReason && <p className="text-xs text-red-500 mt-0.5">Gagal: {w.failureReason}</p>}
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`text-xs font-bold px-3 py-1 rounded-full ${
-                  w.status === "PENDING"
-                    ? "bg-amber-100 text-amber-700"
-                    : w.status === "PAID"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : w.status === "APPROVED"
-                        ? "bg-blue-100 text-blue-700"
-                        : w.status === "PROCESSING"
-                          ? "bg-sky-100 text-sky-700"
-                          : "bg-red-100 text-red-700"
-                }`}
-              >
-                {w.status}
-              </span>
-              {["PENDING", "APPROVED"].includes(w.status) && (
-                <>
-                  <form action={processWithdrawalAction}>
-                    <input type="hidden" name="id" value={w.id} />
-                    <input type="hidden" name="decision" value="PAID" />
-                    <button className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-emerald-700">
-                      ✓ Ditransfer
-                    </button>
-                  </form>
-                  {w.status === "PENDING" && (
+                <p className="text-xs text-slate-400">
+                  {new Date(w.createdAt).toLocaleString("id-ID")}
+                </p>
+                {(w.autoProcessed || w.provider) && (
+                  <p className="text-xs text-sky-600 mt-0.5">
+                    ⚙️ Auto-payout{w.provider ? ` via ${w.provider}` : ""}{w.providerRef ? ` · ref ${w.providerRef}` : ""}
+                  </p>
+                )}
+                {w.failureReason && <p className="text-xs text-red-500 mt-0.5">Gagal: {w.failureReason}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge tone={STATUS_TONE[w.status] ?? "slate"}>{w.status}</Badge>
+                {["PENDING", "APPROVED"].includes(w.status) && (
+                  <>
                     <form action={processWithdrawalAction}>
                       <input type="hidden" name="id" value={w.id} />
-                      <input type="hidden" name="decision" value="REJECTED" />
-                      <button className="bg-red-100 text-red-600 text-xs font-bold px-3 py-2 rounded-lg hover:bg-red-200">
-                        Tolak
+                      <input type="hidden" name="decision" value="PAID" />
+                      <button className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-emerald-700">
+                        ✓ Ditransfer
                       </button>
                     </form>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+                    {w.status === "PENDING" && (
+                      <form action={processWithdrawalAction}>
+                        <input type="hidden" name="id" value={w.id} />
+                        <input type="hidden" name="decision" value="REJECTED" />
+                        <button className="bg-red-100 text-red-600 text-xs font-bold px-3 py-2 rounded-lg hover:bg-red-200">
+                          Tolak
+                        </button>
+                      </form>
+                    )}
+                  </>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
