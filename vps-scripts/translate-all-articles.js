@@ -86,8 +86,9 @@ META_DESCRIPTION: ${article.meta_description}`,
 ${article.content_html}`,
   }], 8000);
 
-  const cleanMeta = metaText.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-  const metaJson  = JSON.parse(cleanMeta);
+  const jsonMatch = metaText.match(/\{[\s\S]*?\}/);
+  if (!jsonMatch) throw new Error(`No JSON found in meta response: ${metaText.substring(0, 100)}`);
+  const metaJson  = JSON.parse(jsonMatch[0]);
 
   return {
     title_en:            metaJson.title,
