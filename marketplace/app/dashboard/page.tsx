@@ -64,21 +64,21 @@ export default async function DashboardHome() {
     days.push({ label, value });
   }
 
-  const stats = [
-    { icon: "💰", label: "Saldo Tersedia", value: formatRupiah(balance), tone: "teal" as const },
+  const stats: { icon: string; label: string; value: string; tone: "teal" | "amber" | "emerald" | "slate" }[] = [
+    { icon: "💰", label: "Saldo Tersedia", value: formatRupiah(balance), tone: "teal" },
     {
       icon: "🔒",
       label: "Saldo Tertahan (Escrow)",
       value: formatRupiah(heldBalance),
-      tone: (heldBalance > 0 ? "amber" : "slate") as const,
+      tone: heldBalance > 0 ? "amber" : "slate",
     },
-    { icon: "📈", label: "Total Penjualan", value: formatRupiah(totalSales._sum.amount ?? 0), tone: "slate" as const },
-    { icon: "📦", label: "Produk Aktif", value: String(productCount), tone: "slate" as const },
+    { icon: "📈", label: "Total Penjualan", value: formatRupiah(totalSales._sum.amount ?? 0), tone: "slate" },
+    { icon: "📦", label: "Produk Aktif", value: String(productCount), tone: "slate" },
     {
       icon: "🧾",
       label: "Pesanan Perlu Diproses",
       value: String(pendingOrders),
-      tone: (pendingOrders > 0 ? "amber" : "slate") as const,
+      tone: pendingOrders > 0 ? "amber" : "slate",
     },
   ];
 
