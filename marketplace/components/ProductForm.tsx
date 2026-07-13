@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createProductAction, updateProductAction } from "@/app/actions/products";
+import AiPhotoCaptionPanel from "@/components/AiPhotoCaptionPanel";
 
 type Category = { id: string; name: string };
 type Variant = { name: string; price: number; stock: number | null };
@@ -37,9 +38,11 @@ async function uploadImage(file: File): Promise<string> {
 export default function ProductForm({
   categories,
   product,
+  aiEnabled = false,
 }: {
   categories: Category[];
   product?: Product;
+  aiEnabled?: boolean;
 }) {
   const isEdit = Boolean(product);
   const [state, formAction, pending] = useActionState(
@@ -50,6 +53,8 @@ export default function ProductForm({
   const [uploading, setUploading] = useState(false);
   const [digitalFile, setDigitalFile] = useState<{ filePath: string; fileName: string } | null>(null);
   const [uploadError, setUploadError] = useState("");
+  const [name, setName] = useState(product?.name ?? "");
+  const [description, setDescription] = useState(product?.description ?? "");
   const [coverUrl, setCoverUrl] = useState(product?.imageUrl ?? "");
   const [extraImages, setExtraImages] = useState<string[]>(product?.images.map((i) => i.url) ?? []);
   const [variants, setVariants] = useState<Variant[]>(product?.variants ?? []);
@@ -116,13 +121,34 @@ export default function ProductForm({
 
       <div>
         <label className="text-sm font-medium block mb-1">Nama produk</label>
-        <input type="text" name="name" required defaultValue={product?.name} className={inputCls} />
+        <input
+          type="text"
+          name="name"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={inputCls}
+        />
       </div>
 
       <div>
         <label className="text-sm font-medium block mb-1">Deskripsi</label>
-        <textarea name="description" rows={4} defaultValue={product?.description ?? ""} className={inputCls} />
+        <textarea
+          name="description"
+          rows={4}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className={inputCls}
+        />
       </div>
+
+      {aiEnabled && (
+        <AiPhotoCaptionPanel
+          productName={name}
+          onImageChosen={(url) => setExtraImages((prev) => [...prev, url].slice(0, 5))}
+          onCaptionChosen={setDescription}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>

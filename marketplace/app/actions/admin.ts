@@ -147,6 +147,19 @@ export async function updateSettingsAction(
     update: { value: String(fee) },
   });
   await audit(admin.email, "SETTINGS_FEE_CHANGED", `Platform fee → ${fee}%`);
+
+  // Kosongkan field = biarkan API key yang sudah tersimpan tidak berubah (hindari
+  // kehapus tidak sengaja saat admin cuma mau ganti fee).
+  const kieApiKey = String(formData.get("kieApiKey") ?? "").trim();
+  if (kieApiKey) {
+    await db.setting.upsert({
+      where: { key: "kie_api_key" },
+      create: { key: "kie_api_key", value: kieApiKey },
+      update: { value: kieApiKey },
+    });
+    await audit(admin.email, "SETTINGS_AI_KEY_CHANGED", "Kie.ai API key diperbarui");
+  }
+
   revalidatePath("/admin/settings");
   return { saved: true };
 }

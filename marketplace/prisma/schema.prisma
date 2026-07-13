@@ -104,6 +104,7 @@ model Store {
   vouchers          Voucher[]
   reports           ProductReport[]
   notifications     Notification[]
+  aiGenerations     AiGeneration[]
 }
 
 model Category {
@@ -634,4 +635,15 @@ model Voucher {
   endsAt      DateTime?
   createdAt   DateTime @default(now())
   orders      Order[]
+}
+
+// Jejak pemakaian AI (generate foto/caption via kie.ai) — dipakai untuk kuota bulanan per toko.
+model AiGeneration {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type      String // IMAGE | CAPTION
+  createdAt DateTime @default(now())
+
+  @@index([storeId, type, createdAt])
 }
