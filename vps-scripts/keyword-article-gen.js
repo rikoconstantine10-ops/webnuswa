@@ -524,8 +524,9 @@ async function main() {
           chatCompletion([{ role: "user", content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".\n\nTITLE: ${title}\nMETA_DESCRIPTION: ${metaDesc}` }], 512),
           chatCompletion([{ role: "user", content: `Translate this Indonesian HTML article to English. Keep ALL HTML tags exactly as-is. Keep brand names (Nuswa Lab, Google Ads, WhatsApp, Meta Ads, SEO) unchanged. Keep URLs unchanged. Return ONLY the translated HTML.\n\n${finalHtml}` }], 8000),
         ]);
-        const cleanMeta = metaText.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-        const metaJson  = JSON.parse(cleanMeta);
+        const s = metaText.indexOf("{"), e = metaText.lastIndexOf("}");
+        if (s === -1 || e === -1) throw new Error(`No JSON in meta response: ${metaText.substring(0, 100)}`);
+        const metaJson  = JSON.parse(metaText.slice(s, e + 1));
         titleEn       = metaJson.title;
         metaDescEn    = metaJson.meta_description;
         contentHtmlEn = contentText.trim();
