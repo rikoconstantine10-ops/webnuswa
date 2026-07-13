@@ -2,19 +2,17 @@
 
 import { useActionState } from "react";
 import { setPasswordAction } from "@/app/actions/auth";
+import PasswordField from "./PasswordField";
 
 export default function SetPasswordForm() {
   const [state, formAction, pending] = useActionState(setPasswordAction, {});
 
   return (
     <form action={formAction} className="space-y-3">
-      <input
-        type="password"
+      <PasswordField
         name="password"
-        required
-        minLength={8}
         placeholder="Password baru (min. 8 karakter)"
-        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm"
+        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm pr-16"
       />
       <button
         disabled={pending}

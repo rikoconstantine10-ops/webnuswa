@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useActionState } from "react";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "./TurnstileWidget";
+import PasswordField from "./PasswordField";
 import {
   sellerRequestOtpAction,
   sellerVerifyOtpAction,
@@ -49,7 +50,7 @@ function OtpTab() {
             placeholder="Alamat email"
             className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
           />
-          <TurnstileWidget onReadyChange={setTurnstileReady} />
+          <TurnstileWidget onReadyChange={setTurnstileReady} resetSignal={state} />
           <button
             disabled={pending || !turnstileReady}
             className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 disabled:opacity-50"
@@ -101,14 +102,12 @@ function PasswordTab() {
         placeholder="Alamat email"
         className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
       />
-      <input
-        type="password"
+      <PasswordField
         name="password"
-        required
         placeholder="Password"
-        className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
+        className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm pr-16"
       />
-      <TurnstileWidget onReadyChange={setTurnstileReady} />
+      <TurnstileWidget onReadyChange={setTurnstileReady} resetSignal={state} />
       <button
         disabled={pending || !turnstileReady}
         className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 disabled:opacity-50"

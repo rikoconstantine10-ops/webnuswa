@@ -17,20 +17,33 @@ declare global {
           "expired-callback"?: () => void;
         }
       ) => string;
+      reset: (widgetId: string) => void;
     };
   }
 }
 
-export function TurnstileWidget({ onReadyChange }: { onReadyChange?: (ready: boolean) => void }) {
+// resetSignal: nilai apa saja yang berubah tiap kali sebuah submit attempt selesai
+// (biasanya objek state dari useActionState). Token Turnstile cuma bisa dipakai
+// sekali — begitu satu percobaan submit terkirim ke server, token itu langsung
+// "terbakar" di sisi Cloudflare walau attempt-nya gagal karena alasan lain
+// (mis. password salah). Tanpa reset ini, percobaan submit berikutnya akan selalu
+// gagal dengan "Verifikasi keamanan gagal" walau widget-nya masih tampil "Success!".
+export function TurnstileWidget({
+  onReadyChange,
+  resetSignal,
+}: {
+  onReadyChange?: (ready: boolean) => void;
+  resetSignal?: unknown;
+}) {
   const [token, setToken] = useState("");
   const [failed, setFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const renderedRef = useRef(false);
+  const widgetIdRef = useRef<string | null>(null);
+  const skipNextResetRef = useRef(true);
 
   function renderWidget() {
-    if (renderedRef.current || !containerRef.current || !window.turnstile) return;
-    renderedRef.current = true;
-    window.turnstile.render(containerRef.current, {
+    if (widgetIdRef.current || !containerRef.current || !window.turnstile) return;
+    widgetIdRef.current = window.turnstile.render(containerRef.current, {
       sitekey: TURNSTILE_SITE_KEY!,
       callback: (t) => {
         setToken(t);
@@ -51,6 +64,19 @@ export function TurnstileWidget({ onReadyChange }: { onReadyChange?: (ready: boo
   useEffect(() => {
     if (window.turnstile) renderWidget();
   }, []);
+
+  useEffect(() => {
+    if (skipNextResetRef.current) {
+      skipNextResetRef.current = false;
+      return;
+    }
+    if (widgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(widgetIdRef.current);
+      setToken("");
+      onReadyChange?.(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetSignal]);
 
   if (!TURNSTILE_SITE_KEY) return null;
 
