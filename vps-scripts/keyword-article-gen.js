@@ -588,7 +588,7 @@ async function main() {
     const { execSync } = require("child_process");
     log(`\n🔨 Building site (${inserted.length} new articles)...`);
     try {
-      execSync("npm run build && pm2 restart nuswalab", {
+      execSync("npm run build && sudo -u ubuntu pm2 restart nuswalab", {
         cwd:   VPS_ROOT,
         stdio: "inherit",
       });
