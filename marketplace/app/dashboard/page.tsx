@@ -5,7 +5,7 @@ import { storeBalance, storeHeldBalance } from "@/lib/ledger";
 import { formatRupiah } from "@/lib/money";
 import { waStatus } from "@/lib/wa";
 import SalesChart from "@/components/SalesChart";
-import { markProcessingAction } from "@/app/actions/seller";
+import { markProcessingAction, setMonthlyTargetAction } from "@/app/actions/seller";
 import { Card, PageHeader, StatCard } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +13,11 @@ export const dynamic = "force-dynamic";
 export default async function DashboardHome() {
   const { store } = await requireSeller();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
 
-  const [balance, heldBalance, productCount, pendingOrders, totalSales, paidOrders, topItems, announcements, actionableOrders, wa] =
+  const [balance, heldBalance, productCount, pendingOrders, totalSales, paidOrders, monthSales, topItems, announcements, actionableOrders, wa] =
     await Promise.all([
       storeBalance(store.id),
       storeHeldBalance(store.id),
@@ -27,6 +30,10 @@ export default async function DashboardHome() {
       db.order.findMany({
         where: { storeId: store.id, paidAt: { gte: since } },
         select: { paidAt: true, subtotal: true },
+      }),
+      db.order.aggregate({
+        where: { storeId: store.id, paidAt: { gte: monthStart } },
+        _sum: { subtotal: true },
       }),
       db.orderItem.groupBy({
         by: ["productId", "name"],
@@ -43,6 +50,9 @@ export default async function DashboardHome() {
       }),
       waStatus(store.id),
     ]);
+
+  const monthSalesTotal = monthSales._sum.subtotal ?? 0;
+  const targetPct = store.monthlyTargetRupiah ? Math.min(100, Math.round((monthSalesTotal / store.monthlyTargetRupiah) * 100)) : 0;
 
   const checklist = [
     { done: productCount > 0, label: "Tambah produk pertama", href: "/dashboard/products/new" },
@@ -144,6 +154,50 @@ export default async function DashboardHome() {
           </div>
         </Card>
       )}
+
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-sm">🎯 Target Penjualan Bulan Ini</h2>
+          <span className="text-xs text-slate-400">
+            {new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+          </span>
+        </div>
+        {store.monthlyTargetRupiah ? (
+          <>
+            <div className="flex items-end justify-between mb-1.5">
+              <span className="text-lg font-extrabold text-teal-600">{formatRupiah(monthSalesTotal)}</span>
+              <span className="text-xs text-slate-400">dari target {formatRupiah(store.monthlyTargetRupiah)}</span>
+            </div>
+            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-1">
+              <div
+                className={`h-full rounded-full transition-all ${targetPct >= 100 ? "bg-emerald-500" : "bg-teal-500"}`}
+                style={{ width: `${targetPct}%` }}
+              />
+            </div>
+            <p className="text-xs text-slate-400 mb-3">
+              {targetPct}% tercapai {targetPct >= 100 && "🎉 Target tercapai!"}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-slate-500 mb-3">
+            Belum ada target bulan ini. Penjualan bulan ini: <span className="font-bold">{formatRupiah(monthSalesTotal)}</span>
+          </p>
+        )}
+        <form action={setMonthlyTargetAction} className="flex gap-2">
+          <input
+            type="number"
+            name="monthlyTargetRupiah"
+            min={0}
+            step={10000}
+            defaultValue={store.monthlyTargetRupiah ?? ""}
+            placeholder="Nominal target (Rp)"
+            className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          />
+          <button className="bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-700">
+            {store.monthlyTargetRupiah ? "Ubah" : "Atur Target"}
+          </button>
+        </form>
+      </Card>
 
       {actionableOrders.length > 0 && (
         <Card>

@@ -27,6 +27,17 @@ export async function toggleStorePausedAction() {
   revalidatePath("/market");
 }
 
+// Target penjualan bulanan (opsional) — ditampilkan sebagai progress bar di Ringkasan.
+export async function setMonthlyTargetAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const raw = String(formData.get("monthlyTargetRupiah") ?? "").trim();
+  const target = raw ? parseInt(raw, 10) : null;
+  if (raw && (!Number.isFinite(target) || (target as number) < 0)) return;
+
+  await db.store.update({ where: { id: store.id }, data: { monthlyTargetRupiah: target } });
+  revalidatePath("/dashboard");
+}
+
 export async function markProcessingAction(formData: FormData) {
   const { store } = await requireSeller();
   const orderId = String(formData.get("orderId"));
