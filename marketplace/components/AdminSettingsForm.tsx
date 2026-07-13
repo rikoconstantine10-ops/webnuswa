@@ -2,12 +2,23 @@
 
 import { useActionState } from "react";
 import { updateSettingsAction } from "@/app/actions/admin";
+import AiModelPicker from "@/components/admin/AiModelPicker";
 
-export default function AdminSettingsForm({ currentFee, kieApiKeySet }: { currentFee: number; kieApiKeySet: boolean }) {
+type AiConfig = { apiKeySet: boolean; baseUrl: string; model: string };
+
+export default function AdminSettingsForm({
+  currentFee,
+  imageConfig,
+  captionConfig,
+}: {
+  currentFee: number;
+  imageConfig: AiConfig;
+  captionConfig: AiConfig;
+}) {
   const [state, formAction, pending] = useActionState(updateSettingsAction, {});
 
   return (
-    <form action={formAction} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-4 max-w-md">
+    <form action={formAction} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-6 max-w-xl">
       <div>
         <label className="text-sm font-medium block mb-1">Platform fee (%)</label>
         <input
@@ -27,22 +38,50 @@ export default function AdminSettingsForm({ currentFee, kieApiKeySet }: { curren
       <hr className="border-slate-100" />
 
       <div>
-        <label className="text-sm font-medium block mb-1">
-          ✨ Kie.ai API Key {kieApiKeySet && <span className="text-emerald-600 font-normal">(sudah diatur)</span>}
-        </label>
-        <input
-          type="password"
-          name="kieApiKey"
-          placeholder={kieApiKeySet ? "•••••••••••••••• (kosongkan jika tidak diubah)" : "Tempel API key dari kie.ai/api-key"}
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-        />
-        <p className="text-xs text-slate-500 mt-1">
-          Mengaktifkan fitur ✨ Generate Foto Studio &amp; Caption AI di halaman produk seller. Ambil key di{" "}
-          <a href="https://kie.ai/api-key" target="_blank" rel="noreferrer" className="text-teal-600 hover:underline">
-            kie.ai/api-key
-          </a>
-          . Kuota gratis 10x/bulan per seller, 100x/bulan untuk seller Pro.
+        <p className="text-base font-bold mb-1">✨ Fitur AI Studio Seller</p>
+        <p className="text-xs text-slate-500 mb-4">
+          Generate foto dan generate caption punya API key, base URL, dan model masing-masing — jadi
+          bisa pakai provider/model berbeda untuk tiap fitur. Kuota gratis 10x/bulan per seller,
+          100x/bulan untuk seller Pro. Akses per-toko diatur di{" "}
+          <a href="/admin/ai-usage" className="text-teal-600 hover:underline">AI Studio (admin)</a>.
         </p>
+
+        <div className="grid sm:grid-cols-2 gap-6">
+          <AiModelPicker
+            title="🖼️ Generate Foto"
+            apiKeyName="aiImageApiKey"
+            baseUrlName="aiImageBaseUrl"
+            modelName="aiImageModel"
+            apiKeySet={imageConfig.apiKeySet}
+            defaultBaseUrl={imageConfig.baseUrl}
+            defaultModel={imageConfig.model}
+            placeholderBaseUrl="https://api.kie.ai"
+            placeholderModel="google/nano-banana-edit"
+            helpText={
+              <>
+                Dipakai untuk generate variasi foto produk dari 1 foto HP. Default: kie.ai, model{" "}
+                <code>google/nano-banana-edit</code>.
+              </>
+            }
+          />
+          <AiModelPicker
+            title="📝 Generate Caption"
+            apiKeyName="aiCaptionApiKey"
+            baseUrlName="aiCaptionBaseUrl"
+            modelName="aiCaptionModel"
+            apiKeySet={captionConfig.apiKeySet}
+            defaultBaseUrl={captionConfig.baseUrl}
+            defaultModel={captionConfig.model}
+            placeholderBaseUrl="https://api.kie.ai"
+            placeholderModel="gemini-2.5-flash"
+            helpText={
+              <>
+                Dipakai untuk generate 3 pilihan caption/deskripsi produk. Default: kie.ai, model{" "}
+                <code>gemini-2.5-flash</code>.
+              </>
+            }
+          />
+        </div>
       </div>
 
       {state.error && (

@@ -148,16 +148,36 @@ export async function updateSettingsAction(
   });
   await audit(admin.email, "SETTINGS_FEE_CHANGED", `Platform fee → ${fee}%`);
 
-  // Kosongkan field = biarkan API key yang sudah tersimpan tidak berubah (hindari
-  // kehapus tidak sengaja saat admin cuma mau ganti fee).
-  const kieApiKey = String(formData.get("kieApiKey") ?? "").trim();
-  if (kieApiKey) {
-    await db.setting.upsert({
-      where: { key: "kie_api_key" },
-      create: { key: "kie_api_key", value: kieApiKey },
-      update: { value: kieApiKey },
-    });
-    await audit(admin.email, "SETTINGS_AI_KEY_CHANGED", "Kie.ai API key diperbarui");
+  // Generate Foto dan Generate Caption punya API key, base URL, dan model masing-masing.
+  // Kosongkan API key = biarkan yang sudah tersimpan tidak berubah (hindari kehapus tidak
+  // sengaja saat admin cuma mau ganti model/base URL atau fee). Base URL/model boleh disimpan
+  // kosong (fallback ke default di lib/kieai.ts).
+  const aiImageApiKey = String(formData.get("aiImageApiKey") ?? "").trim();
+  const aiImageBaseUrl = String(formData.get("aiImageBaseUrl") ?? "").trim();
+  const aiImageModel = String(formData.get("aiImageModel") ?? "").trim();
+  const aiCaptionApiKey = String(formData.get("aiCaptionApiKey") ?? "").trim();
+  const aiCaptionBaseUrl = String(formData.get("aiCaptionBaseUrl") ?? "").trim();
+  const aiCaptionModel = String(formData.get("aiCaptionModel") ?? "").trim();
+
+  const settingWrites: Promise<unknown>[] = [
+    db.setting.upsert({ where: { key: "ai_image_base_url" }, create: { key: "ai_image_base_url", value: aiImageBaseUrl }, update: { value: aiImageBaseUrl } }),
+    db.setting.upsert({ where: { key: "ai_image_model" }, create: { key: "ai_image_model", value: aiImageModel }, update: { value: aiImageModel } }),
+    db.setting.upsert({ where: { key: "ai_caption_base_url" }, create: { key: "ai_caption_base_url", value: aiCaptionBaseUrl }, update: { value: aiCaptionBaseUrl } }),
+    db.setting.upsert({ where: { key: "ai_caption_model" }, create: { key: "ai_caption_model", value: aiCaptionModel }, update: { value: aiCaptionModel } }),
+  ];
+  if (aiImageApiKey) {
+    settingWrites.push(
+      db.setting.upsert({ where: { key: "ai_image_api_key" }, create: { key: "ai_image_api_key", value: aiImageApiKey }, update: { value: aiImageApiKey } })
+    );
+  }
+  if (aiCaptionApiKey) {
+    settingWrites.push(
+      db.setting.upsert({ where: { key: "ai_caption_api_key" }, create: { key: "ai_caption_api_key", value: aiCaptionApiKey }, update: { value: aiCaptionApiKey } })
+    );
+  }
+  await Promise.all(settingWrites);
+  if (aiImageApiKey || aiCaptionApiKey) {
+    await audit(admin.email, "SETTINGS_AI_KEY_CHANGED", "API key AI diperbarui");
   }
 
   revalidatePath("/admin/settings");
