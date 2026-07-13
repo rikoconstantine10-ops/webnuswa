@@ -51,6 +51,7 @@ export default async function RootLayout({
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/market" className="hover:text-teal-600">Belanja</Link>
             <Link href="/bantuan" className="hover:text-teal-600">Bantuan</Link>
+            <Link href="/blog" className="hover:text-teal-600">Blog</Link>
             <Link href="/terms" className="hover:text-teal-600">Syarat &amp; Ketentuan</Link>
             <Link href="/privacy" className="hover:text-teal-600">Privasi</Link>
             <a href="mailto:hello@nuswamart.com" className="hover:text-teal-600">hello@nuswamart.com</a>
