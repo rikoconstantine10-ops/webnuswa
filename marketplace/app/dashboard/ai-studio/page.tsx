@@ -1,0 +1,34 @@
+import { requireSeller } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { kieAiEnabled } from "@/lib/kieai";
+import { PageHeader, EmptyState } from "@/components/dashboard/ui";
+import AiStudioPanel from "@/components/AiStudioPanel";
+
+export const dynamic = "force-dynamic";
+
+export default async function AiStudioPage() {
+  const { store } = await requireSeller();
+  const [enabled, products] = await Promise.all([
+    kieAiEnabled(),
+    db.product.findMany({
+      where: { storeId: store.id },
+      select: { id: true, name: true, imageUrl: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  return (
+    <div>
+      <PageHeader title="✨ AI Studio" description="Generate foto studio & caption produk pakai AI." />
+      {!enabled ? (
+        <EmptyState
+          icon="✨"
+          title="Fitur AI belum diaktifkan admin"
+          description="Hubungi admin platform untuk mengaktifkan generate foto & caption AI."
+        />
+      ) : (
+        <AiStudioPanel products={products} />
+      )}
+    </div>
+  );
+}

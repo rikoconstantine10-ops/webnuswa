@@ -18,6 +18,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Jualan",
     items: [
       { href: "/dashboard/products", label: "Produk", icon: "📦" },
+      { href: "/dashboard/ai-studio", label: "AI Studio", icon: "✨" },
       { href: "/dashboard/orders", label: "Pesanan", icon: "🧾" },
       { href: "/dashboard/reviews", label: "Ulasan", icon: "⭐" },
       { href: "/dashboard/questions", label: "Tanya Jawab", icon: "❓" },

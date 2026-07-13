@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { generateProductImage, generateCaptions, checkAiQuota, kieAiEnabled } from "@/lib/kieai";
@@ -58,4 +59,35 @@ export async function generateCaptionsAction(
 
   await db.aiGeneration.create({ data: { storeId: store.id, type: "CAPTION" } });
   return { captions: result.captions };
+}
+
+// Simpan hasil generate langsung ke produk terpilih — dipakai dari halaman AI Studio
+// yang berdiri sendiri (bukan di dalam form produk).
+export async function addProductImageAction(formData: FormData): Promise<void> {
+  const { store } = await requireSeller();
+  const productId = String(formData.get("productId") ?? "");
+  const url = String(formData.get("url") ?? "");
+  if (!productId || !url) return;
+
+  const product = await db.product.findFirst({ where: { id: productId, storeId: store.id } });
+  if (!product) return;
+
+  const count = await db.productImage.count({ where: { productId } });
+  if (count >= 5) return;
+
+  await db.productImage.create({ data: { productId, url, sort: count } });
+  revalidatePath(`/dashboard/products/${productId}/edit`);
+}
+
+export async function setProductDescriptionAction(formData: FormData): Promise<void> {
+  const { store } = await requireSeller();
+  const productId = String(formData.get("productId") ?? "");
+  const description = String(formData.get("description") ?? "").trim();
+  if (!productId || !description) return;
+
+  const product = await db.product.findFirst({ where: { id: productId, storeId: store.id } });
+  if (!product) return;
+
+  await db.product.update({ where: { id: productId }, data: { description } });
+  revalidatePath(`/dashboard/products/${productId}/edit`);
 }

@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from "react";
 import { createProductAction, updateProductAction } from "@/app/actions/products";
-import AiPhotoCaptionPanel from "@/components/AiPhotoCaptionPanel";
 
 type Category = { id: string; name: string };
 type Variant = { name: string; price: number; stock: number | null };
@@ -38,11 +37,9 @@ async function uploadImage(file: File): Promise<string> {
 export default function ProductForm({
   categories,
   product,
-  aiEnabled = false,
 }: {
   categories: Category[];
   product?: Product;
-  aiEnabled?: boolean;
 }) {
   const isEdit = Boolean(product);
   const [state, formAction, pending] = useActionState(
@@ -141,14 +138,6 @@ export default function ProductForm({
           className={inputCls}
         />
       </div>
-
-      {aiEnabled && (
-        <AiPhotoCaptionPanel
-          productName={name}
-          onImageChosen={(url) => setExtraImages((prev) => [...prev, url].slice(0, 5))}
-          onCaptionChosen={setDescription}
-        />
-      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>

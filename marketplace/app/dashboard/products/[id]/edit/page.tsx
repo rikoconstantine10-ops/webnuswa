@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { kieAiEnabled } from "@/lib/kieai";
 import ProductForm from "@/components/ProductForm";
 
 export default async function EditProductPage({
@@ -23,15 +22,12 @@ export default async function EditProductPage({
   });
   if (!product) notFound();
 
-  const [categories, aiEnabled] = await Promise.all([
-    db.category.findMany({ orderBy: { name: "asc" } }),
-    kieAiEnabled(),
-  ]);
+  const categories = await db.category.findMany({ orderBy: { name: "asc" } });
 
   return (
     <div>
       <h1 className="text-2xl font-extrabold mb-6">Edit Produk</h1>
-      <ProductForm categories={categories} product={product} aiEnabled={aiEnabled} />
+      <ProductForm categories={categories} product={product} />
     </div>
   );
 }
