@@ -85,25 +85,23 @@ export default function AiModelPicker({
 
       <div>
         <label className="text-xs font-medium text-slate-500 block mb-1">Model</label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            name={modelName}
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            placeholder={placeholderModel}
-            list={models.length > 0 ? listId : undefined}
-            className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"
-          />
-          <button
-            type="button"
-            onClick={fetchModels}
-            disabled={!apiKey.trim() || !baseUrl.trim() || status.kind === "loading"}
-            className="shrink-0 text-xs font-bold px-3 py-2 rounded-lg bg-violet-100 text-violet-700 hover:bg-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {status.kind === "loading" ? "Mengambil..." : "🔄 Ambil Model"}
-          </button>
-        </div>
+        <input
+          type="text"
+          name={modelName}
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          placeholder={placeholderModel}
+          list={models.length > 0 ? listId : undefined}
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"
+        />
+        <button
+          type="button"
+          onClick={fetchModels}
+          disabled={!apiKey.trim() || !baseUrl.trim() || status.kind === "loading"}
+          className="mt-2 w-full sm:w-auto text-xs font-bold px-3 py-1.5 rounded-lg bg-violet-100 text-violet-700 hover:bg-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {status.kind === "loading" ? "Mengambil..." : "🔄 Ambil Daftar Model"}
+        </button>
         {models.length > 0 && (
           <datalist id={listId}>
             {models.map((m) => (

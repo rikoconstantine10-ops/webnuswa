@@ -18,7 +18,7 @@ export default function AdminSettingsForm({
   const [state, formAction, pending] = useActionState(updateSettingsAction, {});
 
   return (
-    <form action={formAction} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-6 max-w-xl">
+    <form action={formAction} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 p-6 space-y-6 max-w-3xl">
       <div>
         <label className="text-sm font-medium block mb-1">Platform fee (%)</label>
         <input
@@ -46,7 +46,7 @@ export default function AdminSettingsForm({
           <a href="/admin/ai-usage" className="text-teal-600 hover:underline">AI Studio (admin)</a>.
         </p>
 
-        <div className="grid sm:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6">
           <AiModelPicker
             title="🖼️ Generate Foto"
             apiKeyName="aiImageApiKey"
