@@ -16,34 +16,11 @@ export default function SiteHeader({
   logoutAction: () => void;
 }) {
   const pathname = usePathname();
-  const inDashboard = pathname?.startsWith("/dashboard");
+  const inDashboard = pathname === "/dashboard" || pathname?.startsWith("/dashboard/");
   const inAdmin = pathname === "/admin" || pathname?.startsWith("/admin/");
 
-  if (inAdmin) {
+  if (inAdmin || inDashboard) {
     return null;
-  }
-
-  if (inDashboard) {
-    return (
-      <header className="bg-slate-900 text-white sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="text-base font-extrabold">
-            Nuswa<span className="text-teal-400">Mart</span>
-            <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400 align-middle">
-              Dashboard Seller
-            </span>
-          </Link>
-          <nav className="flex items-center gap-4 text-sm font-medium">
-            <Link href="/" className="text-slate-300 hover:text-white">
-              ← Kembali ke NuswaMart
-            </Link>
-            <form action={logoutAction}>
-              <button className="text-slate-300 hover:text-red-400 cursor-pointer">Keluar</button>
-            </form>
-          </nav>
-        </div>
-      </header>
-    );
   }
 
   return (

@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 
 export default function SiteFooter() {
   const pathname = usePathname();
-  if (pathname === "/admin" || pathname?.startsWith("/admin/")) return null;
+  const inAdmin = pathname === "/admin" || pathname?.startsWith("/admin/");
+  const inDashboard = pathname === "/dashboard" || pathname?.startsWith("/dashboard/");
+  if (inAdmin || inDashboard) return null;
 
   return (
     <footer className="bg-white border-t border-slate-200 py-6 text-center text-sm text-slate-500 space-y-2">
