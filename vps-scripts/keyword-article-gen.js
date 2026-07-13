@@ -20,7 +20,6 @@ const http       = require("http");
 const fs         = require("fs");
 const path       = require("path");
 const { spawn }  = require("child_process");
-const Anthropic  = require("@anthropic-ai/sdk");
 const Database   = require("better-sqlite3");
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -29,16 +28,13 @@ const VPS_ROOT        = "/home/ubuntu/nuswalab";
 const DB_PATH         = "/home/ubuntu/articel generator/data.db";
 const KEYWORDS_FILE   = path.join(VPS_ROOT, "scripts/keywords.json");
 const IMAGE_DIR       = path.join(VPS_ROOT, "public/images/blog");
-const API_KEY         = process.env.ANTHROPIC_API_KEY;
 const PEXELS_KEY      = process.env.PEXELS_API_KEY;
-const BASE_URL        = process.env.ANTHROPIC_BASE_URL || "https://ai.sumopod.com";
-const MODEL           = process.env.ANTHROPIC_MODEL    || "claude-opus-4-8";
-const AI_API_KEY      = process.env.AI_API_KEY         || API_KEY;
+const AI_API_KEY      = process.env.AI_API_KEY;
 const AI_BASE_URL     = process.env.AI_BASE_URL        || "https://openagentic.id/api/v1";
 const AI_MODEL        = process.env.AI_MODEL           || "claude-sonnet-4-6";
 const DRY_RUN         = process.env.DRY_RUN === "1";
 const MAX_DAILY       = parseInt(process.env.MAX_DAILY || "3");
-const ARTICLE_STATUS  = process.env.ARTICLE_STATUS || "draft";
+const ARTICLE_STATUS  = process.env.ARTICLE_STATUS || "published";
 
 // ─── Internal links for diaspora context ─────────────────────────────────────
 
@@ -342,7 +338,7 @@ function chatCompletion(messages, maxTokens) {
 
 // ─── Claude Article Generation ────────────────────────────────────────────────
 
-async function generateArticle(kw, client) {
+async function generateArticle(kw) {
   const systemPrompt = `Kamu adalah expert content writer & SEO specialist untuk Nuswa Lab, digital marketing agency yang spesialis membantu bisnis diaspora Indonesia berkembang di luar negeri (Malaysia, UAE, Saudi Arabia, Australia, Jepang, UK, Belanda, Taiwan, Hong Kong, Qatar, Kuwait, Korea Selatan).
 
 Penulisanmu: profesional, data-driven, actionable. Mix Bahasa Indonesia (70%) + English (30%). Setiap artikel harus memenuhi standar SEO modern, AEO (Answer Engine Optimization), dan AIO (AI Overview Optimization).`;
@@ -385,14 +381,11 @@ INSTRUKSI WAJIB:
 
 PENTING: Return HANYA konten HTML. Mulai langsung dengan <h1>. Jangan tambahkan \`\`\`html atau wrapper apapun.`;
 
-  const message = await client.messages.create({
-    model:      MODEL,
-    max_tokens: 6000,
-    system:     systemPrompt,
-    messages:   [{ role: "user", content: userPrompt }],
-  });
+  const result = await chatCompletion([
+    { role: "user", content: `${systemPrompt}\n\n${userPrompt}` },
+  ], 6000);
 
-  return message.content[0].text.trim();
+  return result.trim();
 }
 
 // ─── Post-process HTML ────────────────────────────────────────────────────────
@@ -440,11 +433,9 @@ function saveKeywords(keywords) {
 async function main() {
   log("=== Keyword Article Generator START ===");
 
-  if (!API_KEY) { log("✗ ANTHROPIC_API_KEY not set. Exiting."); process.exit(1); }
+  if (!AI_API_KEY) { log("✗ AI_API_KEY not set. Exiting."); process.exit(1); }
   if (!PEXELS_KEY) log("⚠ PEXELS_API_KEY not set — articles will have no featured image");
   if (DRY_RUN) log("⚠ DRY RUN mode — nothing will be written to DB or rebuilt");
-
-  const client = new Anthropic({ apiKey: API_KEY, baseURL: BASE_URL });
   const db = DRY_RUN ? null : new Database(DB_PATH);
 
   const keywords = loadKeywords();
@@ -479,7 +470,7 @@ async function main() {
     // 1. Generate article
     let rawHtml;
     try {
-      rawHtml = await generateArticle(kw, client);
+      rawHtml = await generateArticle(kw);
     } catch (err) {
       log(`✗ Claude error: ${err.message}`);
       const idx = keywords.findIndex(k => k.keyword === kw.keyword);
