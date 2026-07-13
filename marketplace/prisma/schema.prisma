@@ -108,6 +108,8 @@ model Store {
   reports           ProductReport[]
   notifications     Notification[]
   aiGenerations     AiGeneration[]
+  aiCreditPurchases AiCreditPurchase[]
+  aiCreditEntries   AiCreditEntry[]
 }
 
 model Category {
@@ -649,4 +651,50 @@ model AiGeneration {
   createdAt DateTime @default(now())
 
   @@index([storeId, type, createdAt])
+}
+
+// Paket topup kredit AI yang bisa dibeli seller (dikelola admin di /admin/ai-usage).
+// Kredit dipakai setelah kuota gratis bulanan habis, dan tidak hangus/expire.
+model AiCreditPackage {
+  id          String   @id @default(cuid())
+  name        String
+  credits     Int
+  priceRupiah Int
+  active      Boolean  @default(true)
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Transaksi pembelian paket kredit AI via Louvin (QRIS/VA) — mirip alur Order tapi
+// bukan untuk produk marketplace, jadi disimpan terpisah.
+model AiCreditPurchase {
+  id          String    @id @default(cuid())
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  packageName String
+  credits     Int
+  priceRupiah Int
+  status      String    @default("PENDING") // PENDING | PAID | EXPIRED | CANCELLED
+  paymentType String?
+  louvinTrxId String?   @unique
+  paymentInfo String? // JSON respons Louvin (nomor VA / QRIS)
+  createdAt   DateTime  @default(now())
+  paidAt      DateTime?
+
+  @@index([storeId])
+}
+
+// Sumber kebenaran saldo kredit AI berbayar: saldo = SUM(amount) per storeId.
+// amount positif = kredit masuk (dari pembelian), negatif = kredit terpakai (generate
+// setelah kuota gratis bulanan habis).
+model AiCreditEntry {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type      String // PURCHASE | CONSUME | ADJUSTMENT
+  amount    Int
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
 }

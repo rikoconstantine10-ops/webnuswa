@@ -4,8 +4,10 @@ import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { confirmReceivedAction } from "@/app/actions/checkout";
 import { openDisputeAction, addDisputeMessageAction } from "@/app/actions/disputes";
+import { extractPaymentDisplay } from "@/lib/paymentDisplay";
 import MetaPixel from "@/components/MetaPixel";
 import ReviewForm from "@/components/ReviewForm";
+import PaymentInstructions from "@/components/PaymentInstructions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,33 +22,6 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   DISPUTED: { label: "Komplain", cls: "bg-orange-100 text-orange-700" },
   REFUNDED: { label: "Dana Dikembalikan", cls: "bg-slate-200 text-slate-600" },
 };
-
-function extractPaymentDisplay(paymentInfo: string | null) {
-  if (!paymentInfo) return null;
-  try {
-    const trx = JSON.parse(paymentInfo);
-    const p = trx.payment ?? trx.data ?? trx;
-    // URL gambar QR dari acquirer (mis. Midtrans "generate-qr-code" action)
-    const actions: { name?: string; url?: string }[] = p.raw_response?.actions ?? [];
-    const qrImageUrl =
-      p.qris_url ??
-      p.qris_image ??
-      actions.find((a) => a.name?.startsWith("generate-qr-code"))?.url ??
-      null;
-    return {
-      vaNumber: p.va_number ?? p.vaNumber ?? null,
-      bank: p.bank ?? null,
-      qrImageUrl,
-      qrString: p.qr_string ?? p.qris_string ?? null,
-      expiredAt: p.expired_at ?? null,
-      // Saat "fee ke customer" aktif di Louvin, total bayar > total order.
-      totalPayment: typeof p.total_payment === "number" ? p.total_payment : null,
-      simulated: Boolean(trx.simulated),
-    };
-  } catch {
-    return null;
-  }
-}
 
 export default async function OrderPage({
   params,
@@ -119,55 +94,7 @@ export default async function OrderPage({
       {isPendingPayment && (
         <div className="bg-white rounded-2xl border-2 border-teal-500 p-6">
           <h2 className="font-bold mb-3">Selesaikan Pembayaran</h2>
-          {pay?.totalPayment != null && pay.totalPayment !== order.total && (
-            <div className="text-sm bg-slate-50 rounded-lg px-4 py-3 mb-3 space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Total pesanan</span>
-                <span>{formatRupiah(order.total)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Biaya admin pembayaran</span>
-                <span>{formatRupiah(pay.totalPayment - order.total)}</span>
-              </div>
-              <div className="flex justify-between font-extrabold border-t border-slate-200 pt-1.5">
-                <span>Total yang harus dibayar</span>
-                <span className="text-teal-600">{formatRupiah(pay.totalPayment)}</span>
-              </div>
-            </div>
-          )}
-          {pay?.simulated && (
-            <p className="text-xs bg-amber-50 text-amber-700 rounded-lg px-3 py-2 mb-3">
-              Mode simulasi (LOUVIN_API_KEY belum diset) — pembayaran tidak nyata.
-            </p>
-          )}
-          {pay?.vaNumber && (
-            <div className="mb-3">
-              <p className="text-sm text-slate-500 mb-1">
-                Nomor Virtual Account ({(pay.bank ?? order.paymentType?.replace("_va", ""))?.toUpperCase()})
-              </p>
-              <p className="text-2xl font-mono font-extrabold tracking-wider bg-slate-100 rounded-lg px-4 py-3">
-                {pay.vaNumber}
-              </p>
-            </div>
-          )}
-          {(pay?.qrImageUrl || pay?.qrString) && (
-            <div className="mb-3">
-              <p className="text-sm text-slate-500 mb-2">Scan QRIS berikut:</p>
-              {pay.qrImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={String(pay.qrImageUrl)} alt="QRIS" className="w-56 h-56 border rounded-xl bg-white" />
-              ) : (
-                <p className="text-xs font-mono break-all bg-slate-100 rounded-lg p-3">{String(pay.qrString)}</p>
-              )}
-            </div>
-          )}
-          {pay?.expiredAt && (
-            <p className="text-xs text-amber-600 mb-2">Bayar sebelum: {String(pay.expiredAt)} WIB</p>
-          )}
-          <p className="text-xs text-slate-500">
-            Halaman ini bisa di-refresh setelah membayar — status akan berubah otomatis begitu
-            pembayaran terkonfirmasi.
-          </p>
+          <PaymentInstructions pay={pay} baseAmount={order.total} paymentType={order.paymentType} />
         </div>
       )}
 

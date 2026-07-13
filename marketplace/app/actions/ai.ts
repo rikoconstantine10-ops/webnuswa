@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { generateProductImage, generateCaptions, checkAiQuota, storeAiEnabled } from "@/lib/kieai";
+import { generateProductImage, generateCaptions, storeAiEnabled } from "@/lib/kieai";
+import { canGenerate, consumeGeneration } from "@/lib/aiCredits";
 
 export async function generateProductImagesAction(
   _prev: { urls?: string[]; error?: string },
@@ -12,9 +13,11 @@ export async function generateProductImagesAction(
   const { store } = await requireSeller();
   if (!(await storeAiEnabled(store.id))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
 
-  const quota = await checkAiQuota(store.id);
-  if (!quota.ok) {
-    return { error: `Kuota generate AI bulan ini habis (${quota.used}/${quota.limit}). Upgrade ke Pro untuk kuota lebih besar.` };
+  const usage = await canGenerate(store.id);
+  if (!usage.ok) {
+    return {
+      error: `Kuota gratis bulan ini habis (${usage.freeUsed}/${usage.freeLimit}) dan saldo kredit AI kosong. Beli kredit di halaman Kredit AI untuk lanjut generate.`,
+    };
   }
 
   const imageUrl = String(formData.get("imageUrl") ?? "").trim();
@@ -34,7 +37,7 @@ export async function generateProductImagesAction(
     return { error: results.find((r) => r.error)?.error || "Gagal generate foto" };
   }
 
-  await db.aiGeneration.create({ data: { storeId: store.id, type: "IMAGE" } });
+  await consumeGeneration(store.id, "IMAGE");
   return { urls };
 }
 
@@ -45,9 +48,11 @@ export async function generateCaptionsAction(
   const { store } = await requireSeller();
   if (!(await storeAiEnabled(store.id))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
 
-  const quota = await checkAiQuota(store.id);
-  if (!quota.ok) {
-    return { error: `Kuota generate AI bulan ini habis (${quota.used}/${quota.limit}). Upgrade ke Pro untuk kuota lebih besar.` };
+  const usage = await canGenerate(store.id);
+  if (!usage.ok) {
+    return {
+      error: `Kuota gratis bulan ini habis (${usage.freeUsed}/${usage.freeLimit}) dan saldo kredit AI kosong. Beli kredit di halaman Kredit AI untuk lanjut generate.`,
+    };
   }
 
   const productName = String(formData.get("productName") ?? "").trim();
@@ -57,7 +62,7 @@ export async function generateCaptionsAction(
   const result = await generateCaptions({ productName, imageUrl });
   if (!result.ok) return { error: result.error };
 
-  await db.aiGeneration.create({ data: { storeId: store.id, type: "CAPTION" } });
+  await consumeGeneration(store.id, "CAPTION");
   return { captions: result.captions };
 }
 

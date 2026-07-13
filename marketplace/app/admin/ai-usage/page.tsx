@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { formatRupiah } from "@/lib/money";
 import { kieAiEnabled } from "@/lib/kieai";
 import { toggleStoreAiAction } from "@/app/actions/admin";
+import { createAiCreditPackageAction, toggleAiCreditPackageAction, deleteAiCreditPackageAction } from "@/app/actions/aiCredits";
 import { PageHeader, Card, Badge, StatCard, EmptyState } from "@/components/dashboard/ui";
+import ConfirmButton from "@/components/admin/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +18,7 @@ export default async function AdminAiUsagePage() {
   since.setDate(1);
   since.setHours(0, 0, 0, 0);
 
-  const [stores, generations] = await Promise.all([
+  const [stores, generations, packages, revenueAgg] = await Promise.all([
     db.store.findMany({
       select: { id: true, name: true, slug: true, aiGenerationEnabled: true, plan: true, planUntil: true },
       orderBy: { aiGenerationEnabled: "desc" },
@@ -24,6 +27,8 @@ export default async function AdminAiUsagePage() {
       where: { createdAt: { gte: since } },
       select: { storeId: true, type: true },
     }),
+    db.aiCreditPackage.findMany({ orderBy: { sort: "asc" } }),
+    db.aiCreditPurchase.aggregate({ where: { status: "PAID" }, _sum: { priceRupiah: true, credits: true } }),
   ]);
 
   const usageByStore = new Map<string, { images: number; captions: number }>();
@@ -59,6 +64,63 @@ export default async function AdminAiUsagePage() {
         <StatCard icon="👥" label="Pakai Bulan Ini" value={String(activeUsers)} tone="indigo" />
         <StatCard icon="🖼️" label="Generate Bulan Ini" value={String(totalGenerations)} tone="fuchsia" />
         <StatCard icon="🔑" label="API Key" value={platformEnabled ? "Aktif" : "Belum diatur"} tone={platformEnabled ? "emerald" : "amber"} />
+      </div>
+
+      <div>
+        <PageHeader
+          title="💎 Paket Kredit AI"
+          description={`Pendapatan topup kredit: ${formatRupiah(revenueAgg._sum.priceRupiah ?? 0)} (${revenueAgg._sum.credits ?? 0} kredit terjual). Kredit dipakai seller setelah kuota gratis bulanan habis, dibayar via Louvin (QRIS/VA).`}
+        />
+
+        <Card className="mb-4">
+          <form action={createAiCreditPackageAction} className="flex flex-wrap gap-2 items-end">
+            <div>
+              <label className="text-xs font-medium text-slate-500 block mb-1">Nama Paket</label>
+              <input type="text" name="name" required placeholder="Paket Hemat" className="border border-slate-300 rounded-lg px-3 py-2 text-sm w-40" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 block mb-1">Jumlah Kredit</label>
+              <input type="number" name="credits" required min={1} placeholder="50" className="border border-slate-300 rounded-lg px-3 py-2 text-sm w-28" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 block mb-1">Harga (Rp)</label>
+              <input type="number" name="priceRupiah" required min={1} placeholder="25000" className="border border-slate-300 rounded-lg px-3 py-2 text-sm w-32" />
+            </div>
+            <button className="bg-violet-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-violet-700">
+              + Tambah Paket
+            </button>
+          </form>
+        </Card>
+
+        {packages.length === 0 ? (
+          <EmptyState icon="💎" title="Belum ada paket kredit" description="Tambahkan paket di atas supaya seller bisa topup kredit AI." />
+        ) : (
+          <Card className="!p-0 divide-y divide-slate-50">
+            {packages.map((pkg) => (
+              <div key={pkg.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                <div>
+                  <p className="font-medium text-sm">{pkg.name}</p>
+                  <p className="text-xs text-slate-400">{pkg.credits} kredit · {formatRupiah(pkg.priceRupiah)}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge tone={pkg.active ? "emerald" : "slate"}>{pkg.active ? "Aktif" : "Nonaktif"}</Badge>
+                  <form action={toggleAiCreditPackageAction}>
+                    <input type="hidden" name="id" value={pkg.id} />
+                    <button className="text-xs text-slate-600 hover:underline cursor-pointer">
+                      {pkg.active ? "Nonaktifkan" : "Aktifkan"}
+                    </button>
+                  </form>
+                  <form action={deleteAiCreditPackageAction}>
+                    <input type="hidden" name="id" value={pkg.id} />
+                    <ConfirmButton confirmMessage={`Hapus paket "${pkg.name}"?`} className="text-xs text-red-600 hover:underline cursor-pointer">
+                      Hapus
+                    </ConfirmButton>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </Card>
+        )}
       </div>
 
       {stores.length === 0 ? (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { markOrderPaid } from "@/lib/orders";
+import { markAiCreditPurchasePaid } from "@/lib/aiCredits";
 import { logError } from "@/lib/errors";
 
 const PAID_STATUSES = ["paid", "success", "settlement", "completed", "berhasil"];
@@ -56,10 +57,44 @@ export async function POST(req: NextRequest) {
     }
   }
   if (!order) {
-    await db.webhookLog.update({
-      where: { id: log.id },
-      data: { note: `order dengan trxId ${trxId} tidak ditemukan` },
-    });
+    // Bukan pembayaran order marketplace — cek apakah ini pembelian topup kredit AI.
+    const purchase = await db.aiCreditPurchase.findUnique({ where: { louvinTrxId: String(trxId) } });
+    if (!purchase) {
+      await db.webhookLog.update({
+        where: { id: log.id },
+        data: { note: `order/purchase dengan trxId ${trxId} tidak ditemukan` },
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    if (PAID_STATUSES.includes(status)) {
+      try {
+        await markAiCreditPurchasePaid(purchase.id);
+      } catch (e) {
+        await logError("webhook.louvin.markAiCreditPurchasePaid", e, { purchaseId: purchase.id });
+        throw e;
+      }
+      await db.webhookLog.update({
+        where: { id: log.id },
+        data: { processed: true, note: `topup kredit AI ${purchase.id} ditandai lunas` },
+      });
+    } else if (["expired", "cancelled", "failed"].includes(status)) {
+      if (purchase.status === "PENDING") {
+        await db.aiCreditPurchase.update({
+          where: { id: purchase.id },
+          data: { status: status === "expired" ? "EXPIRED" : "CANCELLED" },
+        });
+      }
+      await db.webhookLog.update({
+        where: { id: log.id },
+        data: { processed: true, note: `topup kredit AI ${purchase.id} status: ${status}` },
+      });
+    } else {
+      await db.webhookLog.update({
+        where: { id: log.id },
+        data: { note: `status tidak dikenali: ${status}` },
+      });
+    }
     return NextResponse.json({ received: true });
   }
 
