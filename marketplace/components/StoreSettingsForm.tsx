@@ -24,10 +24,31 @@ type Store = {
   originLng: number | null;
 };
 
+const BANK_OPTIONS = [
+  "BCA",
+  "BRI",
+  "BNI",
+  "Bank Mandiri",
+  "BSI",
+  "CIMB Niaga",
+  "Permata",
+  "Danamon",
+  "BTN",
+  "Bank Mega",
+  "Panin",
+  "OCBC NISP",
+  "Bank Jago",
+  "SeaBank",
+];
+
 export default function StoreSettingsForm({ store }: { store: Store }) {
   const [state, formAction, pending] = useActionState(updateStoreAction, {});
   const [logoUrl, setLogoUrl] = useState(store.logoUrl ?? "");
   const [bannerUrl, setBannerUrl] = useState(store.bannerUrl ?? "");
+  const [bankName, setBankName] = useState(store.bankName ?? "");
+  const [useCustomBank, setUseCustomBank] = useState(
+    Boolean(store.bankName) && !BANK_OPTIONS.includes(store.bankName ?? "")
+  );
   const [uploading, setUploading] = useState(false);
   const [lat, setLat] = useState(store.originLat != null ? String(store.originLat) : "");
   const [lng, setLng] = useState(store.originLng != null ? String(store.originLng) : "");
@@ -126,13 +147,37 @@ export default function StoreSettingsForm({ store }: { store: Store }) {
       <hr className="border-slate-100" />
       <h2 className="font-bold text-sm">Rekening Bank (tujuan penarikan dana)</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input
-          type="text"
-          name="bankName"
-          placeholder="Nama bank (BCA/BNI/...)"
-          defaultValue={store.bankName ?? ""}
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm"
-        />
+        <div>
+          <select
+            value={useCustomBank ? "OTHER" : bankName}
+            onChange={(e) => {
+              if (e.target.value === "OTHER") {
+                setUseCustomBank(true);
+                setBankName("");
+              } else {
+                setUseCustomBank(false);
+                setBankName(e.target.value);
+              }
+            }}
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="">Pilih bank</option>
+            {BANK_OPTIONS.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+            <option value="OTHER">Lainnya...</option>
+          </select>
+          {useCustomBank && (
+            <input
+              type="text"
+              placeholder="Nama bank lain"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-2"
+            />
+          )}
+          <input type="hidden" name="bankName" value={bankName} />
+        </div>
         <input
           type="text"
           name="bankAccountNumber"
