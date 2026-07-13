@@ -33,6 +33,20 @@ export async function setStoreStatusAction(formData: FormData) {
   revalidatePath("/admin/sellers");
 }
 
+// Setujui banyak toko PENDING sekaligus (dipilih via checkbox di /admin/sellers).
+export async function bulkApproveSellersAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const storeIds = formData.getAll("storeIds").map(String);
+  if (storeIds.length === 0) return;
+
+  const res = await db.store.updateMany({
+    where: { id: { in: storeIds }, status: "PENDING" },
+    data: { status: "ACTIVE" },
+  });
+  await audit(admin.email, "STORE_ACTIVE", `${res.count} toko disetujui sekaligus`);
+  revalidatePath("/admin/sellers");
+}
+
 // Voucher platform (berlaku di semua toko; storeId null). Diskon ditanggung platform.
 export async function createPlatformVoucherAction(
   _prev: { error?: string; ok?: boolean },
@@ -226,6 +240,24 @@ export async function takedownProductAction(formData: FormData) {
   await db.product.update({ where: { id }, data: { active: false } });
   await audit(admin.email, "PRODUCT_TAKEDOWN", `${product.name} (toko: ${product.store.name})`);
   revalidatePath(`/admin/sellers/${product.storeId}`);
+}
+
+// Setujui/tolak banyak produk PENDING moderasi sekaligus (dipilih via checkbox di /admin/moderation).
+export async function bulkModerateProductsAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const productIds = formData.getAll("productIds").map(String);
+  const decision = String(formData.get("decision") ?? "");
+  if (productIds.length === 0 || !["APPROVE", "REJECT"].includes(decision)) return;
+
+  const res = await db.product.updateMany({
+    where: { id: { in: productIds }, moderation: "PENDING" },
+    data:
+      decision === "APPROVE"
+        ? { moderation: "APPROVED" }
+        : { moderation: "REJECTED", active: false },
+  });
+  await audit(admin.email, `PRODUCT_BULK_${decision}`, `${res.count} produk`);
+  revalidatePath("/admin/moderation");
 }
 
 // ===== Pengumuman =====

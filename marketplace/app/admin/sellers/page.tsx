@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { setStoreStatusAction, toggleStoreAiAction } from "@/app/actions/admin";
+import { setStoreStatusAction, toggleStoreAiAction, bulkApproveSellersAction } from "@/app/actions/admin";
 import { Card, PageHeader, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
@@ -36,9 +36,25 @@ export default async function AdminSellersPage({
     orderBy: { createdAt: "desc" },
   });
 
+  const pendingCount = stores.filter((s) => s.status === "PENDING").length;
+
   return (
     <div>
-      <PageHeader title="Seller / Toko" />
+      <form id="bulk-approve" action={bulkApproveSellersAction} />
+      <PageHeader
+        title="Seller / Toko"
+        action={
+          pendingCount > 0 ? (
+            <button
+              type="submit"
+              form="bulk-approve"
+              className="bg-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-emerald-700"
+            >
+              ✓ Setujui Terpilih
+            </button>
+          ) : undefined
+        }
+      />
 
       <Card className="mb-4">
         <form method="get" className="flex flex-wrap gap-2 items-center">
@@ -68,6 +84,7 @@ export default async function AdminSellersPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+              <th className="px-4 py-3 w-8"></th>
               <th className="px-4 py-3">Toko</th>
               <th className="px-4 py-3">Pemilik</th>
               <th className="px-4 py-3">Produk</th>
@@ -80,6 +97,11 @@ export default async function AdminSellersPage({
           <tbody>
             {stores.map((s) => (
               <tr key={s.id} className="border-b border-slate-50">
+                <td className="px-4 py-3">
+                  {s.status === "PENDING" && (
+                    <input type="checkbox" name="storeIds" value={s.id} form="bulk-approve" className="w-4 h-4 accent-emerald-600" />
+                  )}
+                </td>
                 <td className="px-4 py-3 font-medium">
                   <Link href={`/admin/sellers/${s.id}`} className="hover:text-teal-600">
                     {s.name}

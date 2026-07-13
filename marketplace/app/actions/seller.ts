@@ -39,6 +39,20 @@ export async function markProcessingAction(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+// Tandai banyak pesanan PAID sekaligus jadi Diproses (dipilih via checkbox di /dashboard/orders).
+export async function bulkMarkProcessingAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const orderIds = formData.getAll("orderIds").map(String);
+  if (orderIds.length === 0) return;
+
+  await db.order.updateMany({
+    where: { id: { in: orderIds }, storeId: store.id, status: "PAID" },
+    data: { status: "PROCESSING" },
+  });
+  revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard");
+}
+
 export async function shipOrderAction(formData: FormData) {
   const { store } = await requireSeller();
   const orderId = String(formData.get("orderId"));

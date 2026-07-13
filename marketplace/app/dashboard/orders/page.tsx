@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
-import { markProcessingAction, shipOrderAction } from "@/app/actions/seller";
+import { markProcessingAction, shipOrderAction, bulkMarkProcessingAction } from "@/app/actions/seller";
 import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
@@ -59,17 +59,31 @@ export default async function OrdersPage({
     take: 100,
   });
 
+  const bulkEligibleCount = orders.filter((o) => o.status === "PAID" && o.shippingAddress).length;
+
   return (
     <div>
+      <form id="bulk-processing" action={bulkMarkProcessingAction} />
       <PageHeader
         title="Pesanan"
         action={
-          <a
-            href="/api/dashboard/orders/export"
-            className="border border-slate-300 bg-white text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
-          >
-            ⬇ Export CSV
-          </a>
+          <div className="flex gap-2">
+            {bulkEligibleCount > 0 && (
+              <button
+                type="submit"
+                form="bulk-processing"
+                className="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-blue-700"
+              >
+                📦 Tandai Terpilih Diproses
+              </button>
+            )}
+            <a
+              href="/api/dashboard/orders/export"
+              className="border border-slate-300 bg-white text-slate-700 text-sm font-bold px-4 py-2 rounded-xl hover:bg-slate-50"
+            >
+              ⬇ Export CSV
+            </a>
+          </div>
         }
       />
 
@@ -104,12 +118,23 @@ export default async function OrdersPage({
           {orders.map((order) => (
             <Card key={order.id}>
               <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                <div>
-                  <p className="font-mono font-bold">{order.code}</p>
-                  <p className="text-xs text-slate-500">
-                    {order.buyerName} · {order.buyerEmail} ·{" "}
-                    {new Date(order.createdAt).toLocaleString("id-ID")}
-                  </p>
+                <div className="flex items-start gap-2">
+                  {order.status === "PAID" && order.shippingAddress && (
+                    <input
+                      type="checkbox"
+                      name="orderIds"
+                      value={order.id}
+                      form="bulk-processing"
+                      className="w-4 h-4 mt-1 accent-blue-600 shrink-0"
+                    />
+                  )}
+                  <div>
+                    <p className="font-mono font-bold">{order.code}</p>
+                    <p className="text-xs text-slate-500">
+                      {order.buyerName} · {order.buyerEmail} ·{" "}
+                      {new Date(order.createdAt).toLocaleString("id-ID")}
+                    </p>
+                  </div>
                 </div>
                 <Badge tone={STATUS_TONE[order.status] ?? "slate"}>
                   {STATUS_LABEL[order.status] ?? order.status}

@@ -21,6 +21,7 @@ const NAV_GROUPS: NavGroup[] = [
     accent: "amber",
     items: [
       { href: "/admin/sellers", label: "Seller", icon: "🏪" },
+      { href: "/admin/moderation", label: "Moderasi Produk", icon: "🔍" },
       { href: "/admin/reports", label: "Laporan Produk", icon: "🚩" },
       { href: "/admin/disputes", label: "Sengketa", icon: "⚖️" },
     ],
