@@ -65,17 +65,18 @@ function chatCompletion(messages, maxTokens) {
 }
 
 async function translateArticle(article) {
-  const [metaText, contentHtml] = await Promise.all([
-    chatCompletion([{
-      role: "user",
-      content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".
+  // Sequential to avoid hitting concurrent_limit on openagentic.id
+  const metaText = await chatCompletion([{
+    role: "user",
+    content: `Translate from Indonesian to English. Return only valid JSON with keys "title" and "meta_description".
 
 TITLE: ${article.title}
 META_DESCRIPTION: ${article.meta_description}`,
-    }], 512),
-    chatCompletion([{
-      role: "user",
-      content: `Translate this Indonesian HTML article to English. Rules:
+  }], 512);
+
+  const contentHtml = await chatCompletion([{
+    role: "user",
+    content: `Translate this Indonesian HTML article to English. Rules:
 - Keep ALL HTML tags exactly as-is
 - Keep brand names (Nuswa Lab, Google Ads, WhatsApp, Meta Ads, SEO, Pexels) unchanged
 - Keep URLs and href values unchanged
@@ -83,8 +84,7 @@ META_DESCRIPTION: ${article.meta_description}`,
 - Return ONLY the translated HTML, nothing else
 
 ${article.content_html}`,
-    }], 8000),
-  ]);
+  }], 8000);
 
   const cleanMeta = metaText.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
   const metaJson  = JSON.parse(cleanMeta);
