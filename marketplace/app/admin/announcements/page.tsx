@@ -6,6 +6,7 @@ import {
   deleteAnnouncementAction,
 } from "@/app/actions/admin";
 import { Card, PageHeader, EmptyState } from "@/components/dashboard/ui";
+import ConfirmButton from "@/components/admin/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 
@@ -50,9 +51,12 @@ export default async function AdminAnnouncementsPage() {
                 </form>
                 <form action={deleteAnnouncementAction}>
                   <input type="hidden" name="id" value={a.id} />
-                  <button className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 text-red-600">
+                  <ConfirmButton
+                    confirmMessage="Hapus pengumuman ini? Aksi ini tidak bisa dibatalkan."
+                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-red-50 text-red-600"
+                  >
                     Hapus
-                  </button>
+                  </ConfirmButton>
                 </form>
               </div>
             </Card>

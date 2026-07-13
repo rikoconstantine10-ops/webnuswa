@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createCategoryAction, deleteCategoryAction } from "@/app/actions/admin";
 import { Card, PageHeader } from "@/components/dashboard/ui";
+import ConfirmButton from "@/components/admin/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +41,12 @@ export default async function AdminCategoriesPage() {
             </div>
             <form action={deleteCategoryAction}>
               <input type="hidden" name="id" value={c.id} />
-              <button className="text-red-500 text-sm font-semibold hover:underline cursor-pointer">
+              <ConfirmButton
+                confirmMessage={`Hapus kategori "${c.name}"? ${c._count.products} produk akan menjadi tanpa kategori.`}
+                className="text-red-500 text-sm font-semibold hover:underline cursor-pointer"
+              >
                 Hapus
-              </button>
+              </ConfirmButton>
             </form>
           </div>
         ))}

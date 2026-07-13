@@ -4,6 +4,7 @@ import { formatRupiah } from "@/lib/money";
 import PlatformVoucherManager from "@/components/PlatformVoucherManager";
 import { toggleAdminVoucherAction, deleteAdminVoucherAction } from "@/app/actions/admin";
 import { Card, PageHeader, Badge } from "@/components/dashboard/ui";
+import ConfirmButton from "@/components/admin/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,12 @@ export default async function AdminVouchersPage() {
                     </form>
                     <form action={deleteAdminVoucherAction} className="inline">
                       <input type="hidden" name="id" value={v.id} />
-                      <button className="text-xs text-red-600 hover:underline">Hapus</button>
+                      <ConfirmButton
+                        confirmMessage={`Hapus voucher "${v.code}"? Aksi ini tidak bisa dibatalkan.`}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Hapus
+                      </ConfirmButton>
                     </form>
                   </td>
                 </tr>

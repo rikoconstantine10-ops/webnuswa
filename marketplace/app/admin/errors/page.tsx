@@ -1,13 +1,29 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminErrorsPage() {
+const LEVELS = ["error", "warn"];
+
+export default async function AdminErrorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; level?: string }>;
+}) {
   await requireAdmin();
+  const { q, level } = await searchParams;
+
   const [logs, count24h] = await Promise.all([
-    db.errorLog.findMany({ orderBy: { createdAt: "desc" }, take: 200 }),
+    db.errorLog.findMany({
+      where: {
+        ...(level && LEVELS.includes(level) ? { level } : {}),
+        ...(q ? { message: { contains: q, mode: "insensitive" } } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
     db.errorLog.count({ where: { createdAt: { gt: new Date(Date.now() - 86400000) } } }),
   ]);
 
@@ -22,8 +38,32 @@ export default async function AdminErrorsPage() {
         }
       />
 
+      <Card className="mb-4">
+        <form method="get" className="flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Cari pesan error..."
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-48"
+          />
+          <select name="level" defaultValue={level ?? ""} className="border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Semua level</option>
+            {LEVELS.map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+          <button className="bg-indigo-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-indigo-700">
+            Cari
+          </button>
+          {(q || level) && (
+            <Link href="/admin/errors" className="text-sm text-slate-500 hover:underline">Reset</Link>
+          )}
+        </form>
+      </Card>
+
       {logs.length === 0 ? (
-        <EmptyState icon="🐞" title="Belum ada log error" />
+        <EmptyState icon="🐞" title={q || level ? "Tidak ada error yang cocok" : "Belum ada log error"} />
       ) : (
         <Card className="!p-0 divide-y divide-slate-100">
           {logs.map((l) => (

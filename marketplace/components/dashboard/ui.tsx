@@ -29,6 +29,12 @@ const STAT_ACCENTS: Record<string, string> = {
   amber: "bg-amber-50 text-amber-600",
   emerald: "bg-emerald-50 text-emerald-600",
   slate: "bg-slate-50 text-slate-500",
+  indigo: "bg-indigo-50 text-indigo-600",
+  violet: "bg-violet-50 text-violet-600",
+  fuchsia: "bg-fuchsia-50 text-fuchsia-600",
+  rose: "bg-rose-50 text-rose-600",
+  cyan: "bg-cyan-50 text-cyan-600",
+  orange: "bg-orange-50 text-orange-600",
 };
 
 export function StatCard({
@@ -41,7 +47,7 @@ export function StatCard({
   icon: string;
   label: string;
   value: string;
-  tone?: "teal" | "amber" | "emerald" | "slate";
+  tone?: "teal" | "amber" | "emerald" | "slate" | "indigo" | "violet" | "fuchsia" | "rose" | "cyan" | "orange";
   valueClassName?: string;
 }) {
   return (
@@ -65,6 +71,12 @@ const BADGE_TONES: Record<string, string> = {
   teal: "bg-teal-100 text-teal-700",
   sky: "bg-sky-100 text-sky-700",
   blue: "bg-blue-100 text-blue-700",
+  indigo: "bg-indigo-100 text-indigo-700",
+  violet: "bg-violet-100 text-violet-700",
+  fuchsia: "bg-fuchsia-100 text-fuchsia-700",
+  rose: "bg-rose-100 text-rose-700",
+  cyan: "bg-cyan-100 text-cyan-700",
+  orange: "bg-orange-100 text-orange-700",
 };
 
 export function Badge({
@@ -72,7 +84,7 @@ export function Badge({
   tone = "slate",
 }: {
   children: ReactNode;
-  tone?: "slate" | "emerald" | "amber" | "red" | "teal" | "sky" | "blue";
+  tone?: "slate" | "emerald" | "amber" | "red" | "teal" | "sky" | "blue" | "indigo" | "violet" | "fuchsia" | "rose" | "cyan" | "orange";
 }) {
   return (
     <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${BADGE_TONES[tone]}`}>{children}</span>

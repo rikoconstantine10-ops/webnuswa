@@ -17,6 +17,11 @@ export default function SiteHeader({
 }) {
   const pathname = usePathname();
   const inDashboard = pathname?.startsWith("/dashboard");
+  const inAdmin = pathname === "/admin" || pathname?.startsWith("/admin/");
+
+  if (inAdmin) {
+    return null;
+  }
 
   if (inDashboard) {
     return (
