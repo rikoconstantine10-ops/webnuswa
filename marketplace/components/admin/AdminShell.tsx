@@ -74,7 +74,9 @@ export default function AdminShell({
             <div className="absolute inset-0 bg-slate-900/40" onClick={() => setMobileOpen(false)} />
             <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl overflow-y-auto p-3">
               <div className="flex items-center justify-between px-2 py-2 mb-1">
-                <span className="font-extrabold text-slate-900">
+                <span className="flex items-center gap-2 font-extrabold text-slate-900">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/nuswamart-icon.png" alt="" className="h-5 w-auto" />
                   Nuswa<span className="text-indigo-600">Mart</span> Admin
                 </span>
                 <button onClick={() => setMobileOpen(false)} className="text-slate-400 text-xl leading-none">

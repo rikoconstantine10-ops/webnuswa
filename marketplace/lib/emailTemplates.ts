@@ -22,7 +22,10 @@ function wrapEmail(opts: { title: string; bodyHtml: string; footerNote?: string 
     <tr><td align="center">
       <table role="presentation" width="100%" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid ${BORDER};overflow:hidden">
         <tr><td style="padding:24px 28px;border-bottom:1px solid ${BORDER}">
-          <span style="font-size:18px;font-weight:800;color:${BRAND_TEAL}">Nuswa<span style="color:${TEXT_DARK}">Mart</span></span>
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+            <td style="vertical-align:middle;padding-right:8px"><img src="${appUrl}/nuswamart-icon.png" alt="" width="22" height="auto" style="display:block"/></td>
+            <td style="vertical-align:middle"><span style="font-size:18px;font-weight:800;color:${BRAND_TEAL}">Nuswa<span style="color:${TEXT_DARK}">Mart</span></span></td>
+          </tr></table>
         </td></tr>
         <tr><td style="padding:28px">
           <h1 style="margin:0 0 12px;font-size:20px;font-weight:800;color:${TEXT_DARK}">${opts.title}</h1>

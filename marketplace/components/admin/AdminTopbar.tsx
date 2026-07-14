@@ -86,8 +86,9 @@ export default function AdminTopbar({
         </button>
 
         <Link href="/admin" className="shrink-0 flex items-center gap-2 mr-2">
-          <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-fuchsia-600 flex items-center justify-center text-white text-sm shadow-sm">
-            ⚡
+          <span className="w-8 h-8 rounded-xl bg-white ring-1 ring-slate-900/5 flex items-center justify-center shadow-sm shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/nuswamart-icon.png" alt="" className="h-5 w-auto" />
           </span>
           <span className="hidden sm:block font-extrabold text-slate-900 leading-tight">
             Nuswa<span className="text-indigo-600">Mart</span>

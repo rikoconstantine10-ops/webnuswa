@@ -26,7 +26,9 @@ export default function SiteHeader({
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="text-xl font-extrabold text-teal-600">
+        <Link href="/" className="flex items-center gap-2 text-xl font-extrabold text-teal-600">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/nuswamart-icon.png" alt="" className="h-7 w-auto" />
           Nuswa<span className="text-slate-800">Mart</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm font-medium">
