@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import SetPasswordForm from "@/components/SetPasswordForm";
+import SetUsernameForm from "@/components/SetUsernameForm";
 
 export const dynamic = "force-dynamic";
 
@@ -51,15 +52,28 @@ export default async function AccountHomePage() {
 
       {(user.store || user.role === "ADMIN") && (
         <div className="mt-6 bg-white border border-slate-200 rounded-2xl p-6">
-          <h2 className="font-bold mb-1">
-            {user.passwordHash ? "Ubah Password Login" : "Atur Password Login"}
-          </h2>
-          <p className="text-sm text-slate-600 mb-3">
+          <h2 className="font-bold mb-1">Kredensial Login</h2>
+          <p className="text-sm text-slate-600 mb-4">
             {user.role === "ADMIN"
               ? "Selain kode OTP, kamu bisa masuk ke admin panel pakai email + password."
-              : "Selain kode OTP, kamu bisa masuk ke dashboard toko pakai email + password."}
+              : "Selain kode OTP, kamu bisa masuk ke dashboard toko pakai username/email + password."}
           </p>
-          <SetPasswordForm />
+
+          {user.store && (
+            <div className="mb-5">
+              <p className="text-sm font-semibold mb-2">
+                Username {user.username ? "" : "(opsional)"}
+              </p>
+              <SetUsernameForm current={user.username} />
+            </div>
+          )}
+
+          <div>
+            <p className="text-sm font-semibold mb-2">
+              {user.passwordHash ? "Ubah Password" : "Atur Password"}
+            </p>
+            <SetPasswordForm />
+          </div>
         </div>
       )}
     </div>

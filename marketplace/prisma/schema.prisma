@@ -15,6 +15,7 @@ model User {
   points        Int       @default(0) // poin loyalitas (1 poin = Rp1)
   affiliateCode String?   @unique // kode afiliasi bila user ikut program
   passwordHash  String?   // login password opsional (hybrid dgn OTP), khusus alur seller
+  username      String?   @unique // handle login opsional untuk seller (login pakai username ATAU email)
   googleId      String?   @unique // sub id dari Google OAuth, bila login via Google
   createdAt     DateTime  @default(now())
   sessions      Session[]

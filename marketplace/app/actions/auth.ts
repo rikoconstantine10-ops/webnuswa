@@ -109,15 +109,18 @@ export async function sellerPasswordLoginAction(
   const ok = await verifyTurnstile(String(formData.get("turnstileToken") ?? "") || null);
   if (!ok) return { error: "Verifikasi keamanan gagal, coba lagi" };
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  // Identifier bisa email ATAU username. Backward-compat: field lama bernama "email".
+  const identifier = String(formData.get("identifier") ?? formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  if (!email || !password) return { error: "Email dan password wajib diisi" };
+  if (!identifier || !password) return { error: "Email/username dan password wajib diisi" };
 
-  const user = await db.user.findUnique({ where: { email }, include: { store: true } });
-  if (!user?.passwordHash) return { error: "Email atau password salah" };
+  const user = identifier.includes("@")
+    ? await db.user.findUnique({ where: { email: identifier }, include: { store: true } })
+    : await db.user.findUnique({ where: { username: identifier }, include: { store: true } });
+  if (!user?.passwordHash) return { error: "Akun atau password salah" };
 
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) return { error: "Email atau password salah" };
+  if (!valid) return { error: "Akun atau password salah" };
 
   await createSessionForUser(user.id);
   redirect(afterSellerLoginPath(Boolean(user.store)));
@@ -193,4 +196,24 @@ export async function setPasswordAction(
   const passwordHash = await bcrypt.hash(password, 10);
   await db.user.update({ where: { id: user.id }, data: { passwordHash } });
   return { saved: true };
+}
+
+// Atur/ubah username login (opsional) — dipakai seller supaya bisa masuk pakai
+// username selain email. Disimpan lowercase; unik lintas akun.
+const USERNAME_RE = /^[a-z][a-z0-9_]{2,19}$/;
+
+export async function setUsernameAction(
+  _prev: { saved?: boolean; error?: string; username?: string },
+  formData: FormData
+): Promise<{ saved?: boolean; error?: string; username?: string }> {
+  const user = await requireUser();
+  const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  if (!USERNAME_RE.test(username)) {
+    return { error: "Username 3–20 karakter: huruf kecil, angka, atau garis bawah, diawali huruf." };
+  }
+  const existing = await db.user.findUnique({ where: { username } });
+  if (existing && existing.id !== user.id) return { error: "Username sudah dipakai, coba yang lain." };
+
+  await db.user.update({ where: { id: user.id }, data: { username } });
+  return { saved: true, username };
 }

@@ -10,9 +10,11 @@ export default async function RegisterSellerPage() {
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <div className="bg-white rounded-2xl border border-slate-200 p-8">
-        <h1 className="text-2xl font-extrabold mb-1">Buka Toko</h1>
+        <h1 className="text-2xl font-extrabold mb-1">{user ? "Buka Toko" : "Masuk atau Buka Toko"}</h1>
         <p className="text-sm text-slate-500 mb-6">
-          Gratis. Jual produk digital maupun fisik, dana masuk ke saldo tokomu.
+          {user
+            ? "Gratis. Jual produk digital maupun fisik, dana masuk ke saldo tokomu."
+            : "Masuk ke tokomu (username/email + password, atau kode OTP), atau buka toko baru gratis."}
         </p>
         {user ? <RegisterSellerForm /> : <SellerAuthForm />}
       </div>

@@ -96,10 +96,13 @@ function PasswordTab() {
   return (
     <form action={formAction} className="space-y-4">
       <input
-        type="email"
-        name="email"
+        type="text"
+        name="identifier"
         required
-        placeholder="Alamat email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        placeholder="Email atau username"
         className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm"
       />
       <PasswordField
@@ -118,7 +121,7 @@ function PasswordTab() {
         <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{state.error}</p>
       )}
       <p className="text-xs text-slate-500">
-        Belum atur password? Masuk pakai Kode OTP, lalu atur password di halaman Akun.
+        Belum punya password/username? Masuk pakai Kode OTP, lalu atur di halaman Akun.
       </p>
     </form>
   );
