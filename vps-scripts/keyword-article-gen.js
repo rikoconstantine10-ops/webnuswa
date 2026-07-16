@@ -307,7 +307,7 @@ function injectInlineImages(html, images) {
 
 function chatCompletion(messages, maxTokens) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model: AI_MODEL, max_tokens: maxTokens, messages });
+    const body = JSON.stringify({ model: AI_MODEL, max_tokens: maxTokens, messages, stream: false });
     const url  = new URL(`${AI_BASE_URL}/chat/completions`);
     const options = {
       hostname: url.hostname,
