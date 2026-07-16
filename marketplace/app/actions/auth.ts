@@ -217,3 +217,76 @@ export async function setUsernameAction(
   await db.user.update({ where: { id: user.id }, data: { username } });
   return { saved: true, username };
 }
+
+// ===== Login UNIVERSAL (/login) — pembeli & seller satu pintu; route by role + next =====
+
+function safeNext(v: FormDataEntryValue | null): string | null {
+  const s = typeof v === "string" ? v : "";
+  return s.startsWith("/") && !s.startsWith("//") ? s : null;
+}
+
+function loginTarget(
+  user: { role: string; store?: { id: string } | null } | null,
+  next: string | null
+): string {
+  if (next) return next;
+  if (user?.role === "ADMIN") return "/admin";
+  if (user?.store) return "/dashboard";
+  return "/akun";
+}
+
+type LoginState = { step: string; email: string; next?: string; error?: string };
+
+export async function authRequestOtpAction(
+  _prev: LoginState,
+  formData: FormData
+): Promise<LoginState> {
+  const next = safeNext(formData.get("next")) ?? undefined;
+  const ok = await verifyTurnstile(String(formData.get("turnstileToken") ?? "") || null);
+  if (!ok) return { step: "email", email: "", next, error: "Verifikasi keamanan gagal, coba lagi" };
+
+  const email = z.string().email().safeParse(String(formData.get("email")).trim().toLowerCase());
+  if (!email.success) return { step: "email", email: "", next, error: "Email tidak valid" };
+
+  await requestOtp(email.data);
+  return { step: "otp", email: email.data, next };
+}
+
+export async function authVerifyOtpAction(
+  _prev: LoginState,
+  formData: FormData
+): Promise<LoginState> {
+  const next = safeNext(formData.get("next")) ?? undefined;
+  const email = String(formData.get("email")).trim().toLowerCase();
+  const code = String(formData.get("code")).trim();
+
+  const ok = await verifyOtp(email, code);
+  if (!ok) return { step: "otp", email, next, error: "Kode salah atau kedaluwarsa" };
+
+  const user = await db.user.findUnique({ where: { email }, include: { store: true } });
+  redirect(loginTarget(user, next ?? null));
+}
+
+export async function authPasswordLoginAction(
+  _prev: { error?: string },
+  formData: FormData
+): Promise<{ error?: string }> {
+  const ok = await verifyTurnstile(String(formData.get("turnstileToken") ?? "") || null);
+  if (!ok) return { error: "Verifikasi keamanan gagal, coba lagi" };
+
+  const next = safeNext(formData.get("next"));
+  const identifier = String(formData.get("identifier") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!identifier || !password) return { error: "Email/username dan password wajib diisi" };
+
+  const user = identifier.includes("@")
+    ? await db.user.findUnique({ where: { email: identifier }, include: { store: true } })
+    : await db.user.findUnique({ where: { username: identifier }, include: { store: true } });
+  if (!user?.passwordHash) return { error: "Akun atau password salah" };
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return { error: "Akun atau password salah" };
+
+  await createSessionForUser(user.id);
+  redirect(loginTarget(user, next));
+}

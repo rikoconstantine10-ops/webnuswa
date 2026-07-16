@@ -79,7 +79,10 @@ export default function SiteHeader({
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-slate-600 hover:text-teal-600">
+                  <Link
+                    href={`/login?next=${encodeURIComponent(pathname || "/market")}`}
+                    className="text-slate-600 hover:text-teal-600"
+                  >
                     Masuk
                   </Link>
                   <Link
@@ -125,7 +128,7 @@ export default function SiteHeader({
                 </>
               ) : (
                 <>
-                  <Link href="/register-seller" className="text-slate-600 hover:text-teal-600">
+                  <Link href="/login" className="text-slate-600 hover:text-teal-600">
                     Masuk
                   </Link>
                   <Link

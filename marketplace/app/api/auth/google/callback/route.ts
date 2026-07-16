@@ -5,11 +5,12 @@ import { createSessionForUser } from "@/lib/auth";
 import { logError } from "@/lib/errors";
 
 const STATE_COOKIE = "g_oauth_state";
+const NEXT_COOKIE = "g_oauth_next";
 
 // GET /api/auth/google/callback?code=...&state=...
 export async function GET(req: NextRequest) {
   const appUrl = process.env.APP_URL || "https://nuswamart.com";
-  const failUrl = new URL("/register-seller?error=google_failed", appUrl);
+  const failUrl = new URL("/login?error=google_failed", appUrl);
   if (!googleOAuthEnabled()) return NextResponse.redirect(failUrl);
 
   const code = req.nextUrl.searchParams.get("code");
@@ -39,9 +40,14 @@ export async function GET(req: NextRequest) {
 
     await createSessionForUser(user.id);
 
-    const dest = user.store ? "/dashboard" : "/register-seller";
+    const nextCookie = req.cookies.get(NEXT_COOKIE)?.value;
+    const safeNext =
+      nextCookie && nextCookie.startsWith("/") && !nextCookie.startsWith("//") ? nextCookie : null;
+    const dest =
+      user.role === "ADMIN" ? "/admin" : user.store ? "/dashboard" : safeNext ?? "/akun";
     const res = NextResponse.redirect(new URL(dest, appUrl));
     res.cookies.set(STATE_COOKIE, "", { path: "/", maxAge: 0 });
+    res.cookies.set(NEXT_COOKIE, "", { path: "/", maxAge: 0 });
     return res;
   } catch (e) {
     logError("google_oauth.callback", e);

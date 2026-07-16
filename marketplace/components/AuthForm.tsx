@@ -5,15 +5,16 @@ import { useActionState } from "react";
 import { TurnstileWidget, TURNSTILE_SITE_KEY } from "./TurnstileWidget";
 import PasswordField from "./PasswordField";
 import {
-  sellerRequestOtpAction,
-  sellerVerifyOtpAction,
-  sellerPasswordLoginAction,
+  authRequestOtpAction,
+  authVerifyOtpAction,
+  authPasswordLoginAction,
 } from "@/app/actions/auth";
 
-function GoogleButton() {
+function GoogleButton({ next }: { next?: string }) {
+  const href = "/api/auth/google" + (next ? `?next=${encodeURIComponent(next)}` : "");
   return (
     <a
-      href="/api/auth/google?next=/register-seller"
+      href={href}
       className="w-full flex items-center justify-center gap-2 border border-slate-300 rounded-xl py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
     >
       <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -27,20 +28,21 @@ function GoogleButton() {
   );
 }
 
-function OtpTab() {
+function OtpTab({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(
-    async (prev: { step: string; email: string; error?: string }, formData: FormData) => {
+    async (prev: { step: string; email: string; next?: string; error?: string }, formData: FormData) => {
       if (prev.step === "otp" && formData.get("code")) {
-        return sellerVerifyOtpAction(prev, formData);
+        return authVerifyOtpAction(prev, formData);
       }
-      return sellerRequestOtpAction(prev, formData);
+      return authRequestOtpAction(prev, formData);
     },
-    { step: "email", email: "" }
+    { step: "email", email: "", next }
   );
   const [turnstileReady, setTurnstileReady] = useState(!TURNSTILE_SITE_KEY);
 
   return (
     <form action={formAction} className="space-y-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       {state.step === "email" ? (
         <>
           <input
@@ -89,12 +91,13 @@ function OtpTab() {
   );
 }
 
-function PasswordTab() {
-  const [state, formAction, pending] = useActionState(sellerPasswordLoginAction, {});
+function PasswordTab({ next }: { next?: string }) {
+  const [state, formAction, pending] = useActionState(authPasswordLoginAction, {});
   const [turnstileReady, setTurnstileReady] = useState(!TURNSTILE_SITE_KEY);
 
   return (
     <form action={formAction} className="space-y-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <input
         type="text"
         name="identifier"
@@ -127,7 +130,7 @@ function PasswordTab() {
   );
 }
 
-export default function SellerAuthForm() {
+export default function AuthForm({ next }: { next?: string }) {
   const [tab, setTab] = useState<"otp" | "password">("otp");
 
   return (
@@ -153,7 +156,7 @@ export default function SellerAuthForm() {
         </button>
       </div>
 
-      {tab === "otp" ? <OtpTab /> : <PasswordTab />}
+      {tab === "otp" ? <OtpTab next={next} /> : <PasswordTab next={next} />}
 
       <div className="flex items-center gap-3 text-xs text-slate-400">
         <div className="h-px flex-1 bg-slate-200" />
@@ -161,7 +164,7 @@ export default function SellerAuthForm() {
         <div className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <GoogleButton />
+      <GoogleButton next={next} />
     </div>
   );
 }
