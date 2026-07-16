@@ -131,7 +131,11 @@ async function settleCodOrder(orderId: string): Promise<void> {
   const order = await db.order.findUnique({ where: { id: orderId } });
   if (!order || order.status === "COMPLETED" || order.paymentType !== "cod") return;
   const feePercent = await getStoreFeePercent(order.storeId);
-  const netSubtotal = Math.max(0, order.subtotal - order.discountAmount);
+  // Diskon voucher TOKO ditanggung penjual; voucher PLATFORM (storeId null) ditanggung platform
+  // (sama seperti markOrderPaid — seller tetap dapat subtotal penuh bila diskon disubsidi platform).
+  const voucher = order.voucherId ? await db.voucher.findUnique({ where: { id: order.voucherId } }) : null;
+  const sellerBorneDiscount = voucher && voucher.storeId ? order.discountAmount : 0;
+  const netSubtotal = Math.max(0, order.subtotal - sellerBorneDiscount);
   const fee = Math.round((netSubtotal * feePercent) / 100);
   const now = new Date();
   await db.$transaction([
@@ -140,7 +144,14 @@ async function settleCodOrder(orderId: string): Promise<void> {
       data: { status: "COMPLETED", paidAt: order.paidAt ?? now, completedAt: now, platformFee: fee, fundsReleased: true },
     }),
     db.ledgerEntry.create({
-      data: { storeId: order.storeId, orderId: order.id, type: "SALE_CREDIT", amount: netSubtotal + order.shippingCost, status: "AVAILABLE", note: `COD ${order.code}` },
+      data: {
+        storeId: order.storeId,
+        orderId: order.id,
+        type: "SALE_CREDIT",
+        amount: netSubtotal + order.shippingCost,
+        status: "AVAILABLE",
+        note: `COD ${order.code}${sellerBorneDiscount ? ` (diskon toko Rp${sellerBorneDiscount.toLocaleString("id-ID")})` : ""}`,
+      },
     }),
     db.ledgerEntry.create({
       data: { storeId: order.storeId, orderId: order.id, type: "PLATFORM_FEE", amount: -fee, status: "AVAILABLE", note: `Fee ${feePercent}% COD ${order.code}` },

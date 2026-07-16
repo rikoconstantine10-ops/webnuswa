@@ -88,6 +88,10 @@ export async function resolveDisputeAction(formData: FormData) {
   if (outcome === "REFUND") {
     await voidOrderFunds(order.id);
     await db.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
+    // Order dibatalkan sepenuhnya → kembalikan kuota voucher yang sempat terpakai.
+    if (order.voucherId) {
+      await db.voucher.update({ where: { id: order.voucherId }, data: { used: { decrement: 1 } } });
+    }
     await db.dispute.update({
       where: { id: disputeId },
       data: { status: "RESOLVED_REFUND", resolution: resolution || "Refund ke pembeli", resolvedAt: new Date() },
