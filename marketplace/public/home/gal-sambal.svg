@@ -1,0 +1,24 @@
+<svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g4Bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdeee7"/><stop offset=".6" stop-color="#f6d6c8"/><stop offset="1" stop-color="#eebfac"/></linearGradient>
+    <radialGradient id="g4Sp" cx="50%" cy="36%" r="60%"><stop offset="0" stop-color="#fffbf7" stop-opacity=".92"/><stop offset="1" stop-color="#fffbf7" stop-opacity="0"/></radialGradient>
+    <linearGradient id="g4H" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9e2414"/><stop offset=".2" stop-color="#d1402a"/><stop offset=".5" stop-color="#ec5f42"/><stop offset=".8" stop-color="#c53820"/><stop offset="1" stop-color="#8f1f10"/></linearGradient>
+    <linearGradient id="g4Hv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".16" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#4a0f06" stop-opacity=".3"/></linearGradient>
+    <filter id="g4S"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="g4So"><feGaussianBlur stdDeviation="1"/></filter>
+  </defs>
+  <rect width="300" height="300" fill="url(#g4Bg)"/>
+  <ellipse cx="150" cy="120" rx="180" ry="130" fill="url(#g4Sp)"/>
+  <ellipse cx="152" cy="254" rx="78" ry="15" fill="#7a1f12" opacity=".3" filter="url(#g4S)"/>
+  <g transform="translate(0,504) scale(1,-1)" opacity=".12" filter="url(#g4So)"><rect x="104" y="112" width="92" height="140" rx="18" fill="url(#g4H)"/></g>
+  <rect x="104" y="112" width="92" height="140" rx="18" fill="url(#g4H)"/>
+  <rect x="104" y="112" width="92" height="140" rx="18" fill="url(#g4Hv)"/>
+  <rect x="116" y="124" width="11" height="108" rx="5.5" fill="#fff" opacity=".4" filter="url(#g4So)"/>
+  <ellipse cx="150" cy="110" rx="48" ry="8" fill="#3a0e06"/>
+  <rect x="103" y="88" width="94" height="26" rx="7" fill="#5c1109"/>
+  <rect x="107" y="92" width="86" height="5" rx="2.5" fill="#fff" opacity=".15"/>
+  <g filter="url(#g4So)"><rect x="116" y="152" width="68" height="64" rx="8" fill="#00000022"/></g>
+  <rect x="115" y="150" width="68" height="62" rx="8" fill="#fff6f2"/>
+  <text x="149" y="182" font-size="15" text-anchor="middle" fill="#b32e1c" font-family="Georgia,serif" font-weight="700" font-style="italic">Sambal</text>
+  <text x="149" y="199" font-size="8" text-anchor="middle" fill="#c65a48" font-family="sans-serif" letter-spacing="2">ROA</text>
+</svg>

@@ -1,0 +1,25 @@
+<svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1Bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fcedcf"/><stop offset=".6" stop-color="#f4d9ac"/><stop offset="1" stop-color="#e8c390"/></linearGradient>
+    <radialGradient id="g1Sp" cx="50%" cy="36%" r="60%"><stop offset="0" stop-color="#fffaf0" stop-opacity=".95"/><stop offset="1" stop-color="#fffaf0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="g1H" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b0640f"/><stop offset=".18" stop-color="#e78d1c"/><stop offset=".5" stop-color="#ffc85e"/><stop offset=".82" stop-color="#df8318"/><stop offset="1" stop-color="#a2580d"/></linearGradient>
+    <linearGradient id="g1Hv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset=".16" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#5e300a" stop-opacity=".28"/></linearGradient>
+    <linearGradient id="g1L" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5a2e"/><stop offset=".5" stop-color="#5c3718"/><stop offset="1" stop-color="#3f2410"/></linearGradient>
+    <filter id="g1S"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="g1So"><feGaussianBlur stdDeviation="1"/></filter>
+  </defs>
+  <rect width="300" height="300" fill="url(#g1Bg)"/>
+  <ellipse cx="150" cy="120" rx="180" ry="130" fill="url(#g1Sp)"/>
+  <ellipse cx="152" cy="252" rx="80" ry="15" fill="#7a4a12" opacity=".33" filter="url(#g1S)"/>
+  <g transform="translate(0,502) scale(1,-1)" opacity=".13" filter="url(#g1So)"><rect x="102" y="110" width="96" height="142" rx="20" fill="url(#g1H)"/></g>
+  <rect x="102" y="110" width="96" height="142" rx="20" fill="url(#g1H)"/>
+  <rect x="102" y="110" width="96" height="142" rx="20" fill="url(#g1Hv)"/>
+  <rect x="114" y="122" width="12" height="110" rx="6" fill="#fff" opacity=".5" filter="url(#g1So)"/>
+  <ellipse cx="150" cy="108" rx="50" ry="9" fill="#2f1c0c"/>
+  <rect x="100" y="86" width="100" height="26" rx="8" fill="url(#g1L)"/>
+  <ellipse cx="150" cy="86" rx="50" ry="9" fill="#6b4423"/>
+  <g filter="url(#g1So)"><rect x="114" y="152" width="72" height="66" rx="8" fill="#00000022"/></g>
+  <rect x="113" y="150" width="72" height="64" rx="8" fill="#fffdf7"/>
+  <text x="149" y="184" font-size="20" text-anchor="middle" fill="#a86a12" font-family="Georgia,serif" font-weight="700" font-style="italic">Madu</text>
+  <text x="149" y="200" font-size="8" text-anchor="middle" fill="#7a5a2a" font-family="sans-serif" letter-spacing="1.5">HUTAN ASLI</text>
+</svg>
