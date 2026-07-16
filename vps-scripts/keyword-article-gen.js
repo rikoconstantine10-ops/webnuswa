@@ -325,8 +325,13 @@ function chatCompletion(messages, maxTokens) {
       res.on("data", chunk => data += chunk);
       res.on("end", () => {
         if (res.statusCode >= 400) { reject(new Error(`${res.statusCode} ${data.substring(0, 200)}`)); return; }
-        try { resolve(JSON.parse(data).choices?.[0]?.message?.content || ""); }
-        catch (e) { reject(new Error(`JSON parse: ${e.message}`)); }
+        try {
+          // Extract outermost JSON object — some proxies append trailing bytes
+          const s = data.indexOf("{"), e = data.lastIndexOf("}");
+          if (s === -1 || e === -1) { reject(new Error(`No JSON in response: ${data.substring(0, 200)}`)); return; }
+          resolve(JSON.parse(data.slice(s, e + 1)).choices?.[0]?.message?.content || "");
+        }
+        catch (e) { reject(new Error(`JSON parse: ${e.message} — raw: ${data.substring(0, 200)}`)); }
       });
     });
     req.on("error", reject);
