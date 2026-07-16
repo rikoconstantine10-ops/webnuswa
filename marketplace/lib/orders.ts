@@ -10,6 +10,10 @@ import { checkLowStockProduct } from "./lowStock";
 
 const DOWNLOAD_DAYS = 7;
 
+// Produk digital dianggap "diterima" instan (dana langsung cair), tapi pembeli
+// tetap diberi jendela singkat untuk komplain bila filenya rusak/salah/tak sesuai.
+export const DIGITAL_DISPUTE_WINDOW_HOURS = 48;
+
 // Idempotent: hanya memproses order berstatus PENDING_PAYMENT.
 // Mencatat ledger (kredit penjualan − platform fee), mengurangi stok,
 // dan menerbitkan token download untuk item digital.

@@ -49,10 +49,13 @@ export async function releaseOrderFunds(orderId: string): Promise<void> {
   ]);
 }
 
-// Batalkan dana escrow (refund): entri HELD di-void agar tak pernah masuk saldo aktif.
+// Batalkan dana order (refund): void entri HELD (belum cair) MAUPUN AVAILABLE
+// (mis. produk digital yang dananya sudah instan cair) — dispute produk digital
+// bisa dibuka dalam jendela singkat setelah COMPLETED, jadi dananya boleh sudah
+// tersedia saat refund diputuskan. Tidak menyentuh entri WITHDRAWAL_DEBIT (orderId null).
 export async function voidOrderFunds(orderId: string): Promise<void> {
   await db.ledgerEntry.updateMany({
-    where: { orderId, status: "HELD" },
+    where: { orderId, status: { in: ["HELD", "AVAILABLE"] } },
     data: { status: "VOID" },
   });
 }

@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { confirmReceivedAction } from "@/app/actions/checkout";
 import { openDisputeAction, addDisputeMessageAction } from "@/app/actions/disputes";
+import { DIGITAL_DISPUTE_WINDOW_HOURS } from "@/lib/orders";
+import { AUTO_COMPLETE_DAYS } from "@/lib/shipping";
 import { extractPaymentDisplay } from "@/lib/paymentDisplay";
 import MetaPixel from "@/components/MetaPixel";
 import ReviewForm from "@/components/ReviewForm";
@@ -46,7 +48,16 @@ export default async function OrderPage({
   if (!order) notFound();
 
   const reviewedProductIds = new Set(order.reviews.map((r) => r.productId));
-  const canDispute = ["PAID", "PROCESSING", "SHIPPED"].includes(order.status) && !order.dispute;
+  // Produk 100% digital selesai instan (dana langsung cair) — beri jendela singkat
+  // pasca-selesai untuk komplain bila filenya bermasalah, mirror lib/actions/disputes.ts.
+  const isDigitalOnly = order.items.every((i) => i.product.type === "DIGITAL");
+  const withinDigitalWindow =
+    order.status === "COMPLETED" &&
+    isDigitalOnly &&
+    order.completedAt !== null &&
+    Date.now() - order.completedAt.getTime() < DIGITAL_DISPUTE_WINDOW_HOURS * 3600 * 1000;
+  const canDispute =
+    (["PAID", "PROCESSING", "SHIPPED"].includes(order.status) || withinDigitalWindow) && !order.dispute;
 
   const status = STATUS_LABEL[order.status] ?? { label: order.status, cls: "bg-slate-200" };
   const pay = extractPaymentDisplay(order.paymentInfo);
@@ -129,6 +140,9 @@ export default async function OrderPage({
               ✓ Pesanan Sudah Diterima
             </button>
           </form>
+          <p className="text-xs text-slate-400 mt-3">
+            Konfirmasi sekarang, atau dana otomatis diteruskan ke penjual dalam {AUTO_COMPLETE_DAYS} hari bila tidak ada respons.
+          </p>
         </div>
       )}
 
@@ -180,6 +194,11 @@ export default async function OrderPage({
       {canDispute && (
         <details className="bg-white rounded-2xl border border-slate-200 p-6">
           <summary className="font-bold cursor-pointer text-slate-700">Ada masalah dengan pesanan ini? Ajukan komplain</summary>
+          {withinDigitalWindow && (
+            <p className="text-xs text-slate-400 mt-2">
+              Produk digital ini sudah selesai, tapi kamu masih bisa komplain dalam {DIGITAL_DISPUTE_WINDOW_HOURS} jam sejak pesanan selesai bila filenya bermasalah.
+            </p>
+          )}
           <form action={openDisputeAction} className="mt-3 space-y-2">
             <input type="hidden" name="code" value={order.code} />
             <textarea

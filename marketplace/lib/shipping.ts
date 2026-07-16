@@ -6,7 +6,7 @@ import { notifyOrderShipped } from "./notify";
 import { finalizeOrderEarnings } from "./earnings";
 
 // Hari sebelum order "delivered" otomatis diselesaikan (rilis dana) bila pembeli diam.
-const AUTO_COMPLETE_DAYS = 3;
+export const AUTO_COMPLETE_DAYS = 3;
 
 // Peta status Biteship → status order internal.
 function mapStatus(biteship: string): "PROCESSING" | "SHIPPED" | "DELIVERED" | null {

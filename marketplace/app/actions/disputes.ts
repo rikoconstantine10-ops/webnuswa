@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin, requireSeller } from "@/lib/auth";
 import { releaseOrderFunds, voidOrderFunds } from "@/lib/ledger";
+import { DIGITAL_DISPUTE_WINDOW_HOURS } from "@/lib/orders";
 import { audit } from "@/lib/audit";
 import { notifyDisputeOpened, notifyDisputeResolved } from "@/lib/notify";
 
@@ -15,11 +16,23 @@ export async function openDisputeAction(formData: FormData) {
   const reason = String(formData.get("reason") ?? "").trim().slice(0, 2000);
   if (reason.length < 10) redirect(`/order/${code}?dispute=short`);
 
-  const order = await db.order.findUnique({ where: { code }, include: { dispute: true } });
-  // Hanya order yang sudah dibayar & belum selesai/refund yang bisa dikomplain.
-  if (!order || order.dispute || !["PAID", "PROCESSING", "SHIPPED"].includes(order.status)) {
-    redirect(`/order/${code}`);
-  }
+  const order = await db.order.findUnique({
+    where: { code },
+    include: { dispute: true, items: { include: { product: { select: { type: true } } } } },
+  });
+  if (!order || order.dispute) redirect(`/order/${code}`);
+
+  // Produk fisik: bisa dikomplain selama belum selesai/refund.
+  // Produk 100% digital: dianggap "diterima" instan (dana langsung cair), tapi tetap
+  // diberi jendela singkat pasca-COMPLETED untuk komplain bila filenya bermasalah.
+  const isDigitalOnly = order.items.every((i) => i.product.type === "DIGITAL");
+  const withinDigitalWindow =
+    order.status === "COMPLETED" &&
+    isDigitalOnly &&
+    order.completedAt !== null &&
+    Date.now() - order.completedAt.getTime() < DIGITAL_DISPUTE_WINDOW_HOURS * 3600 * 1000;
+  const canOpen = ["PAID", "PROCESSING", "SHIPPED"].includes(order.status) || withinDigitalWindow;
+  if (!canOpen) redirect(`/order/${code}`);
 
   await db.$transaction([
     db.dispute.create({
