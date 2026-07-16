@@ -137,6 +137,11 @@ export default function CartCheckoutForm({
 
       <input name="buyerName" required placeholder="Nama lengkap" defaultValue={defaultName} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
       <input name="buyerEmail" type="email" required placeholder="Email" defaultValue={defaultEmail} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+      {!defaultEmail && (
+        <p className="text-xs text-slate-400 -mt-1">
+          💡 Pakai email yang sama dengan akunmu — pesanan otomatis tercatat di satu akun (belanja &amp; jualan).
+        </p>
+      )}
       <input name="buyerPhone" type="tel" required placeholder="No. WhatsApp (08xxx)" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
 
       {hasPhysical && (
