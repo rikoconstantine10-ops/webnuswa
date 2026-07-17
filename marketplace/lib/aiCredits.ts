@@ -42,14 +42,16 @@ export async function markAiCreditPurchasePaid(purchaseId: string) {
   return purchase;
 }
 
+const TYPE_LABEL: Record<string, string> = { IMAGE: "foto", CAPTION: "caption", VIDEO: "video", CHAT: "chat" };
+
 // Catat 1x pemakaian setelah generate berhasil. Kalau kuota gratis bulan ini sudah
 // habis (dicek SEBELUM baris AiGeneration ini dibuat), potong 1 kredit berbayar.
-export async function consumeGeneration(storeId: string, type: "IMAGE" | "CAPTION"): Promise<void> {
+export async function consumeGeneration(storeId: string, type: "IMAGE" | "CAPTION" | "VIDEO" | "CHAT"): Promise<void> {
   const quota = await checkAiQuota(storeId);
   await db.aiGeneration.create({ data: { storeId, type } });
   if (!quota.ok) {
     await db.aiCreditEntry.create({
-      data: { storeId, type: "CONSUME", amount: -1, note: `Generate ${type === "IMAGE" ? "foto" : "caption"}` },
+      data: { storeId, type: "CONSUME", amount: -1, note: `Generate ${TYPE_LABEL[type] ?? type}` },
     });
   }
 }

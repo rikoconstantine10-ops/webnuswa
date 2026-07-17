@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { slugify, randomSuffix } from "@/lib/slug";
 import { notifyWithdrawalPaid } from "@/lib/notify";
+import { saveProviderTiers } from "@/lib/kieai";
 
 export async function markAdminNotificationReadAction(formData: FormData) {
   await requireAdmin();
@@ -189,10 +190,49 @@ export async function updateSettingsAction(
       db.setting.upsert({ where: { key: "ai_caption_api_key" }, create: { key: "ai_caption_api_key", value: aiCaptionApiKey }, update: { value: aiCaptionApiKey } })
     );
   }
+
+  // Transkrip Suara — single provider (tidak pakai fallback 3-tingkat).
+  const aiVoiceApiKey = String(formData.get("aiVoiceApiKey") ?? "").trim();
+  const aiVoiceBaseUrl = String(formData.get("aiVoiceBaseUrl") ?? "").trim();
+  const aiVoiceModel = String(formData.get("aiVoiceModel") ?? "").trim();
+  settingWrites.push(
+    db.setting.upsert({ where: { key: "ai_voice_base_url" }, create: { key: "ai_voice_base_url", value: aiVoiceBaseUrl }, update: { value: aiVoiceBaseUrl } }),
+    db.setting.upsert({ where: { key: "ai_voice_model" }, create: { key: "ai_voice_model", value: aiVoiceModel }, update: { value: aiVoiceModel } })
+  );
+  if (aiVoiceApiKey) {
+    settingWrites.push(
+      db.setting.upsert({ where: { key: "ai_voice_api_key" }, create: { key: "ai_voice_api_key", value: aiVoiceApiKey }, update: { value: aiVoiceApiKey } })
+    );
+  }
+
+  // Global System Prompt — aturan keras chatbot WA, berlaku semua toko, tak bisa ditimpa persona seller.
+  const waGlobalPrompt = String(formData.get("waGlobalSystemPrompt") ?? "").trim();
+  settingWrites.push(
+    db.setting.upsert({
+      where: { key: "wa_global_system_prompt" },
+      create: { key: "wa_global_system_prompt", value: waGlobalPrompt },
+      update: { value: waGlobalPrompt },
+    })
+  );
+
   await Promise.all(settingWrites);
-  if (aiImageApiKey || aiCaptionApiKey) {
+  if (aiImageApiKey || aiCaptionApiKey || aiVoiceApiKey) {
     await audit(admin.email, "SETTINGS_AI_KEY_CHANGED", "API key AI diperbarui");
   }
+
+  // Generate Foto, Generate Video, Chatbot WA — masing-masing 3 slot (Utama/Cadangan 1/Cadangan 2).
+  async function readTierSlots(prefix: string) {
+    return [0, 1, 2].map((i) => ({
+      apiKey: String(formData.get(`${prefix}ApiKey${i}`) ?? "").trim(),
+      baseUrl: String(formData.get(`${prefix}BaseUrl${i}`) ?? "").trim(),
+      model: String(formData.get(`${prefix}Model${i}`) ?? "").trim(),
+    }));
+  }
+  await Promise.all([
+    saveProviderTiers("image", await readTierSlots("aiImageTier")),
+    saveProviderTiers("video", await readTierSlots("aiVideoTier")),
+    saveProviderTiers("chat", await readTierSlots("aiChatTier")),
+  ]);
 
   revalidatePath("/admin/settings");
   return { saved: true };
