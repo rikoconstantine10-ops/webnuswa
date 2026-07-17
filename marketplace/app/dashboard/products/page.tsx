@@ -130,12 +130,19 @@ export default async function ProductsPage({
                   <td className="px-4 py-3">
                     <input type="checkbox" name="ids" value={p.id} form="bulk-products" />
                   </td>
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {p.name}
+                    {p.moderation === "REJECTED" && p.moderationReason && (
+                      <p className="text-xs text-red-600 font-normal mt-0.5">⚠ {p.moderationReason}</p>
+                    )}
+                  </td>
                   <td className="px-4 py-3">{p.type === "DIGITAL" ? "💾 Digital" : "📦 Fisik"}</td>
                   <td className="px-4 py-3">{formatRupiah(p.price)}</td>
                   <td className="px-4 py-3">{p.type === "DIGITAL" ? "∞" : (p.stock ?? 0)}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 space-x-1 whitespace-nowrap">
                     <Badge tone={p.active ? "emerald" : "slate"}>{p.active ? "Aktif" : "Nonaktif"}</Badge>
+                    {p.moderation === "PENDING" && <Badge tone="amber">Menunggu Tinjauan Admin</Badge>}
+                    {p.moderation === "REJECTED" && <Badge tone="red">Ditolak Admin</Badge>}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Link

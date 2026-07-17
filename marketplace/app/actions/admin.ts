@@ -283,21 +283,24 @@ export async function takedownProductAction(formData: FormData) {
 }
 
 // Setujui/tolak banyak produk PENDING moderasi sekaligus (dipilih via checkbox di /admin/moderation).
+// Alasan penolakan (kalau diisi) ditampilkan ke seller di halaman Produk-nya.
 export async function bulkModerateProductsAction(formData: FormData) {
   const admin = await requireAdmin();
   const productIds = formData.getAll("productIds").map(String);
   const decision = String(formData.get("decision") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 500) || null;
   if (productIds.length === 0 || !["APPROVE", "REJECT"].includes(decision)) return;
 
   const res = await db.product.updateMany({
     where: { id: { in: productIds }, moderation: "PENDING" },
     data:
       decision === "APPROVE"
-        ? { moderation: "APPROVED" }
-        : { moderation: "REJECTED", active: false },
+        ? { moderation: "APPROVED", moderationReason: null }
+        : { moderation: "REJECTED", active: false, moderationReason: reason },
   });
-  await audit(admin.email, `PRODUCT_BULK_${decision}`, `${res.count} produk`);
+  await audit(admin.email, `PRODUCT_BULK_${decision}`, `${res.count} produk${reason ? ` — ${reason}` : ""}`);
   revalidatePath("/admin/moderation");
+  revalidatePath("/dashboard/products");
 }
 
 // ===== Pengumuman =====
@@ -358,6 +361,16 @@ export async function toggleStoreAiAction(formData: FormData) {
 
 // ===== Laporan produk =====
 
+// Kategori laporan ditampilkan ke seller sebagai alasan (bukan isi laporan/identitas pelapor —
+// dijaga privasinya supaya pelapor tidak berisiko dibalas dendam oleh seller).
+const REPORT_REASON_LABEL: Record<string, string> = {
+  SPAM: "Spam/menyesatkan",
+  PROHIBITED: "Barang terlarang",
+  COUNTERFEIT: "Palsu/KW",
+  SCAM: "Penipuan",
+  OTHER: "Lainnya",
+};
+
 // Tinjau laporan: "dismiss" (abaikan) atau "takedown" (nonaktifkan produk + tandai ditindak).
 export async function resolveReportAction(formData: FormData) {
   const admin = await requireAdmin();
@@ -367,15 +380,19 @@ export async function resolveReportAction(formData: FormData) {
   if (!report) return;
 
   if (decision === "TAKEDOWN") {
+    const reason = `Diturunkan admin setelah ada laporan pembeli: ${REPORT_REASON_LABEL[report.reason] ?? report.reason}`;
     await db.$transaction([
-      db.product.update({ where: { id: report.productId }, data: { active: false, moderation: "REJECTED" } }),
+      db.product.update({
+        where: { id: report.productId },
+        data: { active: false, moderation: "REJECTED", moderationReason: reason },
+      }),
       db.productReport.update({ where: { id }, data: { status: "ACTIONED" } }),
     ]);
     await audit(admin.email, "REPORT_TAKEDOWN", `${report.product.name} — ${report.reason}`);
   } else if (decision === "APPROVE") {
     // Produk aman → loloskan moderasi & tandai laporan ditinjau.
     await db.$transaction([
-      db.product.update({ where: { id: report.productId }, data: { moderation: "APPROVED" } }),
+      db.product.update({ where: { id: report.productId }, data: { moderation: "APPROVED", moderationReason: null } }),
       db.productReport.update({ where: { id }, data: { status: "REVIEWED" } }),
     ]);
     await audit(admin.email, "REPORT_APPROVED", `${report.product.name}`);
@@ -384,4 +401,5 @@ export async function resolveReportAction(formData: FormData) {
     await audit(admin.email, "REPORT_DISMISSED", `${report.product.name}`);
   }
   revalidatePath("/admin/reports");
+  revalidatePath("/dashboard/products");
 }

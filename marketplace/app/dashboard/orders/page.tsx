@@ -3,6 +3,7 @@ import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { markProcessingAction, shipOrderAction, bulkMarkProcessingAction } from "@/app/actions/seller";
+import { addDisputeMessageAction } from "@/app/actions/disputes";
 import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +55,10 @@ export default async function OrdersPage({
           }
         : {}),
     },
-    include: { items: true },
+    include: {
+      items: true,
+      dispute: { include: { messages: { orderBy: { createdAt: "asc" } } } },
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -191,6 +195,45 @@ export default async function OrdersPage({
                   Resi: {order.courier ? `${order.courier} — ` : ""}
                   <span className="font-mono font-bold">{order.trackingNumber}</span>
                 </p>
+              )}
+
+              {order.dispute && (
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <p className="text-xs font-bold text-red-700 mb-2">
+                    ⚠ Sengketa — {order.dispute.status === "OPEN" ? "menunggu keputusan admin" : "sudah diselesaikan"}
+                  </p>
+                  <div className="space-y-1.5 bg-slate-50 rounded-lg p-3 max-h-52 overflow-auto mb-2">
+                    {order.dispute.messages.map((m) => (
+                      <p key={m.id} className="text-sm">
+                        <span className="font-semibold">
+                          {m.author === "BUYER" ? "Pembeli" : m.author === "SELLER" ? "Kamu" : "Admin"}:
+                        </span>{" "}
+                        {m.body}
+                      </p>
+                    ))}
+                  </div>
+                  {order.dispute.resolution && (
+                    <p className="text-xs text-slate-500 mb-2">
+                      Keputusan admin: <span className="font-medium">{order.dispute.resolution}</span>
+                    </p>
+                  )}
+                  {order.dispute.status === "OPEN" && (
+                    <form action={addDisputeMessageAction} className="flex gap-2">
+                      <input type="hidden" name="disputeId" value={order.dispute.id} />
+                      <input type="hidden" name="role" value="SELLER" />
+                      <input
+                        type="text"
+                        name="body"
+                        required
+                        placeholder="Balas / jelaskan sisi kamu ke pembeli & admin…"
+                        className="flex-1 border border-slate-300 rounded-lg px-3 py-1.5 text-sm"
+                      />
+                      <button className="bg-slate-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg">
+                        Kirim
+                      </button>
+                    </form>
+                  )}
+                </div>
               )}
             </Card>
           ))}

@@ -200,6 +200,7 @@ model Product {
   imageUrl     String?
   active       Boolean       @default(true) // toggle tampil/sembunyi oleh seller
   moderation   String        @default("APPROVED") // PENDING | APPROVED | REJECTED (moderasi admin)
+  moderationReason String?   // ditampilkan ke seller supaya tahu kenapa produknya ditolak/diturunkan
   ratingAvg    Float         @default(0)
   ratingCount  Int           @default(0)
   // Jumlah terjual (untuk "Terlaris" & rekomendasi) — di-increment saat order dibayar

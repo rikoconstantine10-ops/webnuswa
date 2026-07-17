@@ -25,7 +25,14 @@ export default async function AdminModerationPage() {
         description="Produk yang otomatis ditandai untuk ditinjau (mengandung kata kunci terlarang) sebelum tampil di marketplace."
         action={
           products.length > 0 ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                name="reason"
+                form="bulk-moderate-products"
+                placeholder="Alasan tolak (tampil ke seller)"
+                className="border border-slate-300 rounded-xl px-3 py-2 text-sm w-56"
+              />
               <button type="submit" form="bulk-moderate-products" name="decision" value="REJECT" className="bg-red-50 text-red-600 text-sm font-bold px-4 py-2 rounded-xl hover:bg-red-100">
                 ✕ Tolak Terpilih
               </button>

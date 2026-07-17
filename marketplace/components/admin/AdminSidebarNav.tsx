@@ -47,7 +47,10 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Fitur AI",
     accent: "violet",
-    items: [{ href: "/admin/ai-usage", label: "AI Studio", icon: "✨" }],
+    items: [
+      { href: "/admin/ai-usage", label: "AI Studio", icon: "✨" },
+      { href: "/admin/inbox", label: "Inbox Chatbot", icon: "📥" },
+    ],
   },
   {
     title: "Sistem",
