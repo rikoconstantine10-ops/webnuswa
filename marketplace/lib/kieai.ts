@@ -326,10 +326,10 @@ export async function callChatCompletion(
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>
 ): Promise<{ ok: boolean; text?: string; error?: string }> {
   return callWithFallback<{ text: string }>("chat", async (config) => {
-    const res = await fetch(`${config.baseUrl}/${config.model}/v1/chat/completions`, {
+    const res = await fetch(`${config.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ model: config.model, messages, stream: false }),
       signal: AbortSignal.timeout(45000),
     });
     const json = await res.json().catch(() => null);
@@ -395,10 +395,10 @@ export async function generateCaptions(
   }
 
   try {
-    const res = await fetch(`${config.baseUrl}/${config.model}/v1/chat/completions`, {
+    const res = await fetch(`${config.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content }] }),
+      body: JSON.stringify({ model: config.model, messages: [{ role: "user", content }], stream: false }),
     });
     const json = await res.json().catch(() => null);
     const text: string | undefined = json?.choices?.[0]?.message?.content;
