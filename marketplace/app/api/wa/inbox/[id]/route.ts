@@ -7,11 +7,21 @@ async function loadOwnedConversation(storeId: string, id: string) {
   return db.waConversation.findFirst({ where: { id, storeId } });
 }
 
+async function authedStoreId(): Promise<string | null> {
+  try {
+    const { store } = await requireSeller();
+    return store.id;
+  } catch {
+    return null;
+  }
+}
+
 // Thread satu percakapan + tandai terbaca.
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { store } = await requireSeller();
+  const storeId = await authedStoreId();
+  if (!storeId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
-  const conversation = await loadOwnedConversation(store.id, id);
+  const conversation = await loadOwnedConversation(storeId, id);
   if (!conversation) return NextResponse.json({ error: "tidak ditemukan" }, { status: 404 });
 
   const messages = await db.waMessage.findMany({
@@ -31,15 +41,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 // menyela kapan saja). Kirim pesan otomatis memindahkan mode ke HUMAN supaya bot berhenti
 // menimpali percakapan yang sudah ditangani manusia.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { store } = await requireSeller();
+  const storeId = await authedStoreId();
+  if (!storeId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
-  const conversation = await loadOwnedConversation(store.id, id);
+  const conversation = await loadOwnedConversation(storeId, id);
   if (!conversation) return NextResponse.json({ error: "tidak ditemukan" }, { status: 404 });
 
   const { text, imageUrl } = (await req.json().catch(() => ({}))) as { text?: string; imageUrl?: string };
   if (!text && !imageUrl) return NextResponse.json({ error: "text/imageUrl wajib" }, { status: 400 });
 
-  const sent = await waSend(store.id, conversation.buyerPhone, text || "", imageUrl);
+  const sent = await waSend(storeId, conversation.buyerPhone, text || "", imageUrl);
   if (!sent) return NextResponse.json({ error: "WA toko belum terhubung" }, { status: 409 });
 
   await db.waMessage.create({
@@ -62,9 +73,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 // Update mode (BOT/HUMAN), blokir, atau tag percakapan.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { store } = await requireSeller();
+  const storeId = await authedStoreId();
+  if (!storeId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
-  const conversation = await loadOwnedConversation(store.id, id);
+  const conversation = await loadOwnedConversation(storeId, id);
   if (!conversation) return NextResponse.json({ error: "tidak ditemukan" }, { status: 404 });
 
   const body = (await req.json().catch(() => ({}))) as { mode?: string; blocked?: boolean; tags?: string[] };

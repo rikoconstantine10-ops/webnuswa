@@ -4,10 +4,15 @@ import { db } from "@/lib/db";
 
 // Daftar percakapan WA toko yang sedang login, untuk Inbox (style messenger).
 export async function GET(req: NextRequest) {
-  const { store } = await requireSeller();
+  let storeId: string;
+  try {
+    ({ store: { id: storeId } } = await requireSeller());
+  } catch {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const filter = req.nextUrl.searchParams.get("filter") || "all"; // all | unread | human
 
-  const where: Record<string, unknown> = { storeId: store.id };
+  const where: Record<string, unknown> = { storeId };
   if (filter === "unread") where.unreadCount = { gt: 0 };
   if (filter === "human") where.mode = "HUMAN";
 
