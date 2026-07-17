@@ -202,6 +202,23 @@ export function notifyWithdrawalPaid(withdrawalId: string) {
   })().catch((e) => console.error("[NOTIFY withdrawal paid] gagal:", e));
 }
 
+// Notifikasi seller saat ada lead baru dari form order landing page (nama+HP terisi tapi
+// belum tentu checkout selesai) — supaya seller bisa follow-up manual/japri lebih cepat.
+export function notifyLandingLead(leadId: string) {
+  (async () => {
+    const lead = await db.landingLead.findUnique({
+      where: { id: leadId },
+      include: { landingPage: { include: { product: { select: { name: true } } } } },
+    });
+    if (!lead) return;
+    const msg = `🎯 Lead baru dari landing "${lead.landingPage.title}" (${lead.landingPage.product.name}): ${lead.name || "(tanpa nama)"} — ${lead.phone}. Belum tentu checkout, follow-up cepat biar closing!`;
+    await Promise.allSettled([
+      createNotification(lead.landingPage.storeId, "LANDING_LEAD", `Lead baru — ${lead.landingPage.title}`, msg, "/dashboard/landing"),
+      waSendToSelf(lead.landingPage.storeId, msg),
+    ]);
+  })().catch((e) => console.error("[NOTIFY landing lead] gagal:", e));
+}
+
 // Alert admin saat toko baru dibuka (pengganti alur approval KYC yang sudah dihapus).
 export function notifyAdminNewSeller(storeId: string) {
   (async () => {

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 type AiFeature = "image" | "video" | "caption" | "chat";
-type NavItem = { href: string; label: string; icon: string; feature?: AiFeature };
+type Feature = AiFeature | "landingPage";
+type NavItem = { href: string; label: string; icon: string; feature?: Feature };
 type NavGroup = { title: string; accent: string; items: NavItem[]; alwaysOpen?: boolean };
 
 const NAV_GROUPS: NavGroup[] = [
@@ -44,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Pertumbuhan",
     accent: "violet",
     items: [
+      { href: "/dashboard/landing", label: "Landing Page", icon: "🚀", feature: "landingPage" },
       { href: "/dashboard/analytics", label: "Analitik", icon: "📊" },
       { href: "/dashboard/subscription", label: "Langganan Pro", icon: "👑" },
     ],
@@ -98,6 +100,7 @@ export default function SidebarNav({
   aiVideoEnabled = true,
   aiCaptionEnabled = true,
   aiChatEnabled = true,
+  landingPageEnabled = true,
 }: {
   unreadCount: number;
   collapsed?: boolean;
@@ -106,13 +109,15 @@ export default function SidebarNav({
   aiVideoEnabled?: boolean;
   aiCaptionEnabled?: boolean;
   aiChatEnabled?: boolean;
+  landingPageEnabled?: boolean;
 }) {
   const pathname = usePathname();
-  const featureOn: Record<AiFeature, boolean> = {
+  const featureOn: Record<Feature, boolean> = {
     image: aiImageEnabled,
     video: aiVideoEnabled,
     caption: aiCaptionEnabled,
     chat: aiChatEnabled,
+    landingPage: landingPageEnabled,
   };
   const visibleGroups = NAV_GROUPS.map((g) => ({
     ...g,

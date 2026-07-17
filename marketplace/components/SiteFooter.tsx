@@ -7,7 +7,8 @@ export default function SiteFooter() {
   const pathname = usePathname();
   const inAdmin = pathname === "/admin" || pathname?.startsWith("/admin/");
   const inDashboard = pathname === "/dashboard" || pathname?.startsWith("/dashboard/");
-  if (inAdmin || inDashboard) return null;
+  const inLanding = pathname?.startsWith("/l/");
+  if (inAdmin || inDashboard || inLanding) return null;
 
   return (
     <footer className="bg-white border-t border-slate-200 py-6 text-center text-sm text-slate-500 space-y-2">

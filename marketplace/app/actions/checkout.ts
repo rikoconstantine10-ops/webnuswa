@@ -44,6 +44,8 @@ const checkoutSchema = z.object({
   courierName: z.string().optional(),
   voucherCode: z.string().optional(),
   usePoints: z.string().optional(),
+  landingPageId: z.string().optional(),
+  refSource: z.string().optional(),
 });
 
 // Normalisasi ke format internasional Indonesia: 08xx → 628xx.
@@ -77,6 +79,8 @@ export async function checkoutAction(
     courierName: formData.get("courierName") || undefined,
     voucherCode: formData.get("voucherCode") || undefined,
     usePoints: formData.get("usePoints") || undefined,
+    landingPageId: formData.get("landingPageId") || undefined,
+    refSource: formData.get("refSource") || undefined,
   });
   if (!parsed.success) return { error: "Data checkout tidak lengkap / tidak valid" };
   const input = parsed.data;
@@ -250,6 +254,8 @@ export async function checkoutAction(
         shippingCost,
         discountAmount,
         voucherId,
+        landingPageId: input.landingPageId || null,
+        refSource: input.refSource || null,
         total,
         paymentType: "cod",
         affiliateUserId,
@@ -303,6 +309,8 @@ export async function checkoutAction(
         discountAmount,
         pointsUsed,
         voucherId,
+        landingPageId: input.landingPageId || null,
+        refSource: input.refSource || null,
         total,
         paymentType: "crypto",
         affiliateUserId,
@@ -370,6 +378,8 @@ export async function checkoutAction(
       discountAmount,
       pointsUsed,
       voucherId,
+      landingPageId: input.landingPageId || null,
+      refSource: input.refSource || null,
       total,
       paymentType: input.paymentType,
       affiliateUserId,

@@ -23,6 +23,7 @@ export default function DashboardShell({
   aiVideoEnabled,
   aiCaptionEnabled,
   aiChatEnabled,
+  landingPageEnabled,
   unreadCount,
   recentNotifications,
   logoutAction,
@@ -36,6 +37,7 @@ export default function DashboardShell({
   aiVideoEnabled: boolean;
   aiCaptionEnabled: boolean;
   aiChatEnabled: boolean;
+  landingPageEnabled: boolean;
   unreadCount: number;
   recentNotifications: NotifItem[];
   logoutAction: () => void;
@@ -83,6 +85,7 @@ export default function DashboardShell({
               aiVideoEnabled={aiVideoEnabled}
               aiCaptionEnabled={aiCaptionEnabled}
               aiChatEnabled={aiChatEnabled}
+              landingPageEnabled={landingPageEnabled}
             />
           </div>
           <button

@@ -34,6 +34,7 @@ export default async function DashboardLayout({
       aiVideoEnabled={store.aiVideoEnabled}
       aiCaptionEnabled={store.aiCaptionEnabled}
       aiChatEnabled={store.aiChatEnabled}
+      landingPageEnabled={store.landingPageEnabled}
       unreadCount={unreadCount}
       recentNotifications={recent.map((n) => ({
         id: n.id,

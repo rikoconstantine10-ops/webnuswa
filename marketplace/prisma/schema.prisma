@@ -105,6 +105,8 @@ model Store {
   aiVideoEnabled      Boolean     @default(false)
   aiCaptionEnabled    Boolean     @default(false)
   aiChatEnabled       Boolean     @default(false)
+  // Landing Page (funnel 1-produk drag-n-drop + checkout langsung) — sama pola granular di atas.
+  landingPageEnabled  Boolean     @default(false)
   // Target penjualan bulanan (opsional, diatur seller sendiri) — ditampilkan sebagai
   // progress bar di Ringkasan. Direset ulang manual tiap bulan oleh seller bila mau.
   monthlyTargetRupiah Int?
@@ -130,6 +132,7 @@ model Store {
   aiCreditEntries   AiCreditEntry[]
   waConversations   WaConversation[]
   waKnowledgeItems  WaKnowledgeItem[]
+  landingPages      LandingPage[]
 }
 
 // ===== Chatbot WhatsApp =====
@@ -232,6 +235,7 @@ model Product {
   wishlist     Wishlist[]
   questions    ProductQuestion[]
   reports      ProductReport[]
+  landingPages LandingPage[]
 }
 
 // Order bump / add-on: saat checkout produk utama, tawarkan add-on dengan harga spesial.
@@ -307,6 +311,11 @@ model Order {
   voucher         Voucher?      @relation(fields: [voucherId], references: [id])
   checkoutId      String?
   checkout        Checkout?     @relation(fields: [checkoutId], references: [id])
+  // Atribusi funnel: order ini datang dari landing page mana (bila ada) & sumber traffic
+  // apa (?ref= dari link iklan) — dipakai seller untuk melihat iklan mana yang closing.
+  landingPageId   String?
+  landingPage     LandingPage?  @relation(fields: [landingPageId], references: [id], onDelete: SetNull)
+  refSource       String?
   // Escrow: dana ditahan sampai pesanan selesai, lalu dirilis ke saldo seller.
   fundsReleased   Boolean       @default(false)
   autoCompleteAt  DateTime? // auto-selesai (rilis dana) jika pembeli tak konfirmasi
@@ -478,7 +487,7 @@ model Notification {
   id        String    @id @default(cuid())
   storeId   String
   store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  type      String // ORDER_PAID | ORDER_COD_NEW | REVIEW_NEW | QUESTION_NEW | DISPUTE_OPENED | WITHDRAWAL_PAID | LOW_STOCK
+  type      String // ORDER_PAID | ORDER_COD_NEW | REVIEW_NEW | QUESTION_NEW | DISPUTE_OPENED | WITHDRAWAL_PAID | LOW_STOCK | LANDING_LEAD
   title     String
   body      String
   link      String? // path relatif untuk navigasi, mis. /dashboard/orders
@@ -774,4 +783,44 @@ model AiCreditEntry {
   createdAt DateTime @default(now())
 
   @@index([storeId])
+}
+
+// Landing page funnel: 1 halaman = 1 produk utama, blok drag-n-drop (lib/landingBlocks.ts),
+// tanpa navbar/footer situs, form order langsung di halaman (reuse BuyForm/checkoutAction).
+model LandingPage {
+  id            String        @id @default(cuid())
+  storeId       String
+  store         Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  slug          String        @unique
+  title         String
+  blocks        Json          @default("[]")
+  published     Boolean       @default(false)
+  views         Int           @default(0)
+  ogTitle       String?
+  ogDescription String?
+  ogImageUrl    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  orders        Order[]
+  leads         LandingLead[]
+
+  @@index([storeId])
+  @@index([productId])
+}
+
+// Lead tertangkap dari form order landing page (nama+HP diisi tapi belum tentu checkout
+// selesai) — dipakai seller follow-up manual/japri. converted = true kalau akhirnya order jadi.
+model LandingLead {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  name          String?
+  phone         String
+  converted     Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+
+  @@unique([landingPageId, phone])
+  @@index([landingPageId])
 }

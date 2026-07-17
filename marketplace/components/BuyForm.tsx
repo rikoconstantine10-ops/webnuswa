@@ -26,6 +26,9 @@ type Props = {
   userPoints?: number;
   cryptoEnabled?: boolean;
   enabledPaymentTypes?: string[];
+  // Atribusi funnel (diisi hanya saat form ini dipakai dari landing page — lihat LandingOrderForm).
+  landingPageId?: string;
+  refSource?: string;
 };
 
 export default function BuyForm({
@@ -43,6 +46,8 @@ export default function BuyForm({
   userPoints = 0,
   cryptoEnabled = false,
   enabledPaymentTypes = [],
+  landingPageId,
+  refSource,
 }: Props) {
   const [state, formAction, pending] = useActionState(checkoutAction, {});
   const [qty, setQty] = useState(1);
@@ -190,6 +195,8 @@ export default function BuyForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="productId" value={productId} />
+      {landingPageId && <input type="hidden" name="landingPageId" value={landingPageId} />}
+      {refSource && <input type="hidden" name="refSource" value={refSource} />}
 
       {variants.length > 0 && (
         <div>

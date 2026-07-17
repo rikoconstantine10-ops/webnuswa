@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { storeBalance } from "@/lib/ledger";
 import { formatRupiah } from "@/lib/money";
-import { setStoreStatusAction, takedownProductAction, setStoreVerifiedAction, toggleStoreAiAction } from "@/app/actions/admin";
+import { setStoreStatusAction, takedownProductAction, setStoreVerifiedAction, toggleStoreAiAction, toggleStoreLandingPageAction } from "@/app/actions/admin";
 import { Card, StatCard, Badge } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
@@ -85,12 +85,24 @@ export default async function AdminSellerDetailPage({
               {store.aiGenerationEnabled ? "✨ Nonaktifkan AI Studio" : "✨ Aktifkan AI Studio"}
             </button>
           </form>
+          <form action={toggleStoreLandingPageAction}>
+            <input type="hidden" name="storeId" value={store.id} />
+            <input type="hidden" name="enabled" value={String(!store.landingPageEnabled)} />
+            <button className={`text-sm font-bold px-4 py-2 rounded-lg ${store.landingPageEnabled ? "bg-teal-100 text-teal-700" : "bg-teal-600 text-white"}`}>
+              {store.landingPageEnabled ? "🚀 Nonaktifkan Landing Page" : "🚀 Aktifkan Landing Page"}
+            </button>
+          </form>
         </div>
       </div>
 
       {store.aiGenerationEnabled && (
         <p className="text-xs bg-indigo-50 text-indigo-700 rounded-xl px-4 py-2.5">
           ✨ Toko ini punya akses ke fitur AI Studio (generate foto &amp; caption produk).
+        </p>
+      )}
+      {store.landingPageEnabled && (
+        <p className="text-xs bg-teal-50 text-teal-700 rounded-xl px-4 py-2.5">
+          🚀 Toko ini punya akses ke fitur Landing Page (funnel 1-produk drag-n-drop).
         </p>
       )}
 

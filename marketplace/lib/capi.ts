@@ -58,3 +58,39 @@ export function capiPurchase(
     .then((t) => console.log("[CAPI]", t.slice(0, 200)))
     .catch((e) => console.error("[CAPI error]", e.message));
 }
+
+// ViewContent server-side — dipanggil saat landing page (funnel 1-produk) dibuka, supaya
+// seller yang jalankan iklan FB/IG dapat sinyal optimasi selain cuma Purchase.
+export function capiViewContent(
+  store: { metaPixelId: string | null; metaCapiToken: string | null },
+  product: { id: string; name: string; price: number },
+  eventId?: string
+) {
+  const pixelId = store.metaPixelId;
+  const token = store.metaCapiToken;
+  if (!pixelId || !token) return;
+
+  const appUrl = process.env.APP_URL || "";
+  const body = JSON.stringify({
+    data: [
+      {
+        event_name: "ViewContent",
+        event_time: Math.floor(Date.now() / 1000),
+        event_id: eventId || genEventId("view"),
+        action_source: "website",
+        event_source_url: `${appUrl}/l`,
+        custom_data: { currency: "IDR", value: product.price, content_ids: [product.id], content_name: product.name, content_type: "product" },
+      },
+    ],
+  });
+
+  fetch(`https://graph.facebook.com/v21.0/${pixelId}/events?access_token=${token}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    signal: AbortSignal.timeout(6000),
+  })
+    .then((r) => r.text())
+    .then((t) => console.log("[CAPI]", t.slice(0, 200)))
+    .catch((e) => console.error("[CAPI error]", e.message));
+}

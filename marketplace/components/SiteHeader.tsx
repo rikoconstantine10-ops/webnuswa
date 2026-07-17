@@ -39,7 +39,8 @@ export default function SiteHeader({
   const pathname = usePathname();
   const inDashboard = pathname === "/dashboard" || pathname?.startsWith("/dashboard/");
   const inAdmin = pathname === "/admin" || pathname?.startsWith("/admin/");
-  if (inAdmin || inDashboard) return null;
+  const inLanding = pathname?.startsWith("/l/");
+  if (inAdmin || inDashboard || inLanding) return null;
 
   const seg = "/" + (pathname?.split("/")[1] ?? "");
   const shopping = SHOP_SEGMENTS.includes(seg);

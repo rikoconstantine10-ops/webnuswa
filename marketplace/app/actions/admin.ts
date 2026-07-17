@@ -359,6 +359,16 @@ export async function toggleStoreAiAction(formData: FormData) {
   revalidatePath("/admin/sellers");
 }
 
+export async function toggleStoreLandingPageAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const storeId = String(formData.get("storeId"));
+  const enabled = String(formData.get("enabled")) === "true";
+  const store = await db.store.update({ where: { id: storeId }, data: { landingPageEnabled: enabled } });
+  await audit(admin.email, enabled ? "STORE_LANDING_PAGE_ENABLED" : "STORE_LANDING_PAGE_DISABLED", `Toko: ${store.name}`);
+  revalidatePath(`/admin/sellers/${storeId}`);
+  revalidatePath("/admin/sellers");
+}
+
 const AI_FEATURE_FIELD = {
   image: "aiImageEnabled",
   video: "aiVideoEnabled",
