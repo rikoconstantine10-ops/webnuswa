@@ -1,12 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import {
-  generateProductImagesAction,
-  generateCaptionsAction,
-  addProductImageAction,
-  setProductDescriptionAction,
-} from "@/app/actions/ai";
+import { generateProductImagesAction, addProductImageAction } from "@/app/actions/ai";
 import { Card } from "@/components/dashboard/ui";
 
 type Product = { id: string; name: string; imageUrl: string | null };
@@ -18,7 +13,6 @@ export default function AiStudioPanel({ products }: { products: Product[] }) {
   const [uploading, setUploading] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [imgState, imgAction, imgPending] = useActionState(generateProductImagesAction, {});
-  const [capState, capAction, capPending] = useActionState(generateCaptionsAction, {});
 
   async function uploadRawPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -47,15 +41,6 @@ export default function AiStudioPanel({ products }: { products: Product[] }) {
     fd.append("url", url);
     await addProductImageAction(fd);
     flash(`✓ Foto ditambahkan ke galeri "${selected?.name}"`);
-  }
-
-  async function saveCaptionToProduct(text: string) {
-    if (!productId) return;
-    const fd = new FormData();
-    fd.append("productId", productId);
-    fd.append("description", text);
-    await setProductDescriptionAction(fd);
-    flash(`✓ Deskripsi "${selected?.name}" diperbarui`);
   }
 
   if (products.length === 0) {
@@ -125,39 +110,6 @@ export default function AiStudioPanel({ products }: { products: Product[] }) {
                   className="text-[11px] text-teal-600 font-semibold hover:underline"
                 >
                   + Tambahkan ke produk
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <p className="text-sm font-bold mb-1">✨ Generate Caption Produk</p>
-        <p className="text-xs text-slate-500 mb-2">Pakai nama &amp; foto produk yang dipilih di atas.</p>
-        <form action={capAction}>
-          <input type="hidden" name="productName" value={selected?.name ?? ""} />
-          <input type="hidden" name="imageUrl" value={rawPhoto} />
-          <button
-            type="submit"
-            disabled={!productId || capPending}
-            className="bg-indigo-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {capPending ? "Membuat caption..." : "✨ Generate Caption"}
-          </button>
-        </form>
-        {capState.error && <p className="text-xs text-red-600 mt-2">{capState.error}</p>}
-        {capState.captions && capState.captions.length > 0 && (
-          <div className="space-y-2 mt-3">
-            {capState.captions.map((c, i) => (
-              <div key={i} className="bg-slate-50 rounded-lg p-3 text-sm flex items-start justify-between gap-2 border border-slate-200">
-                <p className="flex-1">{c}</p>
-                <button
-                  type="button"
-                  onClick={() => saveCaptionToProduct(c)}
-                  className="text-teal-600 text-xs font-bold hover:underline shrink-0"
-                >
-                  Gunakan
                 </button>
               </div>
             ))}

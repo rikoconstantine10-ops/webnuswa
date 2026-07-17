@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { storeAiEnabled, checkAiQuota } from "@/lib/kieai";
+import { storeAiFeatureEnabled, checkAiQuota } from "@/lib/kieai";
 import { getAiCreditBalance } from "@/lib/aiCredits";
 import { PageHeader, EmptyState } from "@/components/dashboard/ui";
 import AiStudioPanel from "@/components/AiStudioPanel";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function AiStudioPage() {
   const { store } = await requireSeller();
   const [enabled, products, quota, creditBalance] = await Promise.all([
-    storeAiEnabled(store.id),
+    storeAiFeatureEnabled(store.id, "image"),
     db.product.findMany({
       where: { storeId: store.id },
       select: { id: true, name: true, imageUrl: true },
@@ -24,8 +24,8 @@ export default async function AiStudioPage() {
   return (
     <div>
       <PageHeader
-        title="✨ AI Studio"
-        description="Generate foto studio & caption produk pakai AI."
+        title="✨ Generate Foto"
+        description="Generate foto studio produk dari foto HP pakai AI."
         action={
           enabled ? (
             <Link
@@ -41,7 +41,7 @@ export default async function AiStudioPage() {
         <EmptyState
           icon="✨"
           title="Fitur AI belum diaktifkan untuk tokomu"
-          description="Hubungi admin platform untuk mengaktifkan generate foto & caption AI di tokomu."
+          description="Hubungi admin platform untuk mengaktifkan generate foto AI di tokomu."
         />
       ) : (
         <AiStudioPanel products={products} />

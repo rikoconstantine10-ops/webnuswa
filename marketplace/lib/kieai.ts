@@ -204,14 +204,33 @@ export async function kieAiEnabled(): Promise<boolean> {
   return imageTiers.length > 0 || Boolean(caption);
 }
 
-// Fitur aktif untuk toko ini bila: platform sudah punya minimal satu konfigurasi AI DAN
-// admin sudah mengizinkan toko ini secara spesifik (Store.aiGenerationEnabled).
-export async function storeAiEnabled(storeId: string): Promise<boolean> {
-  const [platformEnabled, store] = await Promise.all([
-    kieAiEnabled(),
-    db.store.findUnique({ where: { id: storeId }, select: { aiGenerationEnabled: true } }),
+export type AiFeature = "image" | "video" | "caption" | "chat";
+
+const FEATURE_FIELD = {
+  image: "aiImageEnabled",
+  video: "aiVideoEnabled",
+  caption: "aiCaptionEnabled",
+  chat: "aiChatEnabled",
+} as const;
+
+async function platformFeatureConfigured(feature: AiFeature): Promise<boolean> {
+  if (feature === "caption") return Boolean(await getCaptionConfig());
+  return (await getProviderTiers(feature)).length > 0;
+}
+
+// Fitur (foto/video/caption/chatbot) aktif untuk toko ini bila: platform sudah punya
+// konfigurasi provider untuk fungsi itu DAN admin sudah mengizinkan toko ini secara spesifik
+// per-fitur (Store.aiImageEnabled/aiVideoEnabled/aiCaptionEnabled/aiChatEnabled) — toggle
+// granular ini independen dari Store.aiGenerationEnabled (toggle cepat lama di halaman Seller).
+export async function storeAiFeatureEnabled(storeId: string, feature: AiFeature): Promise<boolean> {
+  const [platformOk, store] = await Promise.all([
+    platformFeatureConfigured(feature),
+    db.store.findUnique({
+      where: { id: storeId },
+      select: { aiImageEnabled: true, aiVideoEnabled: true, aiCaptionEnabled: true, aiChatEnabled: true },
+    }),
   ]);
-  return platformEnabled && Boolean(store?.aiGenerationEnabled);
+  return platformOk && Boolean(store?.[FEATURE_FIELD[feature]]);
 }
 
 // Kuota generate AI per toko per bulan kalender. Seller PRO dapat kuota lebih besar.

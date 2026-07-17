@@ -359,6 +359,30 @@ export async function toggleStoreAiAction(formData: FormData) {
   revalidatePath("/admin/sellers");
 }
 
+const AI_FEATURE_FIELD = {
+  image: "aiImageEnabled",
+  video: "aiVideoEnabled",
+  caption: "aiCaptionEnabled",
+  chat: "aiChatEnabled",
+} as const;
+
+// Toggle granular per fitur AI (Foto/Video/Caption/Chatbot) — independen dari
+// aiGenerationEnabled (toggle cepat lama di halaman Seller). Nonaktif = item nav-nya
+// hilang dari sidebar dashboard seller (lihat components/dashboard/SidebarNav.tsx).
+export async function toggleStoreAiFeatureAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const storeId = String(formData.get("storeId"));
+  const feature = String(formData.get("feature") ?? "");
+  const enabled = String(formData.get("enabled")) === "true";
+  if (!(feature in AI_FEATURE_FIELD)) return;
+  const field = AI_FEATURE_FIELD[feature as keyof typeof AI_FEATURE_FIELD];
+
+  const store = await db.store.update({ where: { id: storeId }, data: { [field]: enabled } });
+  await audit(admin.email, `STORE_AI_${feature.toUpperCase()}_${enabled ? "ENABLED" : "DISABLED"}`, `Toko: ${store.name}`);
+  revalidatePath("/admin/ai-usage");
+  revalidatePath(`/admin/sellers/${storeId}`);
+}
+
 // ===== Laporan produk =====
 
 // Kategori laporan ditampilkan ke seller sebagai alasan (bukan isi laporan/identitas pelapor —

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { generateProductImage, generateProductVideo, generateCaptions, storeAiEnabled } from "@/lib/kieai";
+import { generateProductImage, generateProductVideo, generateCaptions, storeAiFeatureEnabled } from "@/lib/kieai";
 import { canGenerate, consumeGeneration } from "@/lib/aiCredits";
 
 export async function generateProductImagesAction(
@@ -11,7 +11,7 @@ export async function generateProductImagesAction(
   formData: FormData
 ): Promise<{ urls?: string[]; error?: string }> {
   const { store } = await requireSeller();
-  if (!(await storeAiEnabled(store.id))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
+  if (!(await storeAiFeatureEnabled(store.id, "image"))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
 
   const usage = await canGenerate(store.id);
   if (!usage.ok) {
@@ -47,7 +47,7 @@ export async function generateProductVideoAction(
   formData: FormData
 ): Promise<{ urls?: string[]; error?: string }> {
   const { store } = await requireSeller();
-  if (!(await storeAiEnabled(store.id))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
+  if (!(await storeAiFeatureEnabled(store.id, "video"))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
 
   const usage = await canGenerate(store.id);
   if (!usage.ok) {
@@ -76,7 +76,7 @@ export async function generateCaptionsAction(
   formData: FormData
 ): Promise<{ captions?: string[]; error?: string }> {
   const { store } = await requireSeller();
-  if (!(await storeAiEnabled(store.id))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
+  if (!(await storeAiFeatureEnabled(store.id, "caption"))) return { error: "Fitur AI belum diaktifkan admin untuk tokomu" };
 
   const usage = await canGenerate(store.id);
   if (!usage.ok) {

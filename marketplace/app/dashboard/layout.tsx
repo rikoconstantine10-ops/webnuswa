@@ -30,6 +30,10 @@ export default async function DashboardLayout({
       storeSlug={store.slug}
       storeStatus={store.status}
       storePaused={store.paused}
+      aiImageEnabled={store.aiImageEnabled}
+      aiVideoEnabled={store.aiVideoEnabled}
+      aiCaptionEnabled={store.aiCaptionEnabled}
+      aiChatEnabled={store.aiChatEnabled}
       unreadCount={unreadCount}
       recentNotifications={recent.map((n) => ({
         id: n.id,

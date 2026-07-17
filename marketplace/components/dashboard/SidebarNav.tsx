@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type NavItem = { href: string; label: string; icon: string };
+type AiFeature = "image" | "video" | "caption" | "chat";
+type NavItem = { href: string; label: string; icon: string; feature?: AiFeature };
 type NavGroup = { title: string; accent: string; items: NavItem[]; alwaysOpen?: boolean };
 
 const NAV_GROUPS: NavGroup[] = [
@@ -32,10 +33,11 @@ const NAV_GROUPS: NavGroup[] = [
     title: "AI Studio",
     accent: "amber",
     items: [
-      { href: "/dashboard/ai-studio", label: "Generate Foto", icon: "✨" },
-      { href: "/dashboard/ai-studio/video", label: "Generate Video", icon: "🎬" },
+      { href: "/dashboard/ai-studio", label: "Generate Foto", icon: "✨", feature: "image" },
+      { href: "/dashboard/ai-studio/video", label: "Generate Video", icon: "🎬", feature: "video" },
+      { href: "/dashboard/ai-studio/caption", label: "Generate Caption", icon: "📝", feature: "caption" },
       { href: "/dashboard/ai-credits", label: "Kredit AI", icon: "💎" },
-      { href: "/dashboard/inbox", label: "Chatbot WA", icon: "🤖" },
+      { href: "/dashboard/inbox", label: "Chatbot WA", icon: "🤖", feature: "chat" },
     ],
   },
   {
@@ -92,17 +94,36 @@ export default function SidebarNav({
   unreadCount,
   collapsed = false,
   onNavigate,
+  aiImageEnabled = true,
+  aiVideoEnabled = true,
+  aiCaptionEnabled = true,
+  aiChatEnabled = true,
 }: {
   unreadCount: number;
   collapsed?: boolean;
   onNavigate?: () => void;
+  aiImageEnabled?: boolean;
+  aiVideoEnabled?: boolean;
+  aiCaptionEnabled?: boolean;
+  aiChatEnabled?: boolean;
 }) {
   const pathname = usePathname();
-  const allHrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
+  const featureOn: Record<AiFeature, boolean> = {
+    image: aiImageEnabled,
+    video: aiVideoEnabled,
+    caption: aiCaptionEnabled,
+    chat: aiChatEnabled,
+  };
+  const visibleGroups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((i) => !i.feature || featureOn[i.feature]),
+  })).filter((g) => g.items.length > 0);
+
+  const allHrefs = visibleGroups.flatMap((g) => g.items.map((i) => i.href));
   const activeHref = allHrefs
     .filter((href) => matches(pathname ?? "", href))
     .sort((a, b) => b.length - a.length)[0];
-  const activeGroupTitle = NAV_GROUPS.find((g) => g.items.some((i) => i.href === activeHref))?.title;
+  const activeGroupTitle = visibleGroups.find((g) => g.items.some((i) => i.href === activeHref))?.title;
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(NAV_GROUPS.map((g) => g.title)));
   const [hydrated, setHydrated] = useState(false);
@@ -148,7 +169,7 @@ export default function SidebarNav({
 
   return (
     <nav className="space-y-4">
-      {NAV_GROUPS.map((group) => {
+      {visibleGroups.map((group) => {
         const isOpen = collapsed || group.alwaysOpen || openGroups.has(group.title);
         return (
           <div key={group.title}>

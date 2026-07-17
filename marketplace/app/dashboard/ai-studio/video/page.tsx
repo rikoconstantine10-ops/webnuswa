@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { storeAiEnabled, checkAiQuota } from "@/lib/kieai";
+import { storeAiFeatureEnabled, checkAiQuota } from "@/lib/kieai";
 import { getAiCreditBalance } from "@/lib/aiCredits";
 import { PageHeader, EmptyState } from "@/components/dashboard/ui";
 import AiStudioVideoPanel from "@/components/AiStudioVideoPanel";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function AiStudioVideoPage() {
   const { store } = await requireSeller();
   const [enabled, products, quota, creditBalance] = await Promise.all([
-    storeAiEnabled(store.id),
+    storeAiFeatureEnabled(store.id, "video"),
     db.product.findMany({
       where: { storeId: store.id },
       select: { id: true, name: true, imageUrl: true },

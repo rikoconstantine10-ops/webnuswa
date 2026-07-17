@@ -99,6 +99,12 @@ model Store {
   // Akses fitur ✨ AI Studio (generate foto/caption) — diaktifkan per-seller oleh admin,
   // terpisah dari kie_api_key platform (key harus ada DAN toko ini di-approve admin).
   aiGenerationEnabled Boolean     @default(false)
+  // Toggle granular per fitur AI (dasar untuk pricing/paket berjenjang) — independen dari
+  // aiGenerationEnabled di atas. Nonaktif = item nav-nya hilang dari dashboard seller.
+  aiImageEnabled      Boolean     @default(false)
+  aiVideoEnabled      Boolean     @default(false)
+  aiCaptionEnabled    Boolean     @default(false)
+  aiChatEnabled       Boolean     @default(false)
   // Target penjualan bulanan (opsional, diatur seller sendiri) — ditampilkan sebagai
   // progress bar di Ringkasan. Direset ulang manual tiap bulan oleh seller bila mau.
   monthlyTargetRupiah Int?

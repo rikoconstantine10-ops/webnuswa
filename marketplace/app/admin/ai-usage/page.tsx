@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { kieAiEnabled } from "@/lib/kieai";
-import { toggleStoreAiAction } from "@/app/actions/admin";
+import { toggleStoreAiFeatureAction } from "@/app/actions/admin";
 import { createAiCreditPackageAction, toggleAiCreditPackageAction, deleteAiCreditPackageAction } from "@/app/actions/aiCredits";
 import { PageHeader, Card, Badge, StatCard, EmptyState } from "@/components/dashboard/ui";
 import ConfirmButton from "@/components/admin/ConfirmButton";
@@ -20,8 +20,11 @@ export default async function AdminAiUsagePage() {
 
   const [stores, generations, chatMessages, packages, revenueAgg] = await Promise.all([
     db.store.findMany({
-      select: { id: true, name: true, slug: true, aiGenerationEnabled: true, plan: true, planUntil: true },
-      orderBy: { aiGenerationEnabled: "desc" },
+      select: {
+        id: true, name: true, slug: true, plan: true, planUntil: true,
+        aiImageEnabled: true, aiVideoEnabled: true, aiCaptionEnabled: true, aiChatEnabled: true,
+      },
+      orderBy: { name: "asc" },
     }),
     db.aiGeneration.findMany({
       where: { createdAt: { gte: since } },
@@ -52,7 +55,7 @@ export default async function AdminAiUsagePage() {
     chatCountByStore.set(m.conversation.storeId, (chatCountByStore.get(m.conversation.storeId) ?? 0) + 1);
   }
 
-  const enabledCount = stores.filter((s) => s.aiGenerationEnabled).length;
+  const enabledCount = stores.filter((s) => s.aiImageEnabled || s.aiVideoEnabled || s.aiCaptionEnabled || s.aiChatEnabled).length;
   const totalGenerations = generations.length;
   const totalChatReplies = chatMessages.length;
   const activeUsers = usageByStore.size;
@@ -61,7 +64,7 @@ export default async function AdminAiUsagePage() {
     <div className="space-y-6">
       <PageHeader
         title="✨ AI Studio"
-        description="Kelola akses fitur generate foto & caption produk (kie.ai) per seller, dan pantau pemakaian bulan ini."
+        description="Kelola akses 4 fitur AI (Foto/Video/Caption/Chatbot) per seller secara independen — dasar untuk paket berjenjang — dan pantau pemakaian bulan ini."
       />
 
       {!platformEnabled && (
@@ -156,7 +159,7 @@ export default async function AdminAiUsagePage() {
                 <th className="px-4 py-3">Caption</th>
                 <th className="px-4 py-3">Kuota</th>
                 <th className="px-4 py-3">🤖 Chat</th>
-                <th className="px-4 py-3">Akses</th>
+                <th className="px-4 py-3">Fitur Aktif</th>
               </tr>
             </thead>
             <tbody>
@@ -182,17 +185,29 @@ export default async function AdminAiUsagePage() {
                     <td className="px-4 py-3 text-xs text-slate-500">{used} / {limit}</td>
                     <td className="px-4 py-3 text-xs">{chatCount > 0 ? chatCount : "–"}</td>
                     <td className="px-4 py-3">
-                      <form action={toggleStoreAiAction}>
-                        <input type="hidden" name="storeId" value={s.id} />
-                        <input type="hidden" name="enabled" value={String(!s.aiGenerationEnabled)} />
-                        <button
-                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full cursor-pointer ${
-                            s.aiGenerationEnabled ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {s.aiGenerationEnabled ? "Aktif" : "Nonaktif"}
-                        </button>
-                      </form>
+                      <div className="flex flex-wrap gap-1">
+                        {(
+                          [
+                            { key: "image", label: "Foto", on: s.aiImageEnabled },
+                            { key: "video", label: "Video", on: s.aiVideoEnabled },
+                            { key: "caption", label: "Caption", on: s.aiCaptionEnabled },
+                            { key: "chat", label: "Chat", on: s.aiChatEnabled },
+                          ] as const
+                        ).map((f) => (
+                          <form key={f.key} action={toggleStoreAiFeatureAction}>
+                            <input type="hidden" name="storeId" value={s.id} />
+                            <input type="hidden" name="feature" value={f.key} />
+                            <input type="hidden" name="enabled" value={String(!f.on)} />
+                            <button
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer ${
+                                f.on ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-400"
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          </form>
+                        ))}
+                      </div>
                     </td>
                   </tr>
                 );

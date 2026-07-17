@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { waSend, waSendToSelf } from "@/lib/wa";
-import { transcribeVoice } from "@/lib/kieai";
+import { transcribeVoice, storeAiFeatureEnabled } from "@/lib/kieai";
 import { generateBotReply, isWithinBotSchedule, needsEscalation } from "@/lib/waChat";
 
 // Endpoint yang dipanggil wa-service (transport Baileys) tiap ada pesan masuk dari pembeli.
@@ -72,6 +72,9 @@ export async function POST(req: NextRequest) {
 
   if (conversation.blocked || conversation.mode === "HUMAN" || !store.waAutoReplyEnabled) {
     return NextResponse.json({ ok: true, replied: false, reason: "blocked_or_human_or_disabled" });
+  }
+  if (!(await storeAiFeatureEnabled(storeId, "chat"))) {
+    return NextResponse.json({ ok: true, replied: false, reason: "ai_chat_not_enabled" });
   }
   if (!isWithinBotSchedule(store)) {
     return NextResponse.json({ ok: true, replied: false, reason: "outside_schedule" });

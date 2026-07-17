@@ -19,6 +19,10 @@ export default function DashboardShell({
   storeSlug,
   storeStatus,
   storePaused,
+  aiImageEnabled,
+  aiVideoEnabled,
+  aiCaptionEnabled,
+  aiChatEnabled,
   unreadCount,
   recentNotifications,
   logoutAction,
@@ -28,6 +32,10 @@ export default function DashboardShell({
   storeSlug: string;
   storeStatus: string;
   storePaused: boolean;
+  aiImageEnabled: boolean;
+  aiVideoEnabled: boolean;
+  aiCaptionEnabled: boolean;
+  aiChatEnabled: boolean;
   unreadCount: number;
   recentNotifications: NotifItem[];
   logoutAction: () => void;
@@ -68,7 +76,14 @@ export default function DashboardShell({
           }`}
         >
           <div className="p-3">
-            <SidebarNav unreadCount={unreadCount} collapsed={collapsed} />
+            <SidebarNav
+              unreadCount={unreadCount}
+              collapsed={collapsed}
+              aiImageEnabled={aiImageEnabled}
+              aiVideoEnabled={aiVideoEnabled}
+              aiCaptionEnabled={aiCaptionEnabled}
+              aiChatEnabled={aiChatEnabled}
+            />
           </div>
           <button
             onClick={toggleCollapsed}
@@ -92,7 +107,14 @@ export default function DashboardShell({
                   ×
                 </button>
               </div>
-              <SidebarNav unreadCount={unreadCount} onNavigate={() => setMobileOpen(false)} />
+              <SidebarNav
+                unreadCount={unreadCount}
+                onNavigate={() => setMobileOpen(false)}
+                aiImageEnabled={aiImageEnabled}
+                aiVideoEnabled={aiVideoEnabled}
+                aiCaptionEnabled={aiCaptionEnabled}
+                aiChatEnabled={aiChatEnabled}
+              />
             </aside>
           </div>
         )}
