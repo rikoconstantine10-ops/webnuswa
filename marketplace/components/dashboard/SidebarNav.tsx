@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type NavItem = { href: string; label: string; icon: string; children?: NavItem[] };
+type NavItem = { href: string; label: string; icon: string };
 type NavGroup = { title: string; accent: string; items: NavItem[]; alwaysOpen?: boolean };
 
 const NAV_GROUPS: NavGroup[] = [
@@ -21,15 +21,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Jualan",
     accent: "sky",
     items: [
-      {
-        href: "/dashboard/products",
-        label: "Produk",
-        icon: "📦",
-        children: [
-          { href: "/dashboard/ai-studio", label: "AI Studio", icon: "✨" },
-          { href: "/dashboard/ai-credits", label: "Kredit AI", icon: "💎" },
-        ],
-      },
+      { href: "/dashboard/products", label: "Produk", icon: "📦" },
       { href: "/dashboard/orders", label: "Pesanan", icon: "🧾" },
       { href: "/dashboard/reviews", label: "Ulasan", icon: "⭐" },
       { href: "/dashboard/questions", label: "Tanya Jawab", icon: "❓" },
@@ -37,12 +29,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "Chatbot WA",
+    title: "AI Studio",
     accent: "amber",
     items: [
-      { href: "/dashboard/inbox", label: "Inbox", icon: "📥" },
-      { href: "/dashboard/knowledge", label: "Basis Pengetahuan", icon: "📚" },
-      { href: "/dashboard/whatsapp", label: "Pengaturan Bot", icon: "💬" },
+      { href: "/dashboard/ai-studio", label: "Generate Foto", icon: "✨" },
+      { href: "/dashboard/ai-studio/video", label: "Generate Video", icon: "🎬" },
+      { href: "/dashboard/ai-credits", label: "Kredit AI", icon: "💎" },
+      { href: "/dashboard/inbox", label: "Chatbot WA", icon: "🤖" },
     ],
   },
   {
@@ -95,73 +88,6 @@ function matches(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function flattenHrefs(items: NavItem[]): string[] {
-  return items.flatMap((i) => [i.href, ...(i.children ? flattenHrefs(i.children) : [])]);
-}
-
-function groupContainsHref(group: NavGroup, href: string) {
-  return flattenHrefs(group.items).includes(href);
-}
-
-function NavLink({
-  item,
-  active,
-  accent,
-  collapsed,
-  hasOpenChildren,
-  onToggleChildren,
-  onNavigate,
-  nested,
-  unreadCount,
-}: {
-  item: NavItem;
-  active: boolean;
-  accent: string;
-  collapsed: boolean;
-  hasOpenChildren?: boolean;
-  onToggleChildren?: () => void;
-  onNavigate?: () => void;
-  nested?: boolean;
-  unreadCount: number;
-}) {
-  return (
-    <div className={`flex items-center gap-1 ${nested && !collapsed ? "pl-3" : ""}`}>
-      <Link
-        href={item.href}
-        onClick={onNavigate}
-        title={collapsed ? item.label : undefined}
-        className={`flex-1 flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-xl transition min-w-0 ${
-          collapsed ? "justify-center" : "justify-between"
-        } ${active ? ACCENT_ACTIVE[accent] : "text-slate-600 hover:bg-slate-100"}`}
-      >
-        <span className="flex items-center gap-2.5 min-w-0">
-          <span className="text-base shrink-0">{item.icon}</span>
-          {!collapsed && <span className="truncate font-medium">{item.label}</span>}
-        </span>
-        {!collapsed && item.href === "/dashboard/notifications" && unreadCount > 0 && (
-          <span
-            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
-              active ? "bg-white/25 text-white" : "bg-rose-500 text-white"
-            }`}
-          >
-            {unreadCount}
-          </span>
-        )}
-      </Link>
-      {!collapsed && item.children && item.children.length > 0 && (
-        <button
-          type="button"
-          onClick={onToggleChildren}
-          aria-label={hasOpenChildren ? "Sembunyikan submenu" : "Tampilkan submenu"}
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
-        >
-          <span className={`inline-block transition-transform text-xs ${hasOpenChildren ? "rotate-90" : ""}`}>▶</span>
-        </button>
-      )}
-    </div>
-  );
-}
-
 export default function SidebarNav({
   unreadCount,
   collapsed = false,
@@ -172,18 +98,13 @@ export default function SidebarNav({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const allHrefs = NAV_GROUPS.flatMap((g) => flattenHrefs(g.items));
+  const allHrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
   const activeHref = allHrefs
     .filter((href) => matches(pathname ?? "", href))
     .sort((a, b) => b.length - a.length)[0];
-
-  const activeGroupTitle = NAV_GROUPS.find((g) => activeHref && groupContainsHref(g, activeHref))?.title;
-  const activeParentHref = NAV_GROUPS.flatMap((g) => g.items).find(
-    (i) => i.children && activeHref && flattenHrefs(i.children).includes(activeHref)
-  )?.href;
+  const activeGroupTitle = NAV_GROUPS.find((g) => g.items.some((i) => i.href === activeHref))?.title;
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(NAV_GROUPS.map((g) => g.title)));
-  const [openParents, setOpenParents] = useState<Set<string>>(() => new Set());
   const [hydrated, setHydrated] = useState(false);
 
   // Muat preferensi tersimpan sekali saat mount.
@@ -198,12 +119,11 @@ export default function SidebarNav({
     setHydrated(true);
   }, []);
 
-  // Paksa buka grup/parent yang berisi halaman aktif setiap kali pathname berubah — bukan
-  // cuma saat mount — supaya navigasi client-side (Link, tanpa reload) tetap membuka
-  // kategori yang relevan alih-alih meninggalkannya tertutup dari state sebelumnya.
+  // Paksa buka grup yang berisi halaman aktif setiap kali pathname berubah — bukan cuma
+  // saat mount — supaya navigasi client-side (Link, tanpa reload) tetap membuka kategori
+  // yang relevan alih-alih meninggalkannya tertutup dari state sebelumnya.
   useEffect(() => {
     if (activeGroupTitle) setOpenGroups((prev) => new Set(prev).add(activeGroupTitle));
-    if (activeParentHref) setOpenParents((prev) => new Set(prev).add(activeParentHref));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
@@ -222,15 +142,6 @@ export default function SidebarNav({
       const next = new Set(prev);
       if (next.has(title)) next.delete(title);
       else next.add(title);
-      return next;
-    });
-  }
-
-  function toggleParent(href: string) {
-    setOpenParents((prev) => {
-      const next = new Set(prev);
-      if (next.has(href)) next.delete(href);
-      else next.add(href);
       return next;
     });
   }
@@ -263,36 +174,30 @@ export default function SidebarNav({
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const active = item.href === activeHref;
-                  const childOpen = collapsed || openParents.has(item.href);
                   return (
-                    <div key={item.href}>
-                      <NavLink
-                        item={item}
-                        active={active}
-                        accent={group.accent}
-                        collapsed={collapsed}
-                        hasOpenChildren={childOpen}
-                        onToggleChildren={() => toggleParent(item.href)}
-                        onNavigate={onNavigate}
-                        unreadCount={unreadCount}
-                      />
-                      {item.children && childOpen && (
-                        <div className="space-y-1 mt-1">
-                          {item.children.map((child) => (
-                            <NavLink
-                              key={child.href}
-                              item={child}
-                              active={child.href === activeHref}
-                              accent={group.accent}
-                              collapsed={collapsed}
-                              onNavigate={onNavigate}
-                              nested
-                              unreadCount={unreadCount}
-                            />
-                          ))}
-                        </div>
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onNavigate}
+                      title={collapsed ? item.label : undefined}
+                      className={`flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-xl transition ${
+                        collapsed ? "justify-center" : "justify-between"
+                      } ${active ? ACCENT_ACTIVE[group.accent] : "text-slate-600 hover:bg-slate-100"}`}
+                    >
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-base shrink-0">{item.icon}</span>
+                        {!collapsed && <span className="truncate font-medium">{item.label}</span>}
+                      </span>
+                      {!collapsed && item.href === "/dashboard/notifications" && unreadCount > 0 && (
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                            active ? "bg-white/25 text-white" : "bg-rose-500 text-white"
+                          }`}
+                        >
+                          {unreadCount}
+                        </span>
                       )}
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

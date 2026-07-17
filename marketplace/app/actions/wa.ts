@@ -32,7 +32,7 @@ export async function updateWaBotSettingsAction(formData: FormData) {
       waActiveHoursEnd: waActiveHoursEnd || null,
     },
   });
-  revalidatePath("/dashboard/whatsapp");
+  revalidatePath("/dashboard/store");
 }
 
 // ===== Knowledge Base (teks saja — media bot diambil otomatis dari katalog produk) =====
@@ -47,7 +47,7 @@ export async function createKnowledgeItemAction(formData: FormData) {
   await db.waKnowledgeItem.create({
     data: { storeId: store.id, title, answer, sortOrder: (last?.sortOrder ?? -1) + 1 },
   });
-  revalidatePath("/dashboard/knowledge");
+  revalidatePath("/dashboard/store");
 }
 
 export async function updateKnowledgeItemAction(formData: FormData) {
@@ -58,7 +58,7 @@ export async function updateKnowledgeItemAction(formData: FormData) {
   if (!id || !title || !answer) return;
 
   await db.waKnowledgeItem.updateMany({ where: { id, storeId: store.id }, data: { title, answer } });
-  revalidatePath("/dashboard/knowledge");
+  revalidatePath("/dashboard/store");
 }
 
 export async function deleteKnowledgeItemAction(formData: FormData) {
@@ -66,5 +66,5 @@ export async function deleteKnowledgeItemAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await db.waKnowledgeItem.deleteMany({ where: { id, storeId: store.id } });
-  revalidatePath("/dashboard/knowledge");
+  revalidatePath("/dashboard/store");
 }

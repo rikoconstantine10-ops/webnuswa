@@ -8,6 +8,7 @@ import { verifyTurnstile } from "@/lib/turnstile";
 import { db } from "@/lib/db";
 import { slugify, randomSuffix } from "@/lib/slug";
 import { notifyAdminNewSeller } from "@/lib/notify";
+import { seedWaOnboarding } from "@/lib/waOnboarding";
 
 export async function requestOtpAction(
   _prev: { step: string; email: string; error?: string },
@@ -61,6 +62,7 @@ export async function registerSellerAction(
     where: { id: user.id },
     data: { role: user.role === "ADMIN" ? "ADMIN" : "SELLER" },
   });
+  await seedWaOnboarding(store.id, store.name);
   notifyAdminNewSeller(store.id);
 
   redirect("/dashboard");

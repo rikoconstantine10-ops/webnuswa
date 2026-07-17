@@ -58,7 +58,7 @@ export default async function DashboardHome() {
     { done: productCount > 0, label: "Tambah produk pertama", href: "/dashboard/products/new" },
     { done: Boolean(store.bankName && store.bankAccountNumber), label: "Atur rekening bank", href: "/dashboard/store" },
     { done: Boolean(store.originAreaId), label: "Atur alamat asal pengiriman", href: "/dashboard/store" },
-    { done: wa.status === "connected", label: "Sambungkan WhatsApp", href: "/dashboard/whatsapp" },
+    { done: wa.status === "connected", label: "Sambungkan WhatsApp", href: "/dashboard/store?tab=chatbot" },
   ];
   const checklistDone = checklist.filter((c) => c.done).length;
 
