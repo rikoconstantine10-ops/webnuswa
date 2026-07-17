@@ -35,6 +35,8 @@ export async function POST(req: NextRequest) {
     },
   });
   if (!store) return NextResponse.json({ error: "toko tidak ditemukan" }, { status: 404 });
+  const storeId = store.id;
+  const buyerPhone = body.from;
 
   let text = body.text?.trim() || "";
   let mediaType: string | null = body.mediaType ?? null;
@@ -51,8 +53,8 @@ export async function POST(req: NextRequest) {
   }
 
   const conversation = await db.waConversation.upsert({
-    where: { storeId_buyerPhone: { storeId: store.id, buyerPhone: body.from } },
-    create: { storeId: store.id, buyerPhone: body.from, buyerName: body.pushName || null, lastMessageAt: new Date() },
+    where: { storeId_buyerPhone: { storeId, buyerPhone } },
+    create: { storeId, buyerPhone, buyerName: body.pushName || null, lastMessageAt: new Date() },
     update: { buyerName: body.pushName || undefined, lastMessageAt: new Date(), unreadCount: { increment: 1 } },
   });
 
@@ -83,15 +85,15 @@ export async function POST(req: NextRequest) {
       data: { mode: "HUMAN", needsHumanSince: new Date() },
     });
     const notice = "Terima kasih, pesanmu sudah kami catat. Penjual akan segera membalas langsung ya 🙏";
-    const sent = await waSend(store.id, body.from!, notice);
+    const sent = await waSend(storeId, buyerPhone, notice);
     if (sent) {
       await db.waMessage.create({
         data: { conversationId: conversation.id, direction: "OUT", author: "BOT", body: notice },
       });
     }
     await waSendToSelf(
-      store.id,
-      `🔔 Percakapan WA butuh perhatianmu (${reason}).\nDari: ${body.pushName || body.from}\nPesan: ${text.slice(0, 200)}`
+      storeId,
+      `🔔 Percakapan WA butuh perhatianmu (${reason}).\nDari: ${body.pushName || buyerPhone}\nPesan: ${text.slice(0, 200)}`
     );
   }
 
@@ -100,13 +102,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, replied: true, escalated: true });
   }
 
-  const reply = await generateBotReply(store, body.from, text);
+  const reply = await generateBotReply(store, buyerPhone, text);
   if (!reply.ok) {
     await escalate(reply.reason);
     return NextResponse.json({ ok: true, replied: true, escalated: true });
   }
 
-  const sent = await waSend(store.id, body.from, reply.text, reply.imageUrl);
+  const sent = await waSend(storeId, buyerPhone, reply.text, reply.imageUrl);
   if (sent) {
     await db.waMessage.create({
       data: {
