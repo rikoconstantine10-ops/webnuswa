@@ -34,6 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/dashboard/analytics", label: "Analitik", icon: "📊" },
       { href: "/dashboard/whatsapp", label: "WhatsApp", icon: "💬" },
+      { href: "/dashboard/knowledge", label: "Basis Pengetahuan", icon: "📚" },
       { href: "/dashboard/subscription", label: "Langganan Pro", icon: "👑" },
     ],
   },
