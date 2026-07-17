@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
   if (!store) return NextResponse.json({ error: "toko tidak ditemukan" }, { status: 404 });
   const storeId = store.id;
   const buyerPhone = body.from;
+  const pushName = body.pushName || buyerPhone;
 
   let text = body.text?.trim() || "";
   let mediaType: string | null = body.mediaType ?? null;
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     }
     await waSendToSelf(
       storeId,
-      `🔔 Percakapan WA butuh perhatianmu (${reason}).\nDari: ${body.pushName || buyerPhone}\nPesan: ${text.slice(0, 200)}`
+      `🔔 Percakapan WA butuh perhatianmu (${reason}).\nDari: ${pushName}\nPesan: ${text.slice(0, 200)}`
     );
   }
 
