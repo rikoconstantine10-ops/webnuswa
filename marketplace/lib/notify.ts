@@ -147,6 +147,33 @@ export function notifyDisputeOpened(orderId: string) {
   })().catch((e) => console.error("[NOTIFY dispute] gagal:", e));
 }
 
+// WA ke pembeli saat admin menyetujui retur (belum refund — nunggu barang balik dulu).
+export function notifyReturnApproved(orderId: string) {
+  (async () => {
+    const order = await db.order.findUnique({ where: { id: orderId } });
+    if (!order || !order.buyerPhone) return;
+    await waSend(
+      order.storeId,
+      order.buyerPhone,
+      `📦 Retur untuk pesanan ${order.code} disetujui. Cek halaman pesananmu untuk alamat retur, lalu isi nomor resi setelah kamu kirim barangnya balik ke penjual. Dana dikembalikan setelah penjual konfirmasi terima.`
+    ).catch(() => {});
+  })().catch((e) => console.error("[NOTIFY return approved] gagal:", e));
+}
+
+// Notifikasi penjual + admin saat pembeli input resi retur.
+export function notifyReturnShipped(orderId: string) {
+  (async () => {
+    const order = await db.order.findUnique({ where: { id: orderId }, include: { dispute: true } });
+    if (!order || !order.dispute) return;
+    const msg = `📦 Pembeli sudah kirim retur untuk pesanan ${order.code}. Resi: ${order.dispute.returnCourier ?? ""} ${order.dispute.returnTrackingNumber ?? ""}. Konfirmasi di halaman Pesanan begitu barangnya sampai.`;
+    await Promise.allSettled([
+      createNotification(order.storeId, "RETURN_SHIPPED", `Retur dikirim — ${order.code}`, msg, "/dashboard/orders"),
+      waSendToSelf(order.storeId, msg),
+      createAdminNotification("RETURN_SHIPPED", `Retur dikirim — ${order.code}`, msg, "/admin/disputes"),
+    ]);
+  })().catch((e) => console.error("[NOTIFY return shipped] gagal:", e));
+}
+
 // Email pembeli saat sengketa diputus.
 export function notifyDisputeResolved(orderId: string, refunded: boolean) {
   (async () => {

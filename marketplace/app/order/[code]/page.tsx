@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { confirmReceivedAction } from "@/app/actions/checkout";
-import { openDisputeAction, addDisputeMessageAction } from "@/app/actions/disputes";
+import { openDisputeAction, addDisputeMessageAction, submitReturnTrackingAction } from "@/app/actions/disputes";
 import { DIGITAL_DISPUTE_WINDOW_HOURS } from "@/lib/orders";
 import { AUTO_COMPLETE_DAYS } from "@/lib/shipping";
 import { extractPaymentDisplay } from "@/lib/paymentDisplay";
@@ -35,7 +35,12 @@ export default async function OrderPage({
   const order = await db.order.findUnique({
     where: { code },
     include: {
-      store: { select: { name: true, slug: true, metaPixelId: true } },
+      store: {
+        select: {
+          name: true, slug: true, metaPixelId: true,
+          originAddress: true, originContactName: true, originContactPhone: true,
+        },
+      },
       items: {
         include: {
           product: { select: { type: true } },
@@ -154,9 +159,11 @@ export default async function OrderPage({
             <span className="text-xs font-bold px-2 py-1 rounded-full bg-orange-100 text-orange-700">
               {order.dispute.status === "OPEN"
                 ? "Sedang ditinjau admin"
-                : order.dispute.status === "RESOLVED_REFUND"
-                  ? "Selesai — dana dikembalikan"
-                  : "Selesai — diteruskan ke penjual"}
+                : order.dispute.status === "RETURN_APPROVED"
+                  ? "Retur disetujui"
+                  : order.dispute.status === "RESOLVED_REFUND"
+                    ? "Selesai — dana dikembalikan"
+                    : "Selesai — diteruskan ke penjual"}
             </span>
           </div>
           <div className="space-y-2">
@@ -173,6 +180,45 @@ export default async function OrderPage({
             <p className="text-sm bg-slate-50 rounded-lg px-3 py-2">
               <b>Keputusan admin:</b> {order.dispute.resolution}
             </p>
+          )}
+          {order.dispute.status === "RETURN_APPROVED" && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+              <div>
+                <p className="text-sm font-bold text-amber-800">Kirim barang balik ke:</p>
+                <p className="text-sm text-slate-700">
+                  {order.store.originContactName || order.store.name}
+                  {order.store.originContactPhone ? ` · ${order.store.originContactPhone}` : ""}
+                  <br />
+                  {order.store.originAddress || "Hubungi penjual untuk alamat retur"}
+                </p>
+              </div>
+              {order.dispute.returnTrackingNumber ? (
+                <p className="text-sm text-emerald-700">
+                  ✓ Resi retur sudah dikirim: {order.dispute.returnCourier} {order.dispute.returnTrackingNumber} —
+                  menunggu konfirmasi penjual.
+                </p>
+              ) : (
+                <form action={submitReturnTrackingAction} className="flex flex-wrap gap-2">
+                  <input type="hidden" name="code" value={order.code} />
+                  <input
+                    type="text"
+                    name="returnCourier"
+                    placeholder="Kurir (JNE/J&T/...)"
+                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm w-36"
+                  />
+                  <input
+                    type="text"
+                    name="returnTrackingNumber"
+                    required
+                    placeholder="Nomor resi retur"
+                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-40"
+                  />
+                  <button className="bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-amber-700">
+                    Sudah Kukirim
+                  </button>
+                </form>
+              )}
+            </div>
           )}
           {order.dispute.status === "OPEN" && (
             <form action={addDisputeMessageAction} className="flex gap-2">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { waSend, waSendToSelf } from "@/lib/wa";
+import { autoResolveOverdueReturns } from "@/lib/orders";
 
 // Reminder otomatis via WA (dipanggil crontab tiap 15 menit):
 // - Order menunggu bayar 1–24 jam → ingatkan pembeli dari WA toko ybs.
@@ -54,5 +55,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ checked: pending.length, buyerReminded, sellerNotified });
+  const returnsAutoResolved = await autoResolveOverdueReturns();
+
+  return NextResponse.json({ checked: pending.length, buyerReminded, sellerNotified, returnsAutoResolved });
 }

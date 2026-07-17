@@ -602,11 +602,17 @@ model Dispute {
   buyerId    String?
   buyer      User?            @relation(fields: [buyerId], references: [id])
   reason     String
-  status     String           @default("OPEN") // OPEN | RESOLVED_REFUND | RESOLVED_RELEASE | REJECTED
+  status     String           @default("OPEN") // OPEN | RETURN_APPROVED | RESOLVED_REFUND | RESOLVED_RELEASE | REJECTED
   resolution String?
   createdAt  DateTime         @default(now())
   resolvedAt DateTime?
   messages   DisputeMessage[]
+  // ===== Retur barang fisik (admin setujui retur sebelum refund) =====
+  // Alamat retur = alamat asal toko yang sudah ada (Store.originAddress), tidak perlu field baru.
+  returnCourier         String?   // isi bebas dari pembeli, mis. "JNE REG"
+  returnTrackingNumber  String?
+  returnShippedAt       DateTime? // saat pembeli input resi retur
+  returnDeadlineAt      DateTime? // auto-refund kalau seller tak konfirmasi/lapor sebelum ini
 }
 
 model DisputeMessage {

@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { db } from "./db";
-import { getStoreFeePercent, releaseOrderFunds } from "./ledger";
-import { notifyOrderPaid } from "./notify";
+import { getStoreFeePercent, releaseOrderFunds, voidOrderFunds } from "./ledger";
+import { notifyOrderPaid, notifyDisputeResolved } from "./notify";
 import { trackEvent } from "./analytics";
 import { capiPurchase } from "./capi";
 import { createShipmentForOrder } from "./shipping";
@@ -13,6 +13,11 @@ const DOWNLOAD_DAYS = 7;
 // Produk digital dianggap "diterima" instan (dana langsung cair), tapi pembeli
 // tetap diberi jendela singkat untuk komplain bila filenya rusak/salah/tak sesuai.
 export const DIGITAL_DISPUTE_WINDOW_HOURS = 48;
+
+// Batas waktu setelah pembeli input resi retur — kalau seller tak konfirmasi/lapor
+// sampai tenggat ini, retur otomatis dianggap diterima & dana direfund (lindungi pembeli
+// dari seller yang menghilang). Lihat app/actions/disputes.ts & /api/cron/reminders.
+export const RETURN_SHIP_DEADLINE_DAYS = 7;
 
 // Idempotent: hanya memproses order berstatus PENDING_PAYMENT.
 // Mencatat ledger (kredit penjualan − platform fee), mengurangi stok,
@@ -151,4 +156,32 @@ export async function completeOrder(orderId: string): Promise<void> {
 export function generateOrderCode(): string {
   const date = new Date().toISOString().slice(2, 10).replace(/-/g, "");
   return `ORD-${date}-${randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+// Retur yang sudah dikirim pembeli (resi diisi) tapi seller tak konfirmasi/lapor sampai
+// tenggat — anggap diterima & refund otomatis, supaya pembeli tak dirugikan seller yang
+// menghilang. Dipanggil cron (lihat /api/cron/reminders).
+export async function autoResolveOverdueReturns(): Promise<number> {
+  const overdue = await db.dispute.findMany({
+    where: { status: "RETURN_APPROVED", returnDeadlineAt: { lte: new Date() } },
+    include: { order: true },
+  });
+  for (const dispute of overdue) {
+    const order = dispute.order;
+    await voidOrderFunds(order.id);
+    await db.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
+    if (order.voucherId) {
+      await db.voucher.update({ where: { id: order.voucherId }, data: { used: { decrement: 1 } } });
+    }
+    await db.dispute.update({
+      where: { id: dispute.id },
+      data: {
+        status: "RESOLVED_REFUND",
+        resolution: "Retur otomatis diterima (seller tidak konfirmasi dalam tenggat) — dana dikembalikan",
+        resolvedAt: new Date(),
+      },
+    });
+    notifyDisputeResolved(order.id, true);
+  }
+  return overdue.length;
 }

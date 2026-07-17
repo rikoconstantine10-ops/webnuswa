@@ -6,9 +6,14 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin, requireSeller } from "@/lib/auth";
 import { releaseOrderFunds, voidOrderFunds } from "@/lib/ledger";
-import { DIGITAL_DISPUTE_WINDOW_HOURS } from "@/lib/orders";
+import { DIGITAL_DISPUTE_WINDOW_HOURS, RETURN_SHIP_DEADLINE_DAYS } from "@/lib/orders";
 import { audit } from "@/lib/audit";
-import { notifyDisputeOpened, notifyDisputeResolved } from "@/lib/notify";
+import {
+  notifyDisputeOpened,
+  notifyDisputeResolved,
+  notifyReturnApproved,
+  notifyReturnShipped,
+} from "@/lib/notify";
 
 // Pembeli membuka komplain/sengketa dari halaman pesanan (punya kode order).
 export async function openDisputeAction(formData: FormData) {
@@ -87,16 +92,28 @@ export async function addDisputeMessageAction(formData: FormData) {
   revalidatePath(`/dashboard/orders`);
 }
 
-// Admin menyelesaikan sengketa: refund ke pembeli (batalkan dana seller) atau rilis ke seller.
+// Admin menyelesaikan sengketa: refund langsung, retur dulu baru refund, rilis ke seller, atau tolak.
 export async function resolveDisputeAction(formData: FormData) {
   const admin = await requireAdmin();
   const disputeId = String(formData.get("disputeId") ?? "");
-  const outcome = String(formData.get("outcome") ?? ""); // REFUND | RELEASE | REJECT
+  const outcome = String(formData.get("outcome") ?? ""); // REFUND | RETURN | RELEASE | REJECT
   const resolution = String(formData.get("resolution") ?? "").trim().slice(0, 1000);
 
   const dispute = await db.dispute.findUnique({ where: { id: disputeId }, include: { order: true } });
   if (!dispute || dispute.status !== "OPEN") redirect(`/admin/disputes`);
   const order = dispute.order;
+
+  if (outcome === "RETURN") {
+    // Belum refund — nunggu barang fisik balik ke seller & dikonfirmasi dulu (lihat
+    // submitReturnTrackingAction / confirmReturnReceivedAction). Order tetap DISPUTED.
+    await db.dispute.update({
+      where: { id: disputeId },
+      data: { status: "RETURN_APPROVED", resolution: resolution || "Retur disetujui, menunggu barang dikirim balik" },
+    });
+    await audit(admin.email, "DISPUTE_RETURN_APPROVED", `Order ${order.code}`);
+    notifyReturnApproved(order.id);
+    redirect(`/admin/disputes`);
+  }
 
   if (outcome === "REFUND") {
     await voidOrderFunds(order.id);
@@ -127,4 +144,74 @@ export async function resolveDisputeAction(formData: FormData) {
     notifyDisputeResolved(order.id, false);
   }
   redirect(`/admin/disputes`);
+}
+
+// Pembeli input resi setelah mengirim barang retur (dari halaman order, pegang kode order).
+export async function submitReturnTrackingAction(formData: FormData) {
+  const code = String(formData.get("code") ?? "");
+  const courier = String(formData.get("returnCourier") ?? "").trim().slice(0, 60);
+  const trackingNumber = String(formData.get("returnTrackingNumber") ?? "").trim().slice(0, 60);
+  if (!trackingNumber) redirect(`/order/${code}`);
+
+  const order = await db.order.findUnique({ where: { code }, include: { dispute: true } });
+  if (!order?.dispute || order.dispute.status !== "RETURN_APPROVED") redirect(`/order/${code}`);
+
+  await db.dispute.update({
+    where: { id: order.dispute.id },
+    data: {
+      returnCourier: courier || null,
+      returnTrackingNumber: trackingNumber,
+      returnShippedAt: new Date(),
+      returnDeadlineAt: new Date(Date.now() + RETURN_SHIP_DEADLINE_DAYS * 24 * 60 * 60 * 1000),
+    },
+  });
+  notifyReturnShipped(order.id);
+  revalidatePath(`/order/${code}`);
+  redirect(`/order/${code}`);
+}
+
+// Seller konfirmasi barang retur sudah diterima dalam kondisi baik → proses refund ke pembeli.
+export async function confirmReturnReceivedAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const disputeId = String(formData.get("disputeId") ?? "");
+
+  const dispute = await db.dispute.findUnique({ where: { id: disputeId }, include: { order: true } });
+  if (!dispute || dispute.status !== "RETURN_APPROVED" || dispute.order.storeId !== store.id) return;
+  const order = dispute.order;
+
+  await voidOrderFunds(order.id);
+  await db.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
+  if (order.voucherId) {
+    await db.voucher.update({ where: { id: order.voucherId }, data: { used: { decrement: 1 } } });
+  }
+  await db.dispute.update({
+    where: { id: disputeId },
+    data: { status: "RESOLVED_REFUND", resolution: "Retur diterima seller, dana dikembalikan ke pembeli", resolvedAt: new Date() },
+  });
+  notifyDisputeResolved(order.id, true);
+  revalidatePath("/dashboard/orders");
+}
+
+// Seller lapor ada masalah dengan barang retur (tidak sampai/rusak/beda) — dikembalikan ke
+// admin untuk keputusan final, bukan seller yang memutuskan sendiri.
+export async function escalateReturnToAdminAction(formData: FormData) {
+  const { store } = await requireSeller();
+  const disputeId = String(formData.get("disputeId") ?? "");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 1000);
+
+  const dispute = await db.dispute.findUnique({ where: { id: disputeId }, include: { order: true } });
+  if (!dispute || dispute.status !== "RETURN_APPROVED" || dispute.order.storeId !== store.id) return;
+
+  await db.$transaction([
+    db.dispute.update({ where: { id: disputeId }, data: { status: "OPEN" } }),
+    db.disputeMessage.create({
+      data: {
+        disputeId,
+        author: "SELLER",
+        body: note || "Ada masalah dengan barang retur yang dikirim pembeli — mohon admin tinjau ulang.",
+      },
+    }),
+  ]);
+  revalidatePath("/dashboard/orders");
+  revalidatePath("/admin/disputes");
 }

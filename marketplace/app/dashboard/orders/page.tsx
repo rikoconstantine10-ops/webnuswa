@@ -3,7 +3,7 @@ import { requireSeller } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatRupiah } from "@/lib/money";
 import { markProcessingAction, shipOrderAction, bulkMarkProcessingAction } from "@/app/actions/seller";
-import { addDisputeMessageAction } from "@/app/actions/disputes";
+import { addDisputeMessageAction, confirmReturnReceivedAction, escalateReturnToAdminAction } from "@/app/actions/disputes";
 import { Card, PageHeader, Badge, EmptyState } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
@@ -202,7 +202,12 @@ export default async function OrdersPage({
               {order.dispute && (
                 <div className="mt-3 border-t border-slate-100 pt-3">
                   <p className="text-xs font-bold text-red-700 mb-2">
-                    ⚠ Sengketa — {order.dispute.status === "OPEN" ? "menunggu keputusan admin" : "sudah diselesaikan"}
+                    ⚠ Sengketa —{" "}
+                    {order.dispute.status === "OPEN"
+                      ? "menunggu keputusan admin"
+                      : order.dispute.status === "RETURN_APPROVED"
+                        ? "retur disetujui, menunggu barang balik"
+                        : "sudah diselesaikan"}
                   </p>
                   <div className="space-y-1.5 bg-slate-50 rounded-lg p-3 max-h-52 overflow-auto mb-2">
                     {order.dispute.messages.map((m) => (
@@ -218,6 +223,42 @@ export default async function OrdersPage({
                     <p className="text-xs text-slate-500 mb-2">
                       Keputusan admin: <span className="font-medium">{order.dispute.resolution}</span>
                     </p>
+                  )}
+                  {order.dispute.status === "RETURN_APPROVED" && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2 space-y-2">
+                      {order.dispute.returnTrackingNumber ? (
+                        <>
+                          <p className="text-xs text-slate-700">
+                            📦 Resi retur dari pembeli: <b>{order.dispute.returnCourier} {order.dispute.returnTrackingNumber}</b>
+                            {order.dispute.returnDeadlineAt && (
+                              <> — auto-refund {new Date(order.dispute.returnDeadlineAt).toLocaleDateString("id-ID")} kalau tidak dikonfirmasi</>
+                            )}
+                          </p>
+                          <div className="flex gap-2">
+                            <form action={confirmReturnReceivedAction}>
+                              <input type="hidden" name="disputeId" value={order.dispute.id} />
+                              <button className="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">
+                                Konfirmasi Barang Diterima
+                              </button>
+                            </form>
+                            <form action={escalateReturnToAdminAction} className="flex gap-1">
+                              <input type="hidden" name="disputeId" value={order.dispute.id} />
+                              <input
+                                type="text"
+                                name="note"
+                                placeholder="Ada masalah? Jelaskan…"
+                                className="border border-slate-300 rounded-lg px-2 py-1 text-xs w-40"
+                              />
+                              <button className="bg-slate-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-600">
+                                Lapor ke Admin
+                              </button>
+                            </form>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-slate-500">Menunggu pembeli mengirim barang & mengisi resi retur.</p>
+                      )}
+                    </div>
                   )}
                   {order.dispute.status === "OPEN" && (
                     <form action={addDisputeMessageAction} className="flex gap-2">

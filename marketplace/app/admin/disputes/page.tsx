@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 const STATUS: Record<string, string> = {
   OPEN: "Terbuka",
+  RETURN_APPROVED: "Menunggu Retur",
   RESOLVED_REFUND: "Refund ke pembeli",
   RESOLVED_RELEASE: "Diteruskan ke penjual",
   REJECTED: "Ditolak",
@@ -39,7 +40,8 @@ export default async function AdminDisputesPage({
   });
 
   const open = disputes.filter((d) => d.status === "OPEN");
-  const resolved = disputes.filter((d) => d.status !== "OPEN");
+  const returning = disputes.filter((d) => d.status === "RETURN_APPROVED");
+  const resolved = disputes.filter((d) => !["OPEN", "RETURN_APPROVED"].includes(d.status));
 
   return (
     <div className="space-y-6">
@@ -113,6 +115,9 @@ export default async function AdminDisputesPage({
               <button name="outcome" value="REFUND" className="bg-red-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg hover:bg-red-700">
                 Refund pembeli
               </button>
+              <button name="outcome" value="RETURN" className="bg-orange-500 text-white text-sm font-bold px-3 py-1.5 rounded-lg hover:bg-orange-600">
+                Setujui retur
+              </button>
               <button name="outcome" value="RELEASE" className="bg-emerald-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">
                 Teruskan ke penjual
               </button>
@@ -121,12 +126,34 @@ export default async function AdminDisputesPage({
               </button>
             </form>
             <p className="text-[11px] text-slate-400">
-              Refund: dana escrow dibatalkan (tidak masuk saldo penjual) & order ditandai REFUNDED. Pengembalian uang ke
-              pembeli diproses admin via gateway/manual.
+              Refund: dana escrow dibatalkan & langsung REFUNDED. Retur: pembeli kirim barang balik ke penjual dulu,
+              baru refund setelah penjual konfirmasi terima. Pengembalian uang ke pembeli diproses admin via
+              gateway/manual.
             </p>
           </Card>
         ))}
       </section>
+
+      {returning.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-bold text-sm text-amber-700">Menunggu Retur ({returning.length})</h2>
+          {returning.map((d) => (
+            <Card key={d.id} className="border-l-4 border-amber-400 !p-4 text-sm">
+              <div className="flex items-center justify-between">
+                <span>
+                  Order {d.order.code} · {d.order.store.name} · {formatRupiah(d.order.total)}
+                </span>
+                <Badge tone="amber">Menunggu Retur</Badge>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {d.returnTrackingNumber
+                  ? `Resi retur: ${d.returnCourier ?? ""} ${d.returnTrackingNumber} — menunggu konfirmasi penjual (tenggat auto-refund: ${d.returnDeadlineAt ? new Date(d.returnDeadlineAt).toLocaleDateString("id-ID") : "-"})`
+                  : "Menunggu pembeli mengirim barang & mengisi nomor resi"}
+              </p>
+            </Card>
+          ))}
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="font-bold text-sm text-slate-600">Riwayat ({resolved.length})</h2>
