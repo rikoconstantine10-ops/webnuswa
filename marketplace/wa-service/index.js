@@ -3,10 +3,14 @@
  * Satu sesi Baileys per toko (storeId). Seller menghubungkan nomor WA-nya
  * sendiri lewat QR di dashboard; platform hanya menyediakan layanannya.
  *
+ * Servis ini murni TRANSPORT — semua logika bot/persona/eskalasi ada di app utama
+ * (lihat POST /api/wa/inbound). Pesan masuk (teks/gambar/voice note) diteruskan ke
+ * app; app yang memutuskan balasannya, lalu memanggil endpoint /send di sini.
+ *
  * API (semua butuh header x-api-key = WA_SERVICE_KEY):
  *   POST /sessions/:storeId/start   → mulai / lanjutkan sesi (QR terbit jika belum login)
  *   GET  /sessions/:storeId/status  → { status: disconnected|qr|connecting|connected, qr?: dataURL, phone? }
- *   POST /sessions/:storeId/send    → { to: "628xx", message: "..." }
+ *   POST /sessions/:storeId/send    → { to: "628xx", message?: "...", imageUrl?: "https://..." }
  *   POST /sessions/:storeId/logout  → putuskan & hapus kredensial
  *
  * Jalankan HANYA di localhost (bind 127.0.0.1) — jangan diekspos ke publik.
@@ -19,12 +23,14 @@ const QRCode = require("qrcode");
 const {
   default: makeWASocket,
   useMultiFileAuthState,
+  downloadMediaMessage,
   DisconnectReason,
 } = require("@whiskeysockets/baileys");
 
 const PORT = parseInt(process.env.WA_PORT || "3006", 10);
 const API_KEY = process.env.WA_SERVICE_KEY || "";
 const SESSIONS_DIR = process.env.WA_SESSIONS_DIR || "./wa-sessions";
+const APP_URL = process.env.APP_URL || "http://127.0.0.1:3005";
 const logger = pino({ level: "warn" });
 
 fs.mkdirSync(SESSIONS_DIR, { recursive: true });
@@ -34,6 +40,78 @@ const sessions = new Map();
 
 function sessionDir(storeId) {
   return path.join(SESSIONS_DIR, storeId.replace(/[^a-zA-Z0-9_-]/g, "_"));
+}
+
+// Ekstrak teks/media dari satu pesan Baileys. Tipe yang tak didukung (stiker, lokasi,
+// dokumen, dst) diabaikan di v1 — cukup teks, gambar, dan voice note.
+async function extractIncoming(msg) {
+  const m = msg.message;
+  if (!m) return null;
+
+  if (m.conversation) return { text: m.conversation, mediaType: null };
+  if (m.extendedTextMessage?.text) return { text: m.extendedTextMessage.text, mediaType: null };
+
+  if (m.imageMessage) {
+    try {
+      const buf = await downloadMediaMessage(msg, "buffer", {});
+      return {
+        text: m.imageMessage.caption || null,
+        mediaType: "image",
+        mediaBase64: buf.toString("base64"),
+        mediaMime: m.imageMessage.mimetype || "image/jpeg",
+      };
+    } catch (e) {
+      console.error("[wa] gagal unduh gambar:", e.message);
+      return null;
+    }
+  }
+
+  if (m.audioMessage) {
+    try {
+      const buf = await downloadMediaMessage(msg, "buffer", {});
+      return {
+        text: null,
+        mediaType: "audio",
+        mediaBase64: buf.toString("base64"),
+        mediaMime: m.audioMessage.mimetype || "audio/ogg",
+      };
+    } catch (e) {
+      console.error("[wa] gagal unduh voice note:", e.message);
+      return null;
+    }
+  }
+
+  return null;
+}
+
+async function handleIncoming(storeId, sock, msg) {
+  if (msg.key.fromMe) return;
+  const remoteJid = msg.key.remoteJid || "";
+  if (remoteJid.endsWith("@g.us") || remoteJid === "status@broadcast") return; // abaikan grup/status v1
+  const from = remoteJid.split("@")[0];
+  if (!from) return;
+
+  const extracted = await extractIncoming(msg);
+  if (!extracted || (!extracted.text && !extracted.mediaBase64)) return;
+
+  // Tandai terbaca begitu diproses (read receipt untuk pembeli).
+  sock.readMessages([msg.key]).catch(() => {});
+
+  try {
+    await fetch(`${APP_URL}/api/wa/inbound`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+      body: JSON.stringify({
+        storeId,
+        from,
+        pushName: msg.pushName || null,
+        ...extracted,
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+  } catch (e) {
+    console.error(`[wa] gagal teruskan pesan masuk (${storeId}):`, e.message);
+  }
 }
 
 async function startSession(storeId) {
@@ -76,6 +154,13 @@ async function startSession(storeId) {
     }
   });
 
+  sock.ev.on("messages.upsert", ({ messages, type }) => {
+    if (type !== "notify") return;
+    for (const msg of messages) {
+      handleIncoming(storeId, sock, msg).catch((e) => console.error("[wa] handleIncoming error:", e.message));
+    }
+  });
+
   return state;
 }
 
@@ -87,7 +172,7 @@ for (const dir of fs.readdirSync(SESSIONS_DIR)) {
 }
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use((req, res, next) => {
   if (!API_KEY || req.headers["x-api-key"] !== API_KEY) {
     return res.status(401).json({ error: "unauthorized" });
@@ -115,11 +200,18 @@ app.post("/sessions/:storeId/send", async (req, res) => {
   if (!s || s.status !== "connected") {
     return res.status(409).json({ error: "wa belum terhubung" });
   }
-  const { to, message } = req.body || {};
+  const { to, message, imageUrl } = req.body || {};
   const phone = String(to || "").replace(/\D/g, "");
-  if (!phone || !message) return res.status(400).json({ error: "to & message wajib" });
+  if (!phone || (!message && !imageUrl)) return res.status(400).json({ error: "to & message/imageUrl wajib" });
+  const jid = `${phone}@s.whatsapp.net`;
   try {
-    await s.sock.sendMessage(`${phone}@s.whatsapp.net`, { text: String(message) });
+    await s.sock.sendPresenceUpdate("composing", jid).catch(() => {});
+    if (imageUrl) {
+      await s.sock.sendMessage(jid, { image: { url: imageUrl }, caption: message ? String(message) : undefined });
+    } else {
+      await s.sock.sendMessage(jid, { text: String(message) });
+    }
+    await s.sock.sendPresenceUpdate("paused", jid).catch(() => {});
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
