@@ -309,7 +309,10 @@ export async function generateProductVideo(
     const createRes = await fetch(`${config.baseUrl}/api/v1/jobs/createTask`, {
       method: "POST",
       headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: config.model, input: { prompt: input.prompt, image_urls: [input.imageUrl] } }),
+      body: JSON.stringify({
+        model: config.model,
+        input: { prompt: input.prompt, image_url: input.imageUrl, duration: "5" },
+      }),
     });
     const createJson = await createRes.json().catch(() => null);
     const taskId = createJson?.data?.taskId;
