@@ -17,6 +17,7 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   EXPIRED: { label: "Kedaluwarsa", cls: "bg-slate-200 text-slate-600" },
   DISPUTED: { label: "Sengketa", cls: "bg-red-100 text-red-700" },
   REFUNDED: { label: "Dikembalikan", cls: "bg-red-100 text-red-700" },
+  RETURN_TO_SENDER: { label: "Gagal Kirim — Kembali ke Penjual", cls: "bg-orange-100 text-orange-700" },
 };
 
 export default async function MyOrdersPage() {

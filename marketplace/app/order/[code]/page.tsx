@@ -23,6 +23,7 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   EXPIRED: { label: "Kedaluwarsa", cls: "bg-slate-200 text-slate-600" },
   DISPUTED: { label: "Komplain", cls: "bg-orange-100 text-orange-700" },
   REFUNDED: { label: "Dana Dikembalikan", cls: "bg-slate-200 text-slate-600" },
+  RETURN_TO_SENDER: { label: "Dikembalikan ke Penjual", cls: "bg-orange-100 text-orange-700" },
 };
 
 export default async function OrderPage({

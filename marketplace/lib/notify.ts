@@ -113,6 +113,19 @@ export function notifyOrderShipped(orderId: string) {
   })().catch((e) => console.error("[NOTIFY shipped] gagal:", e));
 }
 
+// Notifikasi penjual saat paket gagal diantar & kembali (mis. alamat pembeli tidak ditemukan).
+export function notifyOrderReturned(orderId: string) {
+  (async () => {
+    const order = await db.order.findUnique({ where: { id: orderId }, include: { store: { select: { name: true } } } });
+    if (!order) return;
+    const msg = `📦 Pesanan ${order.code} gagal diantar kurir & sudah dikembalikan ke alamatmu. Stok produk sudah dikembalikan otomatis.`;
+    await Promise.allSettled([
+      createNotification(order.storeId, "ORDER_RETURNED", `Pesanan dikembalikan kurir — ${order.code}`, msg, "/dashboard/orders"),
+      waSendToSelf(order.storeId, msg),
+    ]);
+  })().catch((e) => console.error("[NOTIFY returned] gagal:", e));
+}
+
 // Email saat sengketa dibuka (ke penjual + admin).
 export function notifyDisputeOpened(orderId: string) {
   (async () => {

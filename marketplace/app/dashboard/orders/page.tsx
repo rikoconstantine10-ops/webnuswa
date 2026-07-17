@@ -18,9 +18,10 @@ const STATUS_LABEL: Record<string, string> = {
   EXPIRED: "Kedaluwarsa",
   DISPUTED: "Sengketa",
   REFUNDED: "Refund",
+  RETURN_TO_SENDER: "Gagal Kirim — Kembali",
 };
 
-const STATUS_TONE: Record<string, "amber" | "emerald" | "slate" | "red" | "blue" | "sky"> = {
+const STATUS_TONE: Record<string, "amber" | "emerald" | "slate" | "red" | "blue" | "sky" | "orange"> = {
   PAID: "amber",
   PROCESSING: "blue",
   SHIPPED: "sky",
@@ -29,9 +30,10 @@ const STATUS_TONE: Record<string, "amber" | "emerald" | "slate" | "red" | "blue"
   EXPIRED: "slate",
   DISPUTED: "red",
   REFUNDED: "slate",
+  RETURN_TO_SENDER: "orange",
 };
 
-const STATUS_OPTIONS = ["PAID", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED", "EXPIRED", "DISPUTED", "REFUNDED"];
+const STATUS_OPTIONS = ["PAID", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED", "EXPIRED", "DISPUTED", "REFUNDED", "RETURN_TO_SENDER"];
 
 export default async function OrdersPage({
   searchParams,

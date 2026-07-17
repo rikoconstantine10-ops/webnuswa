@@ -17,7 +17,7 @@ import { generateOrderCode, completeOrder } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
 import { validateVoucher } from "@/lib/voucher";
-import { createShipmentForOrder } from "@/lib/shipping";
+import { createShipmentForOrder, COD_RETURN_ABUSE_THRESHOLD } from "@/lib/shipping";
 import { notifyNewCodOrder } from "@/lib/notify";
 import { checkLowStockProduct } from "@/lib/lowStock";
 import { effectivePrice } from "@/lib/pricing";
@@ -187,6 +187,16 @@ export async function checkoutAction(
   const isCod = input.paymentType === "cod";
   if (isCod && (product.type !== "PHYSICAL" || !codCapable)) {
     return { error: "COD tidak tersedia untuk produk/kurir ini. Pilih pembayaran online." };
+  }
+  // Cegah penyalahgunaan COD dengan alamat bodong berulang: nomor yang riwayatnya sudah
+  // beberapa kali gagal kirim (paket balik ke penjual) tidak lagi ditawari COD.
+  if (isCod) {
+    const failedCodCount = await db.order.count({
+      where: { buyerPhone: normalizePhone(input.buyerPhone), paymentType: "cod", status: "RETURN_TO_SENDER" },
+    });
+    if (failedCodCount >= COD_RETURN_ABUSE_THRESHOLD) {
+      return { error: "COD tidak tersedia untuk nomor ini karena riwayat gagal kirim (alamat tidak ditemukan). Silakan pilih pembayaran online." };
+    }
   }
 
   const user = await currentUser();

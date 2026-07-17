@@ -1,19 +1,24 @@
 import { db } from "./db";
 import { createBiteshipOrder, getBiteshipOrder, INSTANT_COURIER_CODES } from "./biteship";
 import { waSend } from "./wa";
-import { releaseOrderFunds, getStoreFeePercent } from "./ledger";
-import { notifyOrderShipped } from "./notify";
+import { releaseOrderFunds, getStoreFeePercent, voidOrderFunds } from "./ledger";
+import { notifyOrderShipped, notifyOrderReturned } from "./notify";
 import { finalizeOrderEarnings } from "./earnings";
 
 // Hari sebelum order "delivered" otomatis diselesaikan (rilis dana) bila pembeli diam.
 export const AUTO_COMPLETE_DAYS = 3;
+// Ambang jumlah COD gagal kirim (alamat tidak ditemukan/tidak valid) sebelum nomor
+// pembeli itu tidak lagi ditawari COD saat checkout (lihat app/actions/checkout.ts).
+export const COD_RETURN_ABUSE_THRESHOLD = 2;
 
-// Peta status Biteship → status order internal.
-function mapStatus(biteship: string): "PROCESSING" | "SHIPPED" | "DELIVERED" | null {
+// Peta status Biteship → status order internal. "returned" = kurir gagal antar & paket
+// balik ke penjual (mis. alamat pembeli tidak ditemukan/bodong saat COD).
+function mapStatus(biteship: string): "PROCESSING" | "SHIPPED" | "DELIVERED" | "RETURNED" | null {
   const s = biteship.toLowerCase();
   if (["confirmed", "allocated", "picking_up", "scheduled"].includes(s)) return "PROCESSING";
   if (["picked", "dropping_off", "on_transit", "in_transit"].includes(s)) return "SHIPPED";
   if (["delivered"].includes(s)) return "DELIVERED";
+  if (["returned"].includes(s)) return "RETURNED";
   return null;
 }
 
@@ -111,6 +116,23 @@ export async function applyShipmentStatus(orderId: string, biteshipStatus: strin
         data.autoCompleteAt = new Date(Date.now() + AUTO_COMPLETE_DAYS * 24 * 60 * 60 * 1000);
       }
     }
+  } else if (mapped === "RETURNED" && ["PROCESSING", "SHIPPED"].includes(order.status)) {
+    // Kurir gagal antar & paket balik ke penjual (mis. alamat pembeli tidak ditemukan/bodong).
+    // COD: belum pernah dikreditkan (settleCodOrder cuma jalan saat DELIVERED) — tidak ada
+    // dana untuk dibatalkan. Prabayar: dana sudah ditahan escrow → batalkan (void), bukan
+    // salah siapa-siapa, jadi bukan REFUNDED (istilah itu dipakai utk hasil sengketa).
+    if (order.paymentType !== "cod") await voidOrderFunds(order.id);
+    data.status = "RETURN_TO_SENDER";
+    await db.order.update({ where: { id: order.id }, data });
+    await restoreOrderStock(order.id);
+    await notifyBuyer(
+      order,
+      `📦 Pesanan ${order.code} gagal diantar kurir dan dikembalikan ke penjual (kemungkinan alamat tidak ditemukan). ${
+        order.paymentType === "cod" ? "" : "Dana kamu akan dikembalikan. "
+      }Hubungi penjual untuk atur ulang pengiriman kalau masih ingin produknya.`
+    );
+    notifyOrderReturned(order.id);
+    return;
   } else if (mapped === "SHIPPED" && order.status === "PROCESSING") {
     data.status = "SHIPPED";
   } else if (mapped === "PROCESSING" && order.status === "PAID") {
@@ -123,6 +145,20 @@ export async function applyShipmentStatus(orderId: string, biteshipStatus: strin
       order,
       `✅ Pesanan ${order.code} sudah SAMPAI. Cek barangnya ya. Jika sudah sesuai, konfirmasi "Pesanan Diterima" di halaman pesanan. Dana akan otomatis diteruskan ke penjual dalam ${AUTO_COMPLETE_DAYS} hari.`
     );
+  }
+}
+
+// Kembalikan stok produk fisik dari sebuah order yang batal terjual (mis. gagal kirim/RTS).
+// Produk digital (stock null) dilewati — tidak pernah dikurangi di awal.
+async function restoreOrderStock(orderId: string): Promise<void> {
+  const items = await db.orderItem.findMany({
+    where: { orderId },
+    include: { product: { select: { id: true, type: true, stock: true } } },
+  });
+  for (const item of items) {
+    if (item.product.type === "PHYSICAL" && item.product.stock !== null) {
+      await db.product.update({ where: { id: item.product.id }, data: { stock: { increment: item.qty } } });
+    }
   }
 }
 
