@@ -186,22 +186,26 @@ export default function SidebarNav({
   const [openParents, setOpenParents] = useState<Set<string>>(() => new Set());
   const [hydrated, setHydrated] = useState(false);
 
-  // Muat preferensi tersimpan sekali saat mount, lalu paksa buka grup/parent yang berisi
-  // halaman aktif saat ini (supaya link yang baru diklik tidak "hilang" tertutup).
+  // Muat preferensi tersimpan sekali saat mount.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const collapsedTitles: string[] = raw ? JSON.parse(raw) : [];
-      const next = new Set(NAV_GROUPS.map((g) => g.title).filter((t) => !collapsedTitles.includes(t)));
-      if (activeGroupTitle) next.add(activeGroupTitle);
-      setOpenGroups(next);
+      setOpenGroups(new Set(NAV_GROUPS.map((g) => g.title).filter((t) => !collapsedTitles.includes(t))));
     } catch {
       // localStorage tak tersedia — pakai default semua terbuka.
     }
-    if (activeParentHref) setOpenParents((prev) => new Set(prev).add(activeParentHref));
     setHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Paksa buka grup/parent yang berisi halaman aktif setiap kali pathname berubah — bukan
+  // cuma saat mount — supaya navigasi client-side (Link, tanpa reload) tetap membuka
+  // kategori yang relevan alih-alih meninggalkannya tertutup dari state sebelumnya.
+  useEffect(() => {
+    if (activeGroupTitle) setOpenGroups((prev) => new Set(prev).add(activeGroupTitle));
+    if (activeParentHref) setOpenParents((prev) => new Set(prev).add(activeParentHref));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     if (!hydrated) return;
