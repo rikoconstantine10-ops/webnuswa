@@ -199,6 +199,16 @@ export default async function OrdersPage({
                 </p>
               )}
 
+              {order.status === "RETURN_TO_SENDER" && (
+                <p className="text-xs bg-orange-50 border border-orange-200 text-orange-800 rounded-lg px-3 py-2 mt-2">
+                  ⚠ Paket gagal terkirim (alamat tidak ditemukan/tidak jelas) & sudah kembali ke kamu.
+                  Sesuai kebijakan kurir, <b>ongkir pengiriman ini tetap ditagihkan ke akun toko kamu</b> meski
+                  paket tidak sampai ke pembeli — pembeli COD tidak dikenakan biaya apa pun karena transaksinya
+                  tidak selesai. Untuk nomor pembeli yang berulang kali gagal seperti ini, sistem otomatis menonaktifkan
+                  opsi COD pada order berikutnya (wajib bayar online) supaya kejadian ini tidak berulang.
+                </p>
+              )}
+
               {order.dispute && (
                 <div className="mt-3 border-t border-slate-100 pt-3">
                   <p className="text-xs font-bold text-red-700 mb-2">
