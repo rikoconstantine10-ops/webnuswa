@@ -40,10 +40,15 @@ export async function waLogout(storeId: string): Promise<boolean> {
   return Boolean(res?.ok);
 }
 
-export async function waSend(storeId: string, to: string, message: string): Promise<boolean> {
+export async function waSend(
+  storeId: string,
+  to: string,
+  message: string,
+  imageUrl?: string
+): Promise<boolean> {
   const res = await call(`/sessions/${storeId}/send`, {
     method: "POST",
-    body: JSON.stringify({ to, message }),
+    body: JSON.stringify({ to, message, imageUrl }),
   });
   return Boolean(res?.ok);
 }

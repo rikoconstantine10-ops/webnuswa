@@ -301,6 +301,57 @@ export async function generateProductVideo(
   });
 }
 
+// Otak chatbot WA — chat completion generik (format OpenAI-compatible, sama seperti
+// generateCaptions) dengan fallback 3-tingkat via callWithFallback("chat", ...).
+export async function callChatCompletion(
+  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>
+): Promise<{ ok: boolean; text?: string; error?: string }> {
+  return callWithFallback<{ text: string }>("chat", async (config) => {
+    const res = await fetch(`${config.baseUrl}/${config.model}/v1/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+      signal: AbortSignal.timeout(45000),
+    });
+    const json = await res.json().catch(() => null);
+    const text: string | undefined = json?.choices?.[0]?.message?.content;
+    if (!text) return { ok: false, error: json?.error?.message || "Chatbot gagal membalas" };
+    return { ok: true, text };
+  });
+}
+
+// Transkrip voice note pembeli (format Whisper-compatible) — single provider, hasil
+// dipakai sebagai pengganti teks pesan masuk sebelum diproses chatbot.
+export async function transcribeVoice(
+  audioBase64: string,
+  mimeType: string
+): Promise<{ ok: boolean; text?: string; error?: string }> {
+  const config = await getVoiceConfig();
+  if (!config) return { ok: false, error: "Transkrip suara belum dikonfigurasi admin" };
+
+  try {
+    const ext = mimeType.includes("mpeg") ? "mp3" : mimeType.includes("wav") ? "wav" : "ogg";
+    const form = new FormData();
+    form.append("model", config.model);
+    form.append(
+      "file",
+      new Blob([Buffer.from(audioBase64, "base64")], { type: mimeType }),
+      `voice.${ext}`
+    );
+    const res = await fetch(`${config.baseUrl}/v1/audio/transcriptions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${config.apiKey}` },
+      body: form,
+      signal: AbortSignal.timeout(45000),
+    });
+    const json = await res.json().catch(() => null);
+    if (!json?.text) return { ok: false, error: json?.error?.message || "Gagal transkrip suara" };
+    return { ok: true, text: String(json.text) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Gagal memproses audio" };
+  }
+}
+
 // mode "social" = caption postingan sosmed (santai, ajak interaksi).
 // mode "ad" = copy iklan (hook kuat, ringkas, CTA jelas) — relevan karena toko sudah
 // bisa pasang Meta Pixel/CAPI, jadi seller yang beriklan itu nyata.
