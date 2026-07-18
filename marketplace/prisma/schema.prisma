@@ -105,8 +105,10 @@ model Store {
   aiVideoEnabled      Boolean     @default(false)
   aiCaptionEnabled    Boolean     @default(false)
   aiChatEnabled       Boolean     @default(false)
-  // Landing Page (funnel 1-produk drag-n-drop + checkout langsung) — sama pola granular di atas.
-  landingPageEnabled  Boolean     @default(false)
+  // Landing Page (funnel 1-produk drag-n-drop + checkout langsung) — beda dari toggle AI di atas:
+  // ini aktif default untuk semua toko (termasuk yang baru daftar). Admin tetap bisa nonaktifkan
+  // per-toko lewat /admin/sellers/[id] bila ada penyalahgunaan.
+  landingPageEnabled  Boolean     @default(true)
   // Target penjualan bulanan (opsional, diatur seller sendiri) — ditampilkan sebagai
   // progress bar di Ringkasan. Direset ulang manual tiap bulan oleh seller bila mau.
   monthlyTargetRupiah Int?
