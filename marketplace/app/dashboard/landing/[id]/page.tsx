@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { parseLandingBlocks } from "@/lib/landingBlocks";
 import { updateLandingMetaAction } from "@/app/actions/landingPage";
 import { Card, PageHeader, Badge } from "@/components/dashboard/ui";
-import LandingBuilderForm from "@/components/landing/LandingBuilderForm";
+import LandingEditorLayout from "@/components/landing/LandingEditorLayout";
 
 export const dynamic = "force-dynamic";
 
@@ -63,10 +63,7 @@ export default async function LandingBuilderPage({ params }: { params: Promise<{
         </form>
       </Card>
 
-      <Card>
-        <h2 className="font-bold mb-3">Susun Blok (geser untuk urutkan)</h2>
-        <LandingBuilderForm landingPageId={lp.id} initialBlocks={blocks} addons={addons} />
-      </Card>
+      <LandingEditorLayout landingPageId={lp.id} initialBlocks={blocks} addons={addons} previewUrl={`${appUrl}/l/${lp.slug}`} />
     </div>
   );
 }

@@ -14,7 +14,17 @@ function blockSummary(b: LandingBlock): string {
   return any.heading || any.body?.slice(0, 40) || any.buttonLabel || BLOCK_LABELS[b.type];
 }
 
-export default function LandingBuilderForm({ landingPageId, initialBlocks, addons }: { landingPageId: string; initialBlocks: LandingBlock[]; addons: Addon[] }) {
+export default function LandingBuilderForm({
+  landingPageId,
+  initialBlocks,
+  addons,
+  onSaved,
+}: {
+  landingPageId: string;
+  initialBlocks: LandingBlock[];
+  addons: Addon[];
+  onSaved?: () => void;
+}) {
   const router = useRouter();
   const [blocks, setBlocks] = useState<LandingBlock[]>(initialBlocks);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -47,6 +57,7 @@ export default function LandingBuilderForm({ landingPageId, initialBlocks, addon
       }
       setEditing(null);
       router.refresh();
+      onSaved?.();
     } finally {
       setSaving(false);
     }
@@ -59,6 +70,7 @@ export default function LandingBuilderForm({ landingPageId, initialBlocks, addon
     fd.set("blockId", id);
     await removeLandingBlockAction(fd);
     router.refresh();
+    onSaved?.();
   }
 
   function onDrop(targetIndex: number) {
@@ -68,7 +80,10 @@ export default function LandingBuilderForm({ landingPageId, initialBlocks, addon
     next.splice(targetIndex, 0, moved);
     setBlocks(next);
     setDragIndex(null);
-    reorderLandingBlocksAction(landingPageId, next.map((b) => b.id)).then(() => router.refresh());
+    reorderLandingBlocksAction(landingPageId, next.map((b) => b.id)).then(() => {
+      router.refresh();
+      onSaved?.();
+    });
   }
 
   return (
