@@ -63,7 +63,7 @@ export async function getBayarinMerchantInfo(): Promise<BayarinResponse<{ userna
 }
 
 export type CreateBayarinPaymentResult =
-  | { ok: true; transactionId?: string; paymentUrl?: string; qrString?: string; raw: Record<string, unknown> }
+  | { ok: true; transactionId?: string; paymentCode?: string; totalPayment?: number; raw: Record<string, unknown> }
   | { ok: false; error: string };
 
 // referenceId sebaiknya = kode order kita (Order.code) supaya webhook bisa langsung dicocokkan.
@@ -99,15 +99,17 @@ export async function createBayarinPayment(input: {
       }),
     });
     const raw = (await res.json()) as Record<string, unknown>;
-    if (!res.ok || raw.status === false) {
+    // Endpoint ini pakai root field "success" (beda dari /merchant yang pakai "status").
+    if (!res.ok || raw.success !== true) {
       return { ok: false, error: String(raw.msg ?? `HTTP ${res.status}`) };
     }
     const data = (raw.data ?? {}) as Record<string, unknown>;
     return {
       ok: true,
       transactionId: data.transaction_id ? String(data.transaction_id) : undefined,
-      paymentUrl: data.payment_url || data.checkout_url ? String(data.payment_url ?? data.checkout_url) : undefined,
-      qrString: data.qr_string || data.qris_string ? String(data.qr_string ?? data.qris_string) : undefined,
+      // "payment_code" berisi string QRIS, nomor VA, atau kode retail tergantung bank_code.
+      paymentCode: data.payment_code ? String(data.payment_code) : undefined,
+      totalPayment: data.total_payment != null ? Number(data.total_payment) : undefined,
       raw,
     };
   } catch (e) {
@@ -129,7 +131,8 @@ export async function checkBayarinStatus(referenceId: string): Promise<{ ok: boo
       body: JSON.stringify({ api_id: creds.apiId, api_key: creds.apiKey, signature, reference_id: referenceId }),
     });
     const raw = (await res.json()) as Record<string, unknown>;
-    if (!res.ok || raw.status === false) return { ok: false, error: String(raw.msg ?? `HTTP ${res.status}`) };
+    // Endpoint ini pakai root field "success" (beda dari /merchant yang pakai "status").
+    if (!res.ok || raw.success !== true) return { ok: false, error: String(raw.msg ?? `HTTP ${res.status}`) };
     const data = (raw.data ?? {}) as Record<string, unknown>;
     return { ok: true, status: data.status ? String(data.status) : undefined };
   } catch (e) {
