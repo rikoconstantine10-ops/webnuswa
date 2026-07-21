@@ -1,0 +1,828 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  role          String    @default("BUYER") // BUYER | SELLER | ADMIN
+  points        Int       @default(0) // poin loyalitas (1 poin = Rp1)
+  affiliateCode String?   @unique // kode afiliasi bila user ikut program
+  passwordHash  String?   // login password opsional (hybrid dgn OTP), khusus alur seller
+  username      String?   @unique // handle login opsional untuk seller (login pakai username ATAU email)
+  googleId      String?   @unique // sub id dari Google OAuth, bila login via Google
+  createdAt     DateTime  @default(now())
+  sessions      Session[]
+  store         Store?
+  orders        Order[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  disputes      Dispute[]
+  addresses     Address[]
+  wishlist      Wishlist[]
+  pointEntries  PointEntry[]
+  affiliateCommissions AffiliateCommission[]
+  referredOrders Order[]  @relation("AffiliateOrders")
+  questions     ProductQuestion[]
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Store {
+  id                String        @id @default(cuid())
+  ownerId           String        @unique
+  owner             User          @relation(fields: [ownerId], references: [id])
+  name              String
+  slug              String        @unique
+  description       String?
+  logoUrl           String?
+  bannerUrl         String?
+  layoutBlocks      Json?   // blok kustom halaman toko (banner promo, produk pilihan, dst) — lihat lib/storeBlocks.ts
+  enabledPaymentTypes String[] @default([]) // kosong = semua metode pembayaran diizinkan (lihat lib/louvin.ts PAYMENT_TYPES)
+  enabledCouriers   String[]      @default([]) // kosong = semua kurir default diizinkan (lihat lib/biteship.ts)
+  whatsapp          String? // nomor WA toko, format 628xxx
+  customDomain      String?       @unique
+  metaPixelId       String?
+  metaCapiToken     String?
+  // Alamat asal toko (titik jemput kurir) untuk Biteship
+  originAreaId      String?
+  originPostalCode  String?
+  originAddress     String?
+  originContactName String?
+  originContactPhone String?
+  // Koordinat titik jemput — wajib untuk kurir instan (Gojek/Grab/Lalamove)
+  originLat         Float?
+  originLng         Float?
+  status            String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED
+  paused            Boolean       @default(false) // "tutup sementara" — dikendalikan seller sendiri, beda dari SUSPENDED (admin)
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountName   String?
+  // Verifikasi identitas penjual (KYC)
+  kycStatus         String        @default("UNVERIFIED") // UNVERIFIED | PENDING | VERIFIED | REJECTED
+  kycName           String?
+  kycIdNumber       String? // NIK
+  kycIdImageUrl     String? // foto KTP
+  // Reputasi
+  ratingAvg         Float         @default(0)
+  ratingCount       Int           @default(0)
+  // Kepercayaan: badge "Terverifikasi" (sinyal kepercayaan, bukan gerbang jualan)
+  verified          Boolean       @default(false)
+  verifiedAt        DateTime?
+  // Langganan
+  plan              String        @default("FREE") // FREE | PRO
+  planUntil         DateTime?
+  // Akses fitur ✨ AI Studio (generate foto/caption) — diaktifkan per-seller oleh admin,
+  // terpisah dari kie_api_key platform (key harus ada DAN toko ini di-approve admin).
+  aiGenerationEnabled Boolean     @default(false)
+  // Toggle granular per fitur AI (dasar untuk pricing/paket berjenjang) — independen dari
+  // aiGenerationEnabled di atas. Nonaktif = item nav-nya hilang dari dashboard seller.
+  aiImageEnabled      Boolean     @default(false)
+  aiVideoEnabled      Boolean     @default(false)
+  aiCaptionEnabled    Boolean     @default(false)
+  aiChatEnabled       Boolean     @default(false)
+  // Landing Page (funnel 1-produk drag-n-drop + checkout langsung) — beda dari toggle AI di atas:
+  // ini aktif default untuk semua toko (termasuk yang baru daftar). Admin tetap bisa nonaktifkan
+  // per-toko lewat /admin/sellers/[id] bila ada penyalahgunaan.
+  landingPageEnabled  Boolean     @default(true)
+  // Target penjualan bulanan (opsional, diatur seller sendiri) — ditampilkan sebagai
+  // progress bar di Ringkasan. Direset ulang manual tiap bulan oleh seller bila mau.
+  monthlyTargetRupiah Int?
+  // ===== Chatbot WhatsApp =====
+  // Persona/kepribadian bot milik toko — digabung dengan Global System Prompt (Setting,
+  // admin) saat runtime. Global = aturan keras tak bisa ditimpa; persona = gaya bicara.
+  waPersonaPrompt     String?
+  waAutoReplyEnabled  Boolean       @default(true) // toggle master balas-otomatis
+  waActiveDays        String[]      @default([]) // ["MON","TUE",...] kosong = semua hari
+  waActiveHoursStart  String?       // "08:00" — kosong = aktif 24 jam
+  waActiveHoursEnd    String?       // "21:00"
+  createdAt         DateTime      @default(now())
+  products          Product[]
+  orders            Order[]
+  ledgerEntries     LedgerEntry[]
+  withdrawals       Withdrawal[]
+  reviews           Review[]
+  vouchers          Voucher[]
+  reports           ProductReport[]
+  notifications     Notification[]
+  aiGenerations     AiGeneration[]
+  aiCreditPurchases AiCreditPurchase[]
+  aiCreditEntries   AiCreditEntry[]
+  waConversations   WaConversation[]
+  waKnowledgeItems  WaKnowledgeItem[]
+  landingPages      LandingPage[]
+}
+
+// ===== Chatbot WhatsApp =====
+
+model WaConversation {
+  id              String      @id @default(cuid())
+  storeId         String
+  store           Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  buyerPhone      String      // format 628xxxx
+  buyerName       String?
+  mode            String      @default("BOT") // BOT | HUMAN
+  blocked         Boolean     @default(false) // nomor diblokir dari bot & notifikasi
+  tags            String[]    @default([]) // label bebas seller, mis. "Komplain"
+  needsHumanSince DateTime?   // waktu eskalasi mulai — dasar reminder SLA belum direspons
+  unreadCount     Int         @default(0)
+  lastMessageAt   DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  messages        WaMessage[]
+
+  @@unique([storeId, buyerPhone])
+  @@index([storeId, lastMessageAt])
+}
+
+model WaMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   WaConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      String         // IN (dari pembeli) | OUT (ke pembeli)
+  author         String         // BUYER | BOT | SELLER
+  body           String?
+  imageUrl       String?
+  mediaType      String?        // image | audio — audio bila pesan asal voice note (sudah ditranskrip ke body)
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// Knowledge base per toko — daftar topik teks (judul+jawaban) yang jadi konteks
+// tambahan bot saat menyusun balasan. Tanpa gambar — media bot diambil otomatis
+// dari katalog produk aktif, bukan dari sini.
+model WaKnowledgeItem {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  title     String
+  answer    String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([storeId, sortOrder])
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  products Product[]
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  storeId      String
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  categoryId   String?
+  category     Category?     @relation(fields: [categoryId], references: [id])
+  name         String
+  slug         String        @unique
+  description  String?
+  type         String // DIGITAL | PHYSICAL
+  price        Int // rupiah
+  stock        Int? // null = tidak dibatasi (produk digital)
+  lowStockAlertedAt DateTime? // dedup notifikasi stok menipis — reset ke null saat stok naik lagi
+  weightGrams  Int? // untuk produk fisik
+  imageUrl     String?
+  active       Boolean       @default(true) // toggle tampil/sembunyi oleh seller
+  moderation   String        @default("APPROVED") // PENDING | APPROVED | REJECTED (moderasi admin)
+  moderationReason String?   // ditampilkan ke seller supaya tahu kenapa produknya ditolak/diturunkan
+  ratingAvg    Float         @default(0)
+  ratingCount  Int           @default(0)
+  // Jumlah terjual (untuk "Terlaris" & rekomendasi) — di-increment saat order dibayar
+  soldCount    Int           @default(0)
+  // Flash sale: harga diskon berjangka (aktif bila saleEndsAt > sekarang)
+  salePrice    Int?
+  saleEndsAt   DateTime?
+  // Afiliasi: komisi (persen) untuk yang mereferensikan produk ini
+  affiliatePct Int           @default(0)
+  // Promoted listing: tampil prioritas hingga waktu ini
+  boostedUntil DateTime?
+  createdAt    DateTime      @default(now())
+  digitalAsset DigitalAsset?
+  orderItems   OrderItem[]
+  images       ProductImage[]
+  variants     ProductVariant[]
+  wholesaleTiers WholesaleTier[]
+  // Order bump: produk ini menawarkan produk lain sebagai add-on saat checkout.
+  addonLinks   ProductAddon[] @relation("MainProduct")
+  offeredAs    ProductAddon[] @relation("AddonProduct")
+  cartItems    CartItem[]
+  reviews      Review[]
+  wishlist     Wishlist[]
+  questions    ProductQuestion[]
+  reports      ProductReport[]
+  landingPages LandingPage[]
+}
+
+// Order bump / add-on: saat checkout produk utama, tawarkan add-on dengan harga spesial.
+model ProductAddon {
+  id             String  @id @default(cuid())
+  productId      String
+  product        Product @relation("MainProduct", fields: [productId], references: [id], onDelete: Cascade)
+  addonProductId String
+  addonProduct   Product @relation("AddonProduct", fields: [addonProductId], references: [id], onDelete: Cascade)
+  addonPrice     Int // harga spesial add-on saat dibeli bersama produk utama
+
+  @@unique([productId, addonProductId])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  sort      Int     @default(0)
+}
+
+// Varian sederhana satu level: "Merah / XL" dengan harga & stok sendiri.
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Int
+  stock     Int?
+}
+
+// Harga grosir: beli >= minQty, harga satuan turun.
+model WholesaleTier {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  minQty    Int
+  price     Int
+}
+
+model DigitalAsset {
+  id           String  @id @default(cuid())
+  productId    String  @unique
+  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  fileName     String
+  filePath     String
+  maxDownloads Int     @default(5)
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  storeId         String
+  store           Store         @relation(fields: [storeId], references: [id])
+  buyerId         String?
+  buyer           User?         @relation(fields: [buyerId], references: [id])
+  buyerName       String
+  buyerEmail      String
+  buyerPhone      String?
+  waReminderSent  Boolean       @default(false)
+  status          String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | PROCESSING | SHIPPED | COMPLETED | CANCELLED | EXPIRED | DISPUTED | REFUNDED
+  subtotal        Int
+  shippingCost    Int           @default(0)
+  discountAmount  Int           @default(0)
+  pointsUsed      Int           @default(0) // poin loyalitas ditukar (Rp)
+  platformFee     Int           @default(0)
+  total           Int
+  // Afiliasi: user yang mereferensikan pembelian ini (dapat komisi saat selesai)
+  affiliateUserId String?
+  affiliate       User?         @relation("AffiliateOrders", fields: [affiliateUserId], references: [id])
+  voucherId       String?
+  voucher         Voucher?      @relation(fields: [voucherId], references: [id])
+  checkoutId      String?
+  checkout        Checkout?     @relation(fields: [checkoutId], references: [id])
+  // Atribusi funnel: order ini datang dari landing page mana (bila ada) & sumber traffic
+  // apa (?ref= dari link iklan) — dipakai seller untuk melihat iklan mana yang closing.
+  landingPageId   String?
+  landingPage     LandingPage?  @relation(fields: [landingPageId], references: [id], onDelete: SetNull)
+  refSource       String?
+  // Escrow: dana ditahan sampai pesanan selesai, lalu dirilis ke saldo seller.
+  fundsReleased   Boolean       @default(false)
+  autoCompleteAt  DateTime? // auto-selesai (rilis dana) jika pembeli tak konfirmasi
+  paymentType     String?
+  louvinTrxId     String?       @unique
+  paymentInfo     String? // JSON respons Louvin (nomor VA / QRIS)
+  shippingAddress String?
+  destAreaId      String?
+  destPostalCode  String?
+  destLat         Float? // koordinat tujuan — untuk kurir instan
+  destLng         Float?
+  courier         String? // nama tampil kurir, mis. "JNE REG"
+  courierCompany  String? // kode Biteship, mis. "jne"
+  courierType     String? // kode layanan, mis. "reg"
+  trackingNumber  String?
+  biteshipOrderId String?
+  shipmentStatus  String? // status dari Biteship (confirmed/allocated/picked/delivered/...)
+  paidAt          DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  items           OrderItem[]
+  ledgerEntries   LedgerEntry[]
+  reviews         Review[]
+  dispute         Dispute?
+  affiliateCommission AffiliateCommission?
+  pointEntries    PointEntry[]
+}
+
+model OrderItem {
+  id             String          @id @default(cuid())
+  orderId        String
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product         @relation(fields: [productId], references: [id])
+  name           String // snapshot nama produk saat dibeli
+  variantName    String?
+  isAddon        Boolean @default(false)
+  price          Int
+  qty            Int
+  downloadTokens DownloadToken[]
+}
+
+model DownloadToken {
+  id            String    @id @default(cuid())
+  orderItemId   String
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  token         String    @unique
+  downloadsUsed Int       @default(0)
+  maxDownloads  Int       @default(5)
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+}
+
+// Sumber kebenaran saldo seller: saldo = SUM(amount) per storeId.
+// amount positif = kredit ke seller, negatif = debit.
+model LedgerEntry {
+  id        String   @id @default(cuid())
+  storeId   String?
+  store     Store?   @relation(fields: [storeId], references: [id])
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  type      String // SALE_CREDIT | PLATFORM_FEE | WITHDRAWAL_DEBIT | ADJUSTMENT | REFUND_DEBIT
+  amount    Int
+  // Escrow: HELD = belum bisa ditarik (order belum selesai), AVAILABLE = saldo aktif.
+  status    String   @default("AVAILABLE") // HELD | AVAILABLE
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
+  @@index([storeId, status])
+}
+
+model Withdrawal {
+  id                String    @id @default(cuid())
+  storeId           String
+  store             Store     @relation(fields: [storeId], references: [id])
+  amount            Int
+  bankName          String
+  bankAccountNumber String
+  bankAccountName   String
+  status            String    @default("PENDING") // PENDING | APPROVED | PROCESSING | PAID | FAILED | REJECTED
+  note              String?
+  // Pencairan otomatis (disbursement)
+  provider          String? // mis. "flip" | "xendit" | "manual"
+  providerRef       String?   @unique // id transaksi di provider (idempotensi webhook)
+  failureReason     String?
+  autoProcessed     Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  processedAt       DateTime?
+}
+
+// Laporan penyalahgunaan produk oleh pembeli/pengunjung.
+model ProductReport {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reason      String // SPAM | PROHIBITED | COUNTERFEIT | SCAM | OTHER
+  detail      String?
+  reporterEmail String?
+  status      String   @default("OPEN") // OPEN | REVIEWED | DISMISSED | ACTIONED
+  createdAt   DateTime @default(now())
+
+  @@index([status])
+  @@index([productId])
+}
+
+// Log error terpusat untuk observabilitas produksi.
+model ErrorLog {
+  id        String   @id @default(cuid())
+  level     String   @default("error") // error | warn
+  message   String
+  context   String? // JSON: path, storeId, dll.
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Langganan Web Push (PWA) untuk notifikasi.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  source    String   @default("louvin")
+  payload   String
+  processed Boolean  @default(false)
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+// Event analitik ringan: VIEW (halaman produk), CHECKOUT (mulai checkout), PURCHASE (order lunas).
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String
+  storeId   String?
+  productId String?
+  source    String? // asal traffic: instagram/tiktok/whatsapp/google/direct/...
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([productId, type])
+}
+
+// Pengumuman admin, tampil sebagai banner di dashboard seller.
+model Announcement {
+  id        String   @id @default(cuid())
+  message   String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// Pusat notifikasi in-app seller (pesanan baru, ulasan, pertanyaan, sengketa, stok menipis, dst).
+model Notification {
+  id        String    @id @default(cuid())
+  storeId   String
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type      String // ORDER_PAID | ORDER_COD_NEW | REVIEW_NEW | QUESTION_NEW | DISPUTE_OPENED | WITHDRAWAL_PAID | LOW_STOCK | LANDING_LEAD
+  title     String
+  body      String
+  link      String? // path relatif untuk navigasi, mis. /dashboard/orders
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([storeId, readAt])
+  @@index([storeId, createdAt])
+}
+
+// Pusat notifikasi in-app admin (hanya satu admin, jadi tak perlu relasi ke user/store).
+model AdminNotification {
+  id        String    @id @default(cuid())
+  type      String // DISPUTE_OPENED | NEW_SELLER | WITHDRAWAL_REQUESTED | REPORT_SUBMITTED
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([readAt])
+  @@index([createdAt])
+}
+
+// Klik heatmap (posisi dinormalisasi 0..100 relatif ke ukuran dokumen penuh, bukan viewport).
+model HeatmapClick {
+  id        String   @id @default(cuid())
+  path      String
+  device    String // "mobile" | "desktop"
+  xPct      Float
+  yPct      Float
+  createdAt DateTime @default(now())
+
+  @@index([path, device, createdAt])
+}
+
+// Kedalaman scroll maksimum per kunjungan halaman.
+model HeatmapScroll {
+  id        String   @id @default(cuid())
+  path      String
+  device    String
+  depthPct  Int
+  createdAt DateTime @default(now())
+
+  @@index([path, device, createdAt])
+}
+
+// Jejak audit aksi penting (admin & keuangan).
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String // email pelaku
+  action    String // mis. STORE_APPROVED, WITHDRAWAL_PAID
+  detail    String?
+  createdAt DateTime @default(now())
+}
+
+// Keranjang: item disimpan per pengguna login (tamu pakai localStorage di client).
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId   String?  // id keranjang tamu (cookie), dipakai bila userId kosong (checkout tanpa login)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  qty       Int      @default(1)
+  createdAt DateTime @default(now())
+  remindedAt DateTime? // recovery email keranjang terkirim (anti-spam)
+
+  @@unique([userId, productId, variantId])
+  @@unique([guestId, productId, variantId])
+  @@index([userId])
+  @@index([guestId])
+}
+
+// Satu sesi checkout dari keranjang bisa memuat beberapa Order (per toko),
+// tetapi hanya satu transaksi pembayaran Louvin.
+model Checkout {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  buyerId     String?
+  buyerName   String
+  buyerEmail  String
+  buyerPhone  String?
+  total       Int
+  paymentType String?
+  louvinTrxId String?  @unique
+  paymentInfo String?
+  status      String   @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | EXPIRED
+  createdAt   DateTime @default(now())
+  orders      Order[]
+}
+
+// Ulasan pembeli untuk produk (dan otomatis mengagregasi rating toko).
+model Review {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  buyerId    String?
+  buyer      User?    @relation(fields: [buyerId], references: [id])
+  buyerName  String
+  rating     Int // 1..5
+  comment    String?
+  sellerReply String?
+  createdAt  DateTime @default(now())
+
+  @@unique([orderId, productId])
+  @@index([productId])
+  @@index([storeId])
+}
+
+// Sengketa/komplain pesanan; dimediasi admin.
+model Dispute {
+  id         String           @id @default(cuid())
+  orderId    String           @unique
+  order      Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyerId    String?
+  buyer      User?            @relation(fields: [buyerId], references: [id])
+  reason     String
+  status     String           @default("OPEN") // OPEN | RETURN_APPROVED | RESOLVED_REFUND | RESOLVED_RELEASE | REJECTED
+  resolution String?
+  createdAt  DateTime         @default(now())
+  resolvedAt DateTime?
+  messages   DisputeMessage[]
+  // ===== Retur barang fisik (admin setujui retur sebelum refund) =====
+  // Alamat retur = alamat asal toko yang sudah ada (Store.originAddress), tidak perlu field baru.
+  returnCourier         String?   // isi bebas dari pembeli, mis. "JNE REG"
+  returnTrackingNumber  String?
+  returnShippedAt       DateTime? // saat pembeli input resi retur
+  returnDeadlineAt      DateTime? // auto-refund kalau seller tak konfirmasi/lapor sebelum ini
+}
+
+model DisputeMessage {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  author    String // "BUYER" | "SELLER" | "ADMIN"
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// Alamat tersimpan pembeli (buku alamat).
+model Address {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label         String   @default("Rumah")
+  recipientName String
+  phone         String
+  areaId        String?
+  postalCode    String?
+  detail        String
+  lat           Float?
+  lng           Float?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Wishlist / favorit.
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+// Catatan poin loyalitas (audit earn/redeem). Saldo poin = User.points.
+model PointEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  amount    Int // + earn, - redeem
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Komisi afiliasi per order. Saldo afiliasi = SUM(amount) status AVAILABLE.
+model AffiliateCommission {
+  id              String   @id @default(cuid())
+  affiliateUserId String
+  affiliate       User     @relation(fields: [affiliateUserId], references: [id], onDelete: Cascade)
+  orderId         String   @unique
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount          Int
+  status          String   @default("PENDING") // PENDING | AVAILABLE | PAID | VOID
+  createdAt       DateTime @default(now())
+
+  @@index([affiliateUserId, status])
+}
+
+// Tanya-jawab pada halaman produk.
+model ProductQuestion {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  askerName  String
+  question   String
+  answer     String?
+  answeredAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([productId])
+}
+
+// Voucher/diskon: milik toko (storeId) atau platform (storeId null).
+model Voucher {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  storeId     String? // null = voucher platform (berlaku semua toko)
+  store       Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type        String // PERCENT | FIXED
+  value       Int // persen (1..100) atau rupiah
+  minSpend    Int      @default(0)
+  maxDiscount Int      @default(0) // 0 = tak terbatas (untuk PERCENT)
+  quota       Int      @default(0) // 0 = tak terbatas
+  used        Int      @default(0)
+  active      Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  orders      Order[]
+}
+
+// Jejak pemakaian AI (generate foto/caption via kie.ai) — dipakai untuk kuota bulanan per toko.
+model AiGeneration {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type      String // IMAGE | CAPTION | VIDEO | CHAT
+  createdAt DateTime @default(now())
+
+  @@index([storeId, type, createdAt])
+}
+
+// Paket topup kredit AI yang bisa dibeli seller (dikelola admin di /admin/ai-usage).
+// Kredit dipakai setelah kuota gratis bulanan habis, dan tidak hangus/expire.
+model AiCreditPackage {
+  id          String   @id @default(cuid())
+  name        String
+  credits     Int
+  priceRupiah Int
+  active      Boolean  @default(true)
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Transaksi pembelian paket kredit AI via Louvin (QRIS/VA) — mirip alur Order tapi
+// bukan untuk produk marketplace, jadi disimpan terpisah.
+model AiCreditPurchase {
+  id          String    @id @default(cuid())
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  packageName String
+  credits     Int
+  priceRupiah Int
+  status      String    @default("PENDING") // PENDING | PAID | EXPIRED | CANCELLED
+  paymentType String?
+  louvinTrxId String?   @unique
+  paymentInfo String? // JSON respons Louvin (nomor VA / QRIS)
+  createdAt   DateTime  @default(now())
+  paidAt      DateTime?
+
+  @@index([storeId])
+}
+
+// Sumber kebenaran saldo kredit AI berbayar: saldo = SUM(amount) per storeId.
+// amount positif = kredit masuk (dari pembelian), negatif = kredit terpakai (generate
+// setelah kuota gratis bulanan habis).
+model AiCreditEntry {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type      String // PURCHASE | CONSUME | ADJUSTMENT
+  amount    Int
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
+}
+
+// Landing page funnel: 1 halaman = 1 produk utama, blok drag-n-drop (lib/landingBlocks.ts),
+// tanpa navbar/footer situs, form order langsung di halaman (reuse BuyForm/checkoutAction).
+model LandingPage {
+  id            String        @id @default(cuid())
+  storeId       String
+  store         Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  slug          String        @unique
+  title         String
+  blocks        Json          @default("[]")
+  published     Boolean       @default(false)
+  views         Int           @default(0)
+  ogTitle       String?
+  ogDescription String?
+  ogImageUrl    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  orders        Order[]
+  leads         LandingLead[]
+
+  @@index([storeId])
+  @@index([productId])
+}
+
+// Lead tertangkap dari form order landing page (nama+HP diisi tapi belum tentu checkout
+// selesai) — dipakai seller follow-up manual/japri. converted = true kalau akhirnya order jadi.
+model LandingLead {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  name          String?
+  phone         String
+  converted     Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+
+  @@unique([landingPageId, phone])
+  @@index([landingPageId])
+}

@@ -1,0 +1,28 @@
+<svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hpBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fcedcf"/><stop offset=".6" stop-color="#f4d9ac"/><stop offset="1" stop-color="#e8c390"/></linearGradient>
+    <radialGradient id="hpSpot" cx="50%" cy="36%" r="60%"><stop offset="0" stop-color="#fffaf0" stop-opacity=".95"/><stop offset="1" stop-color="#fffaf0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="hpHoney" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b0640f"/><stop offset=".18" stop-color="#e78d1c"/><stop offset=".5" stop-color="#ffc85e"/><stop offset=".82" stop-color="#df8318"/><stop offset="1" stop-color="#a2580d"/></linearGradient>
+    <linearGradient id="hpHoneyV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset=".16" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#5e300a" stop-opacity=".28"/></linearGradient>
+    <linearGradient id="hpLid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5a2e"/><stop offset=".5" stop-color="#5c3718"/><stop offset="1" stop-color="#3f2410"/></linearGradient>
+    <linearGradient id="hpLabel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#eaddc1"/><stop offset=".5" stop-color="#fffdf7"/><stop offset="1" stop-color="#e6d5b3"/></linearGradient>
+    <filter id="hpShadow"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="hpSoft"><feGaussianBlur stdDeviation="1"/></filter>
+  </defs>
+  <rect width="300" height="300" fill="url(#hpBg)"/>
+  <ellipse cx="150" cy="120" rx="180" ry="130" fill="url(#hpSpot)"/>
+  <ellipse cx="152" cy="250" rx="78" ry="15" fill="#7a4a12" opacity=".33" filter="url(#hpShadow)"/>
+  <g transform="translate(0,498) scale(1,-1)" opacity=".13" filter="url(#hpSoft)"><rect x="102" y="108" width="96" height="140" rx="20" fill="url(#hpHoney)"/></g>
+  <rect x="102" y="108" width="96" height="140" rx="20" fill="url(#hpHoney)"/>
+  <rect x="102" y="108" width="96" height="140" rx="20" fill="url(#hpHoneyV)"/>
+  <rect x="114" y="120" width="12" height="108" rx="6" fill="#fff" opacity=".5" filter="url(#hpSoft)"/>
+  <rect x="132" y="128" width="5" height="80" rx="2.5" fill="#fff" opacity=".24"/>
+  <ellipse cx="150" cy="106" rx="50" ry="9" fill="#2f1c0c"/>
+  <rect x="100" y="84" width="100" height="26" rx="8" fill="url(#hpLid)"/>
+  <rect x="104" y="88" width="92" height="5" rx="2.5" fill="#fff" opacity=".2"/>
+  <ellipse cx="150" cy="84" rx="50" ry="9" fill="#6b4423"/>
+  <g filter="url(#hpSoft)"><rect x="114" y="150" width="72" height="66" rx="8" fill="#00000022"/></g>
+  <rect x="113" y="148" width="72" height="64" rx="8" fill="url(#hpLabel)"/>
+  <text x="149" y="182" font-size="20" text-anchor="middle" fill="#a86a12" font-family="Georgia,serif" font-weight="700" font-style="italic">Madu</text>
+  <text x="149" y="198" font-size="8.5" text-anchor="middle" fill="#7a5a2a" font-family="sans-serif" letter-spacing="2">HUTAN ASLI</text>
+</svg>

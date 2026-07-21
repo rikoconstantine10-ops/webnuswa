@@ -1,0 +1,122 @@
+import { db } from "@/lib/db";
+import ProductCard from "@/components/ProductCard";
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Belanja — NuswaMart",
+};
+
+const SORTS: Record<string, { label: string; orderBy: object }> = {
+  baru: { label: "Terbaru", orderBy: { createdAt: "desc" } },
+  terlaris: { label: "Terlaris", orderBy: { soldCount: "desc" } },
+  murah: { label: "Termurah", orderBy: { price: "asc" } },
+  mahal: { label: "Termahal", orderBy: { price: "desc" } },
+  rating: { label: "Rating Tertinggi", orderBy: { ratingAvg: "desc" } },
+};
+
+export default async function MarketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; kategori?: string; sort?: string }>;
+}) {
+  const { q, kategori, sort } = await searchParams;
+  const activeSort = sort && SORTS[sort] ? sort : "baru";
+
+  const [products, categories] = await Promise.all([
+    db.product.findMany({
+      where: {
+        active: true,
+        moderation: "APPROVED",
+        store: { status: "ACTIVE", paused: false },
+        ...(q ? { name: { contains: q } } : {}),
+        ...(kategori ? { category: { slug: kategori } } : {}),
+      },
+      include: { store: { select: { name: true, slug: true } } },
+      orderBy: SORTS[activeSort].orderBy,
+      take: 48,
+    }),
+    db.category.findMany({ orderBy: { name: "asc" } }),
+  ]);
+
+  // Produk yang sedang di-boost tampil paling depan (urutan lain tetap stabil).
+  const now = Date.now();
+  const isBoosted = (p: { boostedUntil: Date | null }) => (p.boostedUntil ? p.boostedUntil.getTime() > now : false);
+  products.sort((a, b) => Number(isBoosted(b)) - Number(isBoosted(a)));
+
+  const qs = (extra: Record<string, string | undefined>) => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (kategori) p.set("kategori", kategori);
+    if (activeSort !== "baru") p.set("sort", activeSort);
+    for (const [k, v] of Object.entries(extra)) {
+      if (v) p.set(k, v);
+      else p.delete(k);
+    }
+    const s = p.toString();
+    return s ? `/market?${s}` : "/market";
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-extrabold mb-6">Jelajahi Produk</h1>
+
+      <form className="mb-6 flex gap-2" action="/market">
+        <input
+          type="text"
+          name="q"
+          defaultValue={q}
+          placeholder="Cari produk..."
+          className="flex-1 bg-white border border-slate-300 rounded-full px-5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+        />
+        <button className="bg-slate-900 text-white px-6 rounded-full text-sm font-semibold hover:bg-slate-700">
+          Cari
+        </button>
+      </form>
+
+      {categories.length > 0 && (
+        <div className="flex gap-2 flex-wrap mb-6">
+          <Link
+            href={qs({ kategori: undefined })}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${!kategori ? "bg-teal-600 text-white border-teal-600" : "bg-white border-slate-300 text-slate-600"}`}
+          >
+            Semua
+          </Link>
+          {categories.map((c) => (
+            <Link
+              key={c.id}
+              href={qs({ kategori: c.slug })}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${kategori === c.slug ? "bg-teal-600 text-white border-teal-600" : "bg-white border-slate-300 text-slate-600"}`}
+            >
+              {c.name}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mb-5 text-xs">
+        <span className="text-slate-400 font-semibold">Urutkan:</span>
+        {Object.entries(SORTS).map(([key, s]) => (
+          <Link
+            key={key}
+            href={qs({ sort: key === "baru" ? undefined : key })}
+            className={`font-semibold px-3 py-1.5 rounded-full border ${activeSort === key ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-300 text-slate-600"}`}
+          >
+            {s.label}
+          </Link>
+        ))}
+      </div>
+
+      {products.length === 0 ? (
+        <p className="text-center text-slate-500 py-16">Belum ada produk.</p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

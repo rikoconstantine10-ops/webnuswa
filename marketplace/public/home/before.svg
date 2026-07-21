@@ -1,0 +1,30 @@
+<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d6455"/><stop offset=".6" stop-color="#4a4338"/><stop offset="1" stop-color="#332e26"/></linearGradient>
+    <linearGradient id="bHoney" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6f5026"/><stop offset=".5" stop-color="#a97e3f"/><stop offset="1" stop-color="#62451f"/></linearGradient>
+    <radialGradient id="bFlash" cx="38%" cy="24%" r="42%"><stop offset="0" stop-color="#fffdf2" stop-opacity=".85"/><stop offset="1" stop-color="#fffdf2" stop-opacity="0"/></radialGradient>
+    <radialGradient id="bVig" cx="50%" cy="46%" r="72%"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".5"/></radialGradient>
+    <filter id="bBlur"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="bSoft"><feGaussianBlur stdDeviation="1.1"/></filter>
+    <filter id="bGrain"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  </defs>
+  <rect width="400" height="300" fill="url(#bBg)"/>
+  <g filter="url(#bBlur)" opacity=".8">
+    <rect x="20" y="60" width="70" height="150" rx="10" fill="#59503f"/>
+    <rect x="300" y="40" width="90" height="120" rx="12" fill="#6b5138"/>
+    <circle cx="350" cy="210" r="34" fill="#7a6a4e"/>
+    <rect x="0" y="235" width="400" height="65" fill="#2c2820"/>
+  </g>
+  <ellipse cx="150" cy="80" rx="150" ry="120" fill="url(#bFlash)"/>
+  <g transform="rotate(-7 205 180)" filter="url(#bSoft)">
+    <ellipse cx="225" cy="250" rx="70" ry="15" fill="#00000066"/>
+    <rect x="158" y="122" width="96" height="126" rx="18" fill="url(#bHoney)"/>
+    <rect x="168" y="132" width="9" height="92" rx="4" fill="#ffffff22"/>
+    <ellipse cx="206" cy="122" rx="49" ry="8" fill="#241608"/>
+    <rect x="157" y="100" width="98" height="26" rx="7" fill="#3d2c18"/>
+    <g transform="rotate(3 206 190)"><rect x="170" y="162" width="72" height="60" rx="5" fill="#b3a789"/></g>
+  </g>
+  <rect width="400" height="300" fill="#5a6a2e" opacity=".14"/>
+  <rect width="400" height="300" filter="url(#bGrain)" opacity=".12"/>
+  <rect width="400" height="300" fill="url(#bVig)"/>
+</svg>
