@@ -5,13 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
-import {
-  createLouvinTransaction,
-  extractTrxId,
-  isPaymentTypeAllowed,
-  MIN_VA_AMOUNT,
-  PAYMENT_TYPES,
-} from "@/lib/louvin";
+import { createBayarinPayment, BAYARIN_BANK_CODES } from "@/lib/bayarin";
 import { generateOrderCode } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
@@ -109,7 +103,7 @@ const cartCheckoutSchema = z.object({
   buyerName: z.string().min(2),
   buyerEmail: z.string().email(),
   buyerPhone: z.string(),
-  paymentType: z.enum([...PAYMENT_TYPES.map((p) => p.id), "cod", "crypto"] as unknown as [string, ...string[]]),
+  paymentType: z.enum([...Object.keys(BAYARIN_BANK_CODES), "cod", "crypto"] as unknown as [string, ...string[]]),
   shippingAddress: z.string().optional(),
   destAreaId: z.string().optional(),
   destPostalCode: z.string().optional(),
@@ -209,9 +203,6 @@ export async function checkoutCartAction(
   }
 
   const total = subtotal - discountAmount + shippingCost;
-  if (!isCod && !isPaymentTypeAllowed(input.paymentType, total)) {
-    return { error: `Virtual Account minimal Rp ${MIN_VA_AMOUNT.toLocaleString("id-ID")} — pilih QRIS` };
-  }
 
   trackEvent({ type: "CHECKOUT", storeId: store.id });
 
@@ -281,14 +272,16 @@ export async function checkoutCartAction(
     redirect(pay.gatewayUrl!);
   }
 
-  const trx = await createLouvinTransaction({
+  const pay = await createBayarinPayment({
+    referenceId: code,
+    bankCode: input.paymentType,
     amount: total,
-    payment_type: input.paymentType,
-    customer_name: input.buyerName,
-    customer_email: input.buyerEmail,
-    description: `Order ${code} - ${orderItemsData.length} item dari ${store.name}`,
+    customerName: input.buyerName,
+    customerEmail: input.buyerEmail,
+    customerPhone: normalizePhone(input.buyerPhone),
+    itemDetails: `${orderItemsData.length} item dari ${store.name}`,
   });
-  if (!trx.success) return { error: `Gagal membuat pembayaran: ${trx.error || trx.details || "unknown"}` };
+  if (!pay.ok) return { error: `Gagal membuat pembayaran: ${pay.error}` };
 
   await db.order.create({
     data: {
@@ -305,8 +298,14 @@ export async function checkoutCartAction(
       total,
       paymentType: input.paymentType,
       affiliateUserId,
-      louvinTrxId: extractTrxId(trx),
-      paymentInfo: JSON.stringify(trx),
+      louvinTrxId: pay.transactionId ?? null,
+      paymentInfo: JSON.stringify({
+        provider: "bayarin",
+        category: pay.category,
+        paymentCode: pay.paymentCode,
+        totalPayment: pay.totalPayment,
+        paymentGuide: pay.paymentGuide,
+      }),
       shippingAddress: input.shippingAddress?.trim() || null,
       destAreaId: input.destAreaId || null,
       destPostalCode: input.destPostalCode || null,

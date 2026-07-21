@@ -2,9 +2,9 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { checkoutAction } from "@/app/actions/checkout";
-import { PAYMENT_TYPES, MIN_VA_AMOUNT, isPaymentTypeAllowed } from "@/lib/louvin";
 import { formatRupiah } from "@/lib/money";
 import AreaSearch from "@/components/AreaSearch";
+import PaymentMethodPicker from "@/components/PaymentMethodPicker";
 
 type Variant = { id: string; name: string; price: number; stock: number | null };
 type Tier = { minQty: number; price: number };
@@ -188,8 +188,6 @@ export default function BuyForm({
   }, [isPhysical, destAreaId, safeQty, productId, destLat, destLng, hasBuyerCoord]);
 
   const paymentAllowed = (id: string) => enabledPaymentTypes.length === 0 || enabledPaymentTypes.includes(id);
-  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal) && paymentAllowed(pt.id));
-  const vaHidden = available.length < PAYMENT_TYPES.filter((pt) => paymentAllowed(pt.id)).length;
   const shippingReady = !isPhysical || Boolean(courier);
 
   return (
@@ -426,16 +424,8 @@ export default function BuyForm({
 
       <div>
         <label className="text-sm font-medium block mb-1.5">Metode pembayaran</label>
-        <div className="grid grid-cols-2 gap-2">
-          {available.map((pt, i) => (
-            <label
-              key={pt.id}
-              className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50"
-            >
-              <input type="radio" name="paymentType" value={pt.id} defaultChecked={i === 0} onChange={() => setPayMethod(pt.id)} required />
-              {pt.label}
-            </label>
-          ))}
+        <PaymentMethodPicker enabledPaymentTypes={enabledPaymentTypes} onChange={setPayMethod} />
+        <div className="grid grid-cols-2 gap-2 mt-2">
           {isPhysical && courier?.cod && paymentAllowed("cod") && (
             <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
               <input type="radio" name="paymentType" value="cod" onChange={() => setPayMethod("cod")} required />
@@ -449,11 +439,6 @@ export default function BuyForm({
             </label>
           )}
         </div>
-        {vaHidden && (
-          <p className="text-xs text-slate-400 mt-1.5">
-            Virtual Account tersedia untuk total minimal {formatRupiah(MIN_VA_AMOUNT)}.
-          </p>
-        )}
       </div>
 
       <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm space-y-1">

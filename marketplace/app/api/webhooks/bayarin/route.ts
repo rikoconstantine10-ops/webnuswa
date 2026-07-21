@@ -4,6 +4,8 @@ import { markOrderPaid } from "@/lib/orders";
 import { verifyBayarinSignature, checkBayarinStatus } from "@/lib/bayarin";
 import { logError } from "@/lib/errors";
 
+const FAILED_STATUSES = ["expired", "expire", "failed", "gagal", "cancelled", "canceled", "batal"];
+
 // Callback Bayarin: notifikasi status pembayaran (server-to-server).
 // Set URL ini di dashboard Bayarin → Integration → Konfigurasi Url → Callback URL (Webhook):
 //   https://nuswamart.com/api/webhooks/bayarin
@@ -33,7 +35,12 @@ export async function POST(req: NextRequest) {
   if (!order) return NextResponse.json({ ok: true, note: "order not found" });
   if (order.status !== "PENDING_PAYMENT") return NextResponse.json({ ok: true, note: "already processed" });
 
-  if (String(data.status ?? "") !== "paid") {
+  const payloadStatus = String(data.status ?? "").toLowerCase();
+  if (payloadStatus !== "paid") {
+    if (FAILED_STATUSES.includes(payloadStatus)) {
+      await db.order.update({ where: { id: order.id }, data: { status: "CANCELLED" } });
+      return NextResponse.json({ ok: true, note: `order ${order.code} dibatalkan (status: ${payloadStatus})` });
+    }
     return NextResponse.json({ ok: true, note: `status ${data.status} belum lunas` });
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { updateFulfillmentSettingsAction } from "@/app/actions/seller";
-import { PAYMENT_TYPES } from "@/lib/louvin";
+import { BAYARIN_PAYMENT_GROUPS, BAYARIN_BANK_CODES } from "@/lib/bayarin";
 
 const COURIER_LABELS: Record<string, string> = {
   jne: "JNE",
@@ -41,18 +41,27 @@ export default function FulfillmentSettingsForm({
         <p className="text-xs text-slate-500 mb-3">
           Pilih metode yang mau diaktifkan. Tidak centang apa pun = semua metode diizinkan.
         </p>
-        <div className="grid sm:grid-cols-2 gap-2">
-          {PAYMENT_TYPES.map((pt) => (
-            <label key={pt.id} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                name="enabledPaymentTypes"
-                value={pt.id}
-                defaultChecked={allPaymentsEnabled || enabledPaymentTypes.includes(pt.id)}
-              />
-              {pt.label}
-            </label>
+        <div className="space-y-3 mb-2">
+          {BAYARIN_PAYMENT_GROUPS.map((g) => (
+            <div key={g.label}>
+              <p className="text-xs font-semibold text-slate-500 mb-1">{g.label}</p>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {g.codes.map((code) => (
+                  <label key={code} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name="enabledPaymentTypes"
+                      value={code}
+                      defaultChecked={allPaymentsEnabled || enabledPaymentTypes.includes(code)}
+                    />
+                    {BAYARIN_BANK_CODES[code]}
+                  </label>
+                ))}
+              </div>
+            </div>
           ))}
+        </div>
+        <div className="grid sm:grid-cols-2 gap-2">
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"

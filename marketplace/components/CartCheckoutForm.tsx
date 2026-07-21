@@ -2,9 +2,9 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { checkoutCartAction } from "@/app/actions/cart";
-import { PAYMENT_TYPES, MIN_VA_AMOUNT, isPaymentTypeAllowed } from "@/lib/louvin";
 import { formatRupiah } from "@/lib/money";
 import AreaSearch from "@/components/AreaSearch";
+import PaymentMethodPicker from "@/components/PaymentMethodPicker";
 
 type Rate = { company: string; type: string; name: string; price: number; duration: string; instant?: boolean; cod?: boolean };
 
@@ -123,8 +123,6 @@ export default function CartCheckoutForm({
   }
 
   const paymentAllowed = (id: string) => enabledPaymentTypes.length === 0 || enabledPaymentTypes.includes(id);
-  const available = PAYMENT_TYPES.filter((pt) => isPaymentTypeAllowed(pt.id, grandTotal) && paymentAllowed(pt.id));
-  const vaHidden = available.length < PAYMENT_TYPES.filter((pt) => paymentAllowed(pt.id)).length;
 
   return (
     <form action={formAction} className="space-y-3">
@@ -197,13 +195,8 @@ export default function CartCheckoutForm({
 
       <div>
         <label className="text-sm font-medium block mb-1.5">Metode pembayaran</label>
-        <div className="grid grid-cols-2 gap-2">
-          {available.map((pt, i) => (
-            <label key={pt.id} className="flex items-center gap-2 border border-slate-300 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50">
-              <input type="radio" name="paymentType" value={pt.id} defaultChecked={i === 0} required />
-              {pt.label}
-            </label>
-          ))}
+        <PaymentMethodPicker enabledPaymentTypes={enabledPaymentTypes} />
+        <div className="grid grid-cols-2 gap-2 mt-2">
           {hasPhysical && courier?.cod && paymentAllowed("cod") && (
             <label className="flex items-center gap-2 border border-amber-300 bg-amber-50/40 rounded-lg px-3 py-2 text-sm cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 col-span-2">
               <input type="radio" name="paymentType" value="cod" required />
@@ -217,7 +210,6 @@ export default function CartCheckoutForm({
             </label>
           )}
         </div>
-        {vaHidden && <p className="text-xs text-slate-400 mt-1.5">Virtual Account untuk total minimal {formatRupiah(MIN_VA_AMOUNT)}.</p>}
       </div>
 
       <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm space-y-1">

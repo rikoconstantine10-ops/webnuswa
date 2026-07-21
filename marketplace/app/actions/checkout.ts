@@ -6,13 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { resolveAffiliateUserId } from "@/lib/affiliate";
-import {
-  createLouvinTransaction,
-  extractTrxId,
-  isPaymentTypeAllowed,
-  MIN_VA_AMOUNT,
-  PAYMENT_TYPES,
-} from "@/lib/louvin";
+import { createBayarinPayment, BAYARIN_BANK_CODES } from "@/lib/bayarin";
 import { generateOrderCode, completeOrder } from "@/lib/orders";
 import { trackEvent } from "@/lib/analytics";
 import { getRates, INSTANT_COURIER_CODES } from "@/lib/biteship";
@@ -33,7 +27,7 @@ const checkoutSchema = z.object({
     .string()
     .transform((v) => v.replace(/\D/g, ""))
     .refine((v) => v.length >= 9 && v.length <= 15, "Nomor WhatsApp tidak valid"),
-  paymentType: z.enum([...PAYMENT_TYPES.map((p) => p.id), "cod", "crypto"] as unknown as [string, ...string[]]),
+  paymentType: z.enum([...Object.keys(BAYARIN_BANK_CODES), "cod", "crypto"] as unknown as [string, ...string[]]),
   shippingAddress: z.string().optional(),
   destAreaId: z.string().optional(),
   destPostalCode: z.string().optional(),
@@ -229,12 +223,6 @@ export async function checkoutAction(
 
   const total = subtotal - discountAmount - pointsUsed + shippingCost;
 
-  if (!isCod && !isPaymentTypeAllowed(input.paymentType, total)) {
-    return {
-      error: `Virtual Account hanya tersedia untuk pembelian minimal Rp ${MIN_VA_AMOUNT.toLocaleString("id-ID")} — silakan pilih QRIS`,
-    };
-  }
-
   trackEvent({ type: "CHECKOUT", storeId: product.storeId, productId: product.id });
 
   const code = generateOrderCode();
@@ -354,15 +342,17 @@ export async function checkoutAction(
     redirect(pay.gatewayUrl!);
   }
 
-  const trx = await createLouvinTransaction({
+  const pay = await createBayarinPayment({
+    referenceId: code,
+    bankCode: input.paymentType,
     amount: total,
-    payment_type: input.paymentType,
-    customer_name: input.buyerName,
-    customer_email: input.buyerEmail,
-    description: `Order ${code} - ${product.name}${variantName ? ` (${variantName})` : ""} x${input.qty}`,
+    customerName: input.buyerName,
+    customerEmail: input.buyerEmail,
+    customerPhone: normalizePhone(input.buyerPhone),
+    itemDetails: `${product.name}${variantName ? ` (${variantName})` : ""} x${input.qty}`,
   });
-  if (!trx.success) {
-    return { error: `Gagal membuat pembayaran: ${trx.error || trx.details || "unknown"}` };
+  if (!pay.ok) {
+    return { error: `Gagal membuat pembayaran: ${pay.error}` };
   }
 
   const created = await db.order.create({
@@ -383,8 +373,14 @@ export async function checkoutAction(
       total,
       paymentType: input.paymentType,
       affiliateUserId,
-      louvinTrxId: extractTrxId(trx),
-      paymentInfo: JSON.stringify(trx),
+      louvinTrxId: pay.transactionId ?? null,
+      paymentInfo: JSON.stringify({
+        provider: "bayarin",
+        category: pay.category,
+        paymentCode: pay.paymentCode,
+        totalPayment: pay.totalPayment,
+        paymentGuide: pay.paymentGuide,
+      }),
       shippingAddress: input.shippingAddress?.trim() || null,
       destAreaId: input.destAreaId || null,
       destPostalCode: input.destPostalCode || null,

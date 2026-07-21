@@ -48,6 +48,60 @@ export const BAYARIN_BANK_CODES = {
 
 export type BayarinBankCode = keyof typeof BAYARIN_BANK_CODES;
 
+// Kategori tampilan per bank_code — dipakai untuk menentukan cara render payment_code:
+// qris → gambar QR, ewallet → link redirect checkout, va/retail → kode + panduan teks.
+// Diverifikasi lewat panggilan API asli (SP=qris, DA=ewallet URL, BCAVA=va nomor, INDOMARET=retail kode).
+export type BayarinCategory = "qris" | "ewallet" | "va" | "retail";
+
+export const BAYARIN_CATEGORY: Record<BayarinBankCode, BayarinCategory> = {
+  SP: "qris",
+  NQ: "qris",
+  DA: "ewallet",
+  OV: "ewallet",
+  LA: "ewallet",
+  SA: "ewallet",
+  SHOPEEPAY: "ewallet",
+  GOPAY: "ewallet",
+  VIRGO: "ewallet",
+  BR: "va",
+  BCAVA: "va",
+  I1: "va",
+  M2: "va",
+  BT: "va",
+  VA: "va",
+  DM: "va",
+  B1: "va",
+  NC: "va",
+  A1: "va",
+  BV: "va",
+  FT: "retail",
+  INDOMARET: "retail",
+};
+
+// Daftar kode yang ditawarkan ke buyer di checkout (satu kode representatif per metode nyata —
+// kode "alt." seperti NQ/SHOPEEPAY/VIRGO disembunyikan supaya tidak dobel di mata buyer).
+export const BAYARIN_PAYMENT_GROUPS: { label: string; codes: BayarinBankCode[] }[] = [
+  { label: "QRIS", codes: ["SP"] },
+  { label: "E-Wallet", codes: ["DA", "OV", "LA", "SA", "GOPAY"] },
+  { label: "Virtual Account Bank", codes: ["BCAVA", "BR", "I1", "M2", "BT", "VA", "DM", "B1", "NC", "A1", "BV"] },
+  { label: "Retail (Bayar di Toko)", codes: ["INDOMARET", "FT"] },
+];
+
+// Payment guide dari Bayarin berisi HTML sederhana (<p>/<strong>) — dibersihkan jadi teks
+// biasa supaya tidak perlu dangerouslySetInnerHTML dengan konten dari API pihak ketiga.
+function stripHtml(html: string): string {
+  return html
+    .replace(/<\/(p|div|li)>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
 type BayarinResponse<T> = { status: boolean; msg?: string; data?: T };
 
 export async function getBayarinMerchantInfo(): Promise<BayarinResponse<{ username: string; balance: string }> | null> {
@@ -63,7 +117,15 @@ export async function getBayarinMerchantInfo(): Promise<BayarinResponse<{ userna
 }
 
 export type CreateBayarinPaymentResult =
-  | { ok: true; transactionId?: string; paymentCode?: string; totalPayment?: number; raw: Record<string, unknown> }
+  | {
+      ok: true;
+      transactionId?: string;
+      paymentCode?: string;
+      totalPayment?: number;
+      paymentGuide?: string;
+      category: BayarinCategory;
+      raw: Record<string, unknown>;
+    }
   | { ok: false; error: string };
 
 // referenceId sebaiknya = kode order kita (Order.code) supaya webhook bisa langsung dicocokkan.
@@ -107,9 +169,12 @@ export async function createBayarinPayment(input: {
     return {
       ok: true,
       transactionId: data.transaction_id ? String(data.transaction_id) : undefined,
-      // "payment_code" berisi string QRIS, nomor VA, atau kode retail tergantung bank_code.
+      // "payment_code" berisi string QRIS, link redirect e-wallet, nomor VA, atau kode retail
+      // tergantung bank_code — lihat BAYARIN_CATEGORY untuk cara render yang benar per tipe.
       paymentCode: data.payment_code ? String(data.payment_code) : undefined,
       totalPayment: data.total_payment != null ? Number(data.total_payment) : undefined,
+      paymentGuide: data.payment_guide ? stripHtml(String(data.payment_guide)) : undefined,
+      category: BAYARIN_CATEGORY[input.bankCode as BayarinBankCode] ?? "va",
       raw,
     };
   } catch (e) {

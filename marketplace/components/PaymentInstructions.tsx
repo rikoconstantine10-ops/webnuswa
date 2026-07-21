@@ -46,6 +46,14 @@ export default function PaymentInstructions({
           </p>
         </div>
       )}
+      {pay.payCode && (
+        <div className="mb-3">
+          <p className="text-sm text-slate-500 mb-1">Kode Bayar</p>
+          <p className="text-2xl font-mono font-extrabold tracking-wider bg-slate-100 rounded-lg px-4 py-3">
+            {pay.payCode}
+          </p>
+        </div>
+      )}
       {(pay.qrImageUrl || pay.qrString) && (
         <div className="mb-3">
           <p className="text-sm text-slate-500 mb-2">Scan QRIS berikut:</p>
@@ -56,6 +64,22 @@ export default function PaymentInstructions({
             <p className="text-xs font-mono break-all bg-slate-100 rounded-lg p-3">{pay.qrString}</p>
           )}
         </div>
+      )}
+      {pay.redirectUrl && (
+        <div className="mb-3">
+          <a
+            href={pay.redirectUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block text-center w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700"
+          >
+            Lanjutkan Pembayaran →
+          </a>
+          <p className="text-xs text-slate-400 mt-1.5">Kamu akan diarahkan ke aplikasi/halaman pembayaran.</p>
+        </div>
+      )}
+      {pay.guide && (
+        <div className="mb-3 bg-slate-50 rounded-lg p-3 text-xs text-slate-600 whitespace-pre-wrap">{pay.guide}</div>
       )}
       {pay.expiredAt && <p className="text-xs text-amber-600 mb-2">Bayar sebelum: {pay.expiredAt} WIB</p>}
       <p className="text-xs text-slate-500">
